@@ -18,13 +18,25 @@ class Markdown {
 		return `\`\`\`${lang}\n${x}\n\`\`\``;
 	}
 	static mention(u) {
-		return `<@${u}>`;
+		if (isNaN(+u)) {
+			return u;
+		} else {
+			return `<@${u}>`;
+		}
 	}
 	static channel(c) {
-		return `<#${c}>`;
+		if (isNaN(+c)) {
+			return c;
+		} else {
+			return `<#${c}>`;
+		}
 	}
 	static role(r) {
-		return `<@&${r}>`;
+		if (isNaN(+r)) {
+			return r;
+		} else {
+			return `<@&${r}>`;
+		}
 	}
 	static emoji(e,id) {
 		return id ? `<:${e}:${id}>` : `:${e}:`;

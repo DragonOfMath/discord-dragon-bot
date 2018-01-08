@@ -108,10 +108,9 @@ class Session {
 		// The resolver function, which determines which events get used
 		this.resolver = resolver;
 		
-		var session = this;
 		this.events = Object.assign({
 			close() {
-				session.manager.end(session.id);
+				this.manager.end(this.id);
 			}
 		}, events);
 	}
@@ -150,6 +149,10 @@ class Session {
 		this.last_channel_id = input.channelID;
 		try {
 			var resolvedEvt = this.resolver.call(this, input);
+		} catch (e) {
+			input.error = e;
+			input.response = ':warning: **Error**: ' + (e.message||e);
+		} finally {
 			if (resolvedEvt && this.hasEvent(resolvedEvt)) {
 				this.uses++;
 				var result = this.fire(resolvedEvt, input);
@@ -170,13 +173,10 @@ class Session {
 				this.misses++;
 				if (this.misses == this.settings.cancel) {
 					this.close(input, 'Canceled.');
-				} else if (this.info && !this.settings.silent) {
-					input.response = `${md.mention(input.userID)} ${this.info}`;
+				} else if (this.silent) {
+					input.response = '';
 				}
 			}
-		} catch (e) {
-			input.error = e;
-			input.response = ':warning: **Error**: ' + (e.message||e);
 		}
 		
 		input.response = this.insertTitle(input.response);

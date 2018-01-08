@@ -1,10 +1,7 @@
 const Bank = require('../../Bank');
 const {Markdown:md,Format:fmt,random} = require('../../Utils');
-const SlotMachine = require('./slots');
-const {Deck,Hand,CardSuits} = require('./cards');
-
-const BlackjackHeader = 'Casino Blackjack' + Object.keys(CardSuits).map(x => CardSuits[x]).join('');
-const BlackjackMinimumBet = 100;
+const SlotMachine = require('./Slots');
+const Blackjack   = require('./Blackjack');
 
 function RollDice(bet) {
 	let multiplier = 0;
@@ -52,9 +49,7 @@ function CoinToss(bet, prediction = 'heads') {
 	}
 }
 
-module.exports = {};
-/*
-let casino = {
+module.exports = {
 	'casino': {
 		category: 'Fun',
 		title: 'Casino Minigames',
@@ -65,28 +60,15 @@ let casino = {
 				info: 'Roll a pair of dice. Pair of 1\'s or 6\'s = x2. Other pair = x1. Sum of 6 = x0.5. Any other roll = loss.',
 				parameters: ['bet'],
 				fn({client, args, userID}) {
-					try {
-						let bet = 0
-						let reward = 0
-						let message = ''
-						client.database.get('users').modify(userID, user => {
-							if (user.bank) {
-								if (user.bank.investing) {
-									throw 'You can\'t play games when your account is investing.'
-								}
-								bet = Math.max(0,Math.min(Number(args[0]),user.bank.credits))
-								;({reward,message} = RollDice(bet))
-								user.bank.credits += reward
-							} else {
-								;({reward,message} = RollDice(0))
-								message += ' (If you would like to add some risky fun, setup your bank account with `!bank.open`)'
-							}
-							return user
-						}).save()
-						return message
-					} catch (e) {
-						return ':warning: **Error**: ' + e
-					}
+					return Bank.modify(client, userID, user => {
+						if (user.investing) {
+							throw 'You can\'t play games when your account is investing.';
+						}
+						var bet = Math.max(0,Math.min(Number(args[0]),user.credits));
+						var {reward,message} = RollDice(bet);
+						user.credits += reward;
+						return message;
+					});
 				}
 			},
 			'coin': {
@@ -95,29 +77,16 @@ let casino = {
 				info: 'Toss a coin, and if you call it right, you win, otherwise, you lose.',
 				parameters: ['bet', '[heads or tails]'],
 				fn({client, args, userID}) {
-					try {
-						let bet = 0
-						let prediction = args[1]
-						let reward = 0
-						let message = ''
-						client.database.get('users').modify(userID, user => {
-							if (user.bank) {
-								if (user.bank.investing) {
-									throw 'You can\'t play games when your account is investing.'
-								}
-								bet = Math.max(0,Math.min(Number(args[0]),user.bank.credits))
-								;({reward,message} = CoinToss(bet, prediction))
-								user.bank.credits += reward
-							} else {
-								;({reward,message} = CoinToss(0, prediction))
-								message += ' (If you would like to add some risky fun, setup your bank account with `!bank.open`)'
-							}
-							return user
-						}).save()
-						return message
-					} catch (e) {
-						return ':warning: **Error**: ' + e
-					}
+					return Bank.modify(client, userID, user => {
+						if (user.bank.investing) {
+							throw 'You can\'t play games when your account is investing.'
+						}
+						var prediction = args[1]
+						var bet = Math.max(0,Math.min(Number(args[0]),user.bank.credits));
+						var {reward,message} = CoinToss(bet, prediction);
+						user.credits += reward;
+						return message;
+					});
 				}
 			},
 			'slots': {
@@ -127,60 +96,23 @@ let casino = {
 				info: '',
 				parameters: ['[bet]'],
 				fn({client, args}) {
-					let bet = Number(args[0]) || 100
-					
-					return 'Not implemented yet, sorry!'
+					return 'Not ready yet, sorry!';
 				}
 			},
 			'blackjack': {
 				category: 'Fun',
 				title: 'Casino | Blackjack',
 				info: 'Classic Blackjack card game. Have the highest hand without going over 21 to win. For a more thorough explanation, see the [Wikipedia page](https://en.wikipedia.org/wiki/Blackjack).',
-				subcommands: {
-					'new': {
-						info: 'Starts a game of Blackjack. Players may join and make their bets before a round starts.'
-					},
-					'stop': {
-						aliases: ['end'],
-						info: 'Stops the Blackjack game. You can only use this when a round is not in progress.'
-					},
-					'join': {
-						info: 'Join a Blackjack game.',
-					},
-					'leave': {
-						aliases: ['goodbye','quit'],
-						info: 'Leave a Blackjack game.'
-					},
-					'bet': {
-						info: 'Sets your bet, which must be at least the minimum and cannot exceed your bank.',
-						parameters: ['amount']
-					},
-					'play': {
-						aliases: ['begin', 'start'],
-						info: 'Starts a round ("shoe") of Blackjack. No players may join or leave until the round is over.'
-					},
-					'hit': {
-						aliases: ['hitme'],
-						info: 'Add a card to your hand. If your hand does not go over 21, you are still in the round.'
-					},
-					'stand': {
-						aliases: ['done', 'finish'],
-						info: 'Finish adding cards to your hand and await for other players and the dealer to finish.'
-					},
-					'double': {
-						aliases: ['doubledown'],
-						info: 'Add one more card and double your bet. Only if you\'re willing to be risky.'
-					},
-					'surrender': {
-						info: 'Relinquish only half your bet instead of your full bet if you think you\'ll lose this turn.'
-					},
-					'insurance': {
-						info: 'Place a side bet when the dealer has an Ace; if they get a blackjack, you keep your money.'
+				fn({client, userID, channelID}) {
+					if (client.sessions.has(channelID)) {
+						throw 'A session is currently in progress in this channel.';
 					}
+					return 'Not ready yet, sorry!';
+					//client.sessions.start(new Blackjack(client, userID, channelID));
+					//return 'A new Blackjack session has started. Players may join and make their bets before the host begins the round.';
 				}
 			}
 		}
 	}
-}
+};
 
-*/

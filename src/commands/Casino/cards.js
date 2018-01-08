@@ -22,12 +22,13 @@ const CardSuits = {
 };
 
 class Card {
-	constructor(value, suit) {
-		this.value = value;
-		this.suit  = suit;
+	constructor(value, suit, hidden = true) {
+		this.value  = value;
+		this.suit   = suit;
+		this.hidden = hidden;
 	}
 	get name() {
-		return `${this.name}${CardSuits[this.suit]}`;
+		return this.hidden ? '??' : (this.name + CardSuits[this.suit]);
 	}
 	equals(card) {
 		return this == card || (this.value == card.value && this.suit == card.suit);
@@ -76,6 +77,15 @@ class Pile {
 		}
 		return this;
 	}
+	hide() {
+		this.cards.forEach(c => c.hidden = true);
+	}
+	show() {
+		this.cards.forEach(c => c.hidden = false);
+	}
+	toString() {
+		return this.cards.map(c => c.name).join(',');
+	}
 }
 
 class Deck extends Pile {
@@ -84,12 +94,13 @@ class Deck extends Pile {
 		while (mult-- > 0) {
 			for (let value in CardValues) {
 				for (let suit in CardSuits) {
-					this.add(new Card(value, suit));
+					this.add(new Card(value, suit, true));
 				}
 			}
 		}
 	}
 	shuffle(iterations = 1) {
+		this.hide();
 		while (iterations-- > 0) {
 			for (let a = 0, b, temp; a < this.length; a++) {
 				b = Math.floor(this.length * Math.random());
@@ -115,13 +126,20 @@ class Hand extends Pile {
 		super();
 		this.bet = Number(bet);
 	}
-	drawFromDeck(deck, count = 1) {
+	drawFromDeck(deck, count = 1, hiddenCount = 0) {
 		if (!(deck instanceof Deck)) {
 			throw 'Invalid deck source.';
 		}
-		let cardsDrawn = []
+		let cardsDrawn = [];
 		while (count-- > 0) {
 			var c = deck.draw();
+			c.hidden = false;
+			cardsDrawn.push(c);
+			this.add(c);
+		}
+		while (hiddenCount-- > 0) {
+			var c = deck.draw();
+			c.hidden = true;
 			cardsDrawn.push(c);
 			this.add(c);
 		}
@@ -140,13 +158,14 @@ class Hand extends Pile {
 	get blackjackValue() {
 		let value = [0], aces = 0;
 		for (let card of this.cards) {
+			if (card.hidden) continue;
 			value[0] += CardValues[card.value];
 			if (card.value == 'A') {
 				aces++;
 			}
 		}
 		// aces allow the hand to have multiple values (e.g. [1,11], [2,12,22], and so on)
-		while (aces-- > 0) {
+		while (aces-- > 0 && value[value.length-1] < 12) {
 			value.push(value[value.length-1]+10);
 		}
 		return value;
