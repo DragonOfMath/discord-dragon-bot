@@ -15,7 +15,7 @@ const INVESTMENT_COST    = 250
 const INVESTMENT_MINIMUM = 1000
 const INVESTMENT_WAIT    = 60 * 60 * 1000
 
-const DAILY_PAYROLL      = 300
+const DAILY_PAYROLL      = 500
 const DAILY_WAIT         = 24 * 60 * 60 * 1000
 
 class BankAccount {
