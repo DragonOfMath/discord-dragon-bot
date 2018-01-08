@@ -356,16 +356,16 @@ class PokemonGame {
 			let sellValue;
 			switch (pokemonSold.rarity) {
 				case 'legendary':
-					sellValue = 10000;
+					sellValue = 100000;
 					break;
 				case 'mythical':
-					sellValue = 5000;
+					sellValue = 50000;
 					break;
 				case 'rare':
-					sellValue = 1000;
+					sellValue = 10000;
 					break;
 				default:
-					sellValue = 100;
+					sellValue = 500;
 					break;
 			}
 			

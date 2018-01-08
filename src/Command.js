@@ -154,9 +154,9 @@ class Command {
 		this.info     = info;
 		
 		this.parameters  = new Parameters(parameters, this);
-		this.permissions = new CPermissions(permissions, this.fullID);
 		this.properties  = new Properties(properties, this);
 		this.subcommands = new Subcommands(subcommands, this);
+		this.permissions = new CPermissions(permissions, this.fullID); // due to recursion, this has to come after subcommands resolve
 		this.fn = fn;
 	}
 	/**
