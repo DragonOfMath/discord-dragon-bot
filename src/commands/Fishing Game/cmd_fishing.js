@@ -33,9 +33,9 @@ module.exports = {
 					reward = Fishing.cost * fish.value;
 
 					if (fish.type == 'bird') {
-						message = `You were about to catch something, but a **${fish.name}** ${fishEmoji} swooped down and stole it! ${Bank.formatCredits(reward)}.`;
+						message = `was about to catch something, but a **${fish.name}** ${fishEmoji} swooped down and stole it! ${Bank.formatCredits(reward)}.`;
 					} else {
-						message = `You ${random('caught','reeled in','hooked','snagged','got')} a **${fish.name}** ${fishEmoji}! `;
+						message = `${random('caught','reeled in','hooked','snagged','got')} a **${fish.name}** ${fishEmoji}! `;
 						if (fish.type == 'chest') {
 							if (user.fishing.hasType('key')) {
 								user.fishing.removeType('key');

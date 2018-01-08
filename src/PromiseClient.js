@@ -137,6 +137,7 @@ class PromiseClient extends Discord.Client {
 	
 	/* Shorthand methods */
 	send(to, message, embed) {
+		//console.log(arguments);
 		if (typeof (message) === 'object') {
 			if (message.constructor.name == 'Promise') {
 				// message is a Promise, so wait for it to resolve before sending
@@ -152,25 +153,32 @@ class PromiseClient extends Discord.Client {
 		return this.sendMessage({to,message,embed});
 	}
 	get(channelID, messageID) {
+		//console.log(arguments);
 		return this.getMessage(makePayload(['channelID','messageID'], arguments));
 	}
 	getAll(channelID, limit = 50) {
+		//console.log(arguments);
 		return this.getMessages(makePayload(['channelID','limit'], arguments));
 	}
 	getLast(channelID) {
 		var messageID = this.channels[channeID].last_message_id;
+		//console.log(arguments, messageID);
 		return this.getMessage({channelID,messageID});
 	}
 	delete(channelID, messageID) {
+		//console.log(arguments);
 		return this.deleteMessage(makePayload(['channelID','messageID'], arguments));
 	}
 	deleteAll(channelID, messageIDs) {
+		//console.log(arguments);
 		return this.deleteMessages(makePayload(['channelID','messageIDs'], arguments));
 	}
 	addRole(serverID, userID, roleID) {
+		//console.log(arguments);
 		return this.addToRole(makePayload(['serverID','userID','roleID'], arguments));
 	}
 	removeRole(serverID, userID, roleID) {
+		//console.log(arguments);
 		return this.removeFromRole(makePayload(['serverID','userID','roleID'], arguments));
 	}
 }

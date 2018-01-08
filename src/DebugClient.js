@@ -28,8 +28,7 @@ class DebugClient extends Logger(PromiseClient) {
 	
 	ping(channelID) {
 		let ref = this.milliseconds;
-		return this.get(channelID, this.channels[channelID].last_message_id)
-		.then(() => this.milliseconds - ref);
+		return this.getLast(channelID).finally(() => this.milliseconds - ref);
 	}
 	
 	stop() {

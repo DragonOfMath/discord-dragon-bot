@@ -1,7 +1,7 @@
 const {Deck,Hand,CardSuits} = require('./cards');
 const Bank = require('../../Bank');
 
-const HEADER = 'Blackjack' + Object.values(CardSuits).join('');
+const HEADER = 'Blackjack' + Object.keys(CardSuits).map(x => CardSuits[x]).join('');
 const BLACKJACK_BET_MINIMUM = 100;
 const STAGE = {
 	WAITING: 0,
@@ -169,7 +169,7 @@ function BlackjackSession(client, host, channelID) {
 				client.wait(3000)
 				.then(() => displayGameProgress(this.data))
 				.then(e => client.send(this.id, e));
-			}
+			},
 			stop({client, userID}) {
 				for (var id of this.data.users) {
 					delete this.data[id];
