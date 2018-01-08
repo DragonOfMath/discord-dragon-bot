@@ -44,7 +44,56 @@ class BlackjackPlayer extends Hand {
 }
 
 class Blackjack {
-	constructor() {}
+	constructor(client, host, channel) {
+		if (Bank.get(client, host).credits < BLACKJACK_BET_MINIMUM) {
+			throw 'You need at least ' + Bank.formatCredits(BLACKJACK_BET_MINIMUM) + ' to host a game of Blackjack.';
+		}
+		this.client = client;
+		this.deck = new Deck(4); // play with 4 decks of cards.
+		this.host = host;
+		this.channelID = channel;
+		this.stage = STAGE.WAITING;
+		this.users = {
+			'Bot':  new BlackjackPlayer(true),
+			[host]: new BlackjackPlayer()
+		};
+	}
+	join(user) {
+		if (this.users[user]) {
+			throw 'User is already part of this game.';
+		}
+		this.users[user] = new BlackjackPlayer();
+	}
+	leave(user) {
+		if (!this.users[user]) {
+			throw 'User is not part of this game.';
+		}
+		delete this.users[user];
+	}
+	start() {
+		this.stage = STAGE.READY;
+		for (var id in this.users) {
+			this.users[id].returnToDeck(this.deck);
+		}
+		this.deck.shuffle(2);
+		for (var id in this.users) {
+			this.users[id].start(deck);
+		}
+		this.client.wait(3000)
+		.then(this.displayGameProgress)
+		.then(e => this.client.send(this.channelID, e));
+	}
+	stop() {
+		for (var id in this.users) {
+			delete this.users[id];
+		}
+	}
+	setBet(user, bet) {
+		if (bet < BLACKJACK_BET_MINIMUM) {
+			throw md.mention(userID) + ', you must make a minimum bet of ' + Bank.formatCredits(BLACKJACK_BET_MINIMUM);
+		}
+		this.users[user].bet = bet;
+	}
 }
 
 function displayGameProgress(data) {
@@ -63,9 +112,6 @@ function displayGameProgress(data) {
 }
 
 function BlackjackSession(client, host, channelID) {
-	if (Bank.get(client, host).credits < BLACKJACK_BET_MINIMUM) {
-		throw 'You need at least ' + Bank.formatCredits(BLACKJACK_BET_MINIMUM) + ' to host a game of Blackjack.';
-	}
 	return {
 		id: channelID,
 		title: 'Blackjack',
@@ -78,12 +124,7 @@ function BlackjackSession(client, host, channelID) {
 			silent: false
 		},
 		data: {
-			stage: STAGE.WAITING,
-			host,
-			deck:   new Deck(4), // play with 4 decks of cards.
-			users: ['Bot', host],
-			Bot:    new BlackjackPlayer(true),
-			[host]: new BlackjackPlayer(),
+			game: this
 		},
 		permissions: {
 			channels: [channelID]
@@ -157,35 +198,22 @@ function BlackjackSession(client, host, channelID) {
 			}
 		},
 		events: {
-			startBlackjack(client) {
-				this.data.stage = STAGE.READY;
-				for (var id of this.data.users) {
-					this.data[id].returnToDeck(this.data.deck);
-				}
-				this.data.deck.shuffle(2);
-				for (var id of this.data.users) {
-					this.data[id].start(deck);
-				}
-				client.wait(3000)
-				.then(() => displayGameProgress(this.data))
-				.then(e => client.send(this.id, e));
+			start({client, userID}) {
+				this.data.game.start();
+				return 'The game has started.';
 			},
 			stop({client, userID}) {
-				for (var id of this.data.users) {
-					delete this.data[id];
-				}
+				this.data.game.stop();
 				this.fire('close');
 				return 'The host has stopped the game.';
 			},
 			join({client, userID}) {
-				this.data.users.push(userID);
-				this.data.set(userID, new Player());
-				return md.mention(userID) + ' has joined this game.';
+				this.data.game.join(userID);
+				return md.mention(user) + ' has joined the game.';
 			},
 			leave({client, userID}) {
-				this.data.users.splice(this.data.users.indexOf(userID),1);
-				this.data.delete(userID);
-				if (userID == this.data.host) {
+				this.data.game.leave(userID);
+				if (userID == this.data.game.host) {
 					this.fire('close');
 					return md.mention(userID) + ' has left, forcing the game to stop.';
 				} else {
@@ -193,12 +221,9 @@ function BlackjackSession(client, host, channelID) {
 				}
 			},
 			bet({client, userID, message}) {
-				
-				var bet = ~~message.split(' ')[1];
-				if (bet < BLACKJACK_BET_MINIMUM) {
-					throw md.mention(userID) + ', you must make a minimum bet of ' + Bank.formatCredits(BLACKJACK_BET_MINIMUM);
-				}
-				this.data[userID].bet = bet;
+				var bet = ~~message.match(/\d+/)[0];
+				this.data.game.setBet(userID, bet);
+				return md.mention(userID) + ', your bet has been set to ' + Bank.formatCredits(bet);
 			},
 			start({client, userID}) {
 				

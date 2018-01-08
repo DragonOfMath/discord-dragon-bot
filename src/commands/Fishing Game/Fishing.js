@@ -140,13 +140,16 @@ class Fishing {
 			percent = '<0.01';
 		}
 		embed.fields.push({
-			name: 'Rarity',
-			value: `**${percent}%** chance to catch`
+			name: 'Value',
+			value: `**\$${fish.value * COST}**`,
+			inline: true
 		});
 		embed.fields.push({
-			name: 'Value',
-			value: `**\$${fish.value * COST}**`
+			name: 'Rarity',
+			value: `**${percent}%** chance to catch`,
+			inline: true
 		});
+		
 		return embed;
 	}
 	static showFishCategories() {

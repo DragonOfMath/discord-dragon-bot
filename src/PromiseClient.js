@@ -161,7 +161,7 @@ class PromiseClient extends Discord.Client {
 		return this.getMessages(makePayload(['channelID','limit'], arguments));
 	}
 	getLast(channelID) {
-		var messageID = this.channels[channeID].last_message_id;
+		var messageID = this.channels[channelID].last_message_id;
 		//console.log(arguments, messageID);
 		return this.getMessage({channelID,messageID});
 	}
