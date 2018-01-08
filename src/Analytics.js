@@ -23,7 +23,7 @@ class Analytics extends MapBase {
 		if (akeys.length == 0) {
 			return {description: 'No analytic information is available.'};
 		} else if (akeys.length < 5) {
-			return {description: akeys.map(cmd => `The \`${cmd}\` command has been used **${analytics[cmd]||0}** times.`).join('\n')};
+			return {description: akeys.map(cmd => `The \`${cmd}\` command has been used **${this[cmd]||0}** times.`).join('\n')};
 		} else if (akeys.length > 25) {
 			rows = 25;
 		} else {

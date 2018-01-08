@@ -40,12 +40,12 @@ class DebugClient extends Logger(PromiseClient) {
 		this._ignoreUsers = false;
 		this._tryReconnect = true;
 	}
-	_disconnected(error) {
+	_disconnected() {
 		if (this._tryReconnect) {
 			this.warn('Client lost connection. Reconnecting...');
 			this.connect();
 		} else {
-			this.info('Client stopped connection.', error);
+			this.info('Client stopped connection.');
 			process.exit(0);
 		}
 	}

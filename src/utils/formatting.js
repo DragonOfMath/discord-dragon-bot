@@ -7,8 +7,11 @@ class Format {
 		return `${x} ${s}${x!=1?'s':''}`;
 	}
 	static insertCommas(x) {
-		if (x < 1000) {
+		if (x >= 0 && x < 1000) {
 			return x;
+		}
+		if (x < 0) {
+			return '-' + this.insertCommas(Math.abs(x));
 		}
 		let decimal = '';
 		if (x % 1 > 0) {
