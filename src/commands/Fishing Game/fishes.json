@@ -1,0 +1,122 @@
+[
+	{
+		"name": "Piece of Trash",
+		"type": "junk",
+		"info": "Worthless junk floating in the virtual ocean.",
+		"things": [":battery:", ":athletic_shoe:", ":mans_shoe:", ":gear:", ":paperclip:", ":paperclips:", ":chains:", ":shopping_cart:", ":shell:"],
+		"rarity": 80,
+		"value": 0
+	},
+	{
+		"name": "Piece of Treasure",
+		"type": "rare junk",
+		"info": "A valuable scrap of treasure that floated away from somewhere.",
+		"things": [":dollar:", ":yen:", ":euro:", ":pound:", ":gem:", ":ring:", ":crown:", ":stopwatch:"],
+		"rarity": 6,
+		"value": 15.0
+	},
+	{
+		"name": "Bug",
+		"type": "common",
+		"info": "Small critters that aren't that valuable for how rare they are.",
+		"things": [":bug:",":snail:",":ant:",":spider:"],
+		"rarity": 30,
+		"value": 0.6
+	},
+	{
+		"name": "Cool Bug",
+		"type": "rare",
+		"info": "Rare bugs, which are much more valuable.",
+		"things": [":butterfly:", ":beetle:", ":bee:"],
+		"rarity": 10,
+		"value": 5.0
+	},
+	{
+		"name": "Fish",
+		"type": "common",
+		"info": "Basic nameless fish, common and only nominally valuable.",
+		"things": [":fish:"],
+		"rarity": 100,
+		"value": 1.2
+	},
+	{
+		"name": "Cool Fish",
+		"type": "uncommon",
+		"info": "An interesting species of fish, rare and quite valuable.",
+		"things": [":tropical_fish:", ":blowfish:"],
+		"rarity": 32,
+		"value": 3.2
+	},
+	{
+		"name": "Critter",
+		"type": "rare",
+		"info": "Various animals you might catch, they fetch a nice price.",
+		"things": [":snake:", ":crab:", ":shrimp:", ":lizard:", ":frog:"],
+		"rarity": 12,
+		"value": 8.0
+	},
+	{
+		"name": "Cool Critter",
+		"type": "rare",
+		"info": "Unique and rare animals, worth quite a lot.",
+		"things": [":turtle:", ":crocodile:", ":octopus:", ":squid:"],
+		"rarity": 8,
+		"value": 20.0
+	},
+	{
+		"name": "Awesome Critter",
+		"type": "very rare",
+		"info": "Even more rare, and that much more awesome. They're very valuable.",
+		"things": [":whale:", ":whale2:", ":shark:", ":dolphin:"],
+		"rarity": 5,
+		"value": 100.0
+	},
+	{
+		"name": "Legendary Creature",
+		"type": "legendary",
+		"info": "The rarest and most valuable creatures of them all.",
+		"things": [":dragon:", ":unicorn:"],
+		"rarity": 0.2,
+		"value": 10000.0
+	},
+	{
+		"name": "Key",
+		"type": "key",
+		"info": "A peculiar key, not worth anything, but might become useful...",
+		"things": [":key:", ":key2:"],
+		"rarity": 3,
+		"value": 0
+	},
+	{
+		"name": "Small Treasure Chest",
+		"type": "chest",
+		"info": "A chest holding a small reward. Needs a key to open, or else it is discarded.",
+		"things": [":moneybag:", ":gift:", ":package:", ":confetti_ball:", ":tada:"],
+		"rarity": 3,
+		"value": 200.0
+	},
+	{
+		"name": "Large Treasure Chest",
+		"type": "chest",
+		"info": "A chest holding a large reward. Needs a key to open, or else it is discarded.",
+		"things": [":moneybag:", ":gift:", ":package:", ":confetti_ball:", ":tada:"],
+		"rarity": 1,
+		"value": 2000.0
+	},
+	{
+		"name": "Legendary Treasure Chest",
+		"type": "chest",
+		"info": "A chest holding a massive reward. Needs a key to open, or else it is discarded.",
+		"things": [":moneybag:", ":gift:", ":package:", ":confetti_ball:", ":tada:"],
+		"rarity": 0.1,
+		"value": 20000.0
+	},
+	{
+		"name": "Bird",
+		"type": "bird",
+		"info": "Pesky birds that steal yo' catch and yo' money.",
+		"things": [":bird:",":eagle:",":duck:"],
+		"rarity": 3,
+		"value": -4.0
+	}
+]

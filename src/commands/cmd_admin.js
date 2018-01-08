@@ -1,0 +1,69 @@
+/**
+	cmd_admin.js
+	Command file for private (owner-only) bot commands.
+*/
+module.exports = {
+	'runjs': {
+		aliases: ['evaljs'],
+		category: 'Admin',
+		title: 'Run JavaScript',
+		info: 'Run JavaScript code within the bot.',
+		parameters: ['...code'],
+		permissions: {
+			type: 'private'
+		},
+		fn({client,clientID,input,cmd,cmds,arg,args,channel,channelID,server,serverID,user,userID,message,messageID}) {
+			return eval(arg);
+		}
+	},
+	'stop': {
+		aliases: ['stopbot','quit','abort','exit','ctrlq'],
+		category: 'Admin',
+		title: 'Stop Bot',
+		info: 'Stops execution of the bot (Optional flag arguments: `-noidle`, `-nodc`, `-nosave`, `-nomsg`)',
+		parameters: ['[...flags]'],
+		permissions: {
+			type: 'private'
+		},
+		fn({client, args}) {
+			return client.stop(args);
+		}
+	},
+	'proxy': {
+		aliases: ['ghost'],
+		category: 'Admin',
+		info: 'Send a message through the bot to another dimension.',
+		parameters: ['target','...message'],
+		permissions: {
+			type: 'private'
+		},
+		fn({client, args, channelID}) {
+			let [target,...message] = args;
+			try {
+				target = target.match(/<#(\d+)>/)[1];
+			} catch (e) {
+				target = channelID;
+			}
+			message = message.join(' ');
+			client.sendMessage({to: target, message, typing: true})
+			.then(console.log)
+			.catch(console.error);
+		}
+	},
+	'ignore': {
+		category: 'Admin',
+		info: 'Toggles ignoring users other than the bot owner.',
+		parameters: ['[boolean]'],
+		permissions: {
+			type: 'private'
+		},
+		fn({client, args, channelID}) {
+			client._ignoreUsers = !!args[0];
+			if (client._ignoreUsers) {
+				return 'Set to ignore users.';
+			} else {
+				return 'No longer ignoring users.';
+			}
+		}
+	}
+};

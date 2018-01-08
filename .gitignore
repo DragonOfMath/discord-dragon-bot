@@ -1,0 +1,11 @@
+node_modules/
+database/
+debug/
+src/deprecated/
+src/static/
+src/commands/NSFW/
+src/commands/WIP/
+*.log
+*.bat
+*.txt
+init.json
