@@ -85,7 +85,7 @@ class Session {
 		this.title = title;
 		this.info  = info;
 		
-		this.permissions = new Permissions(permissions, id);
+		this.permissions = new Permissions(permissions, this);
 		
 		// assign last_channel_id to the first channel of the permissions
 		// this is probably not safe

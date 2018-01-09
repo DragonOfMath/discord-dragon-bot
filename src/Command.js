@@ -73,6 +73,7 @@ class Subcommands extends TypeMapBase {
 		}
 		//console.log(`Adding ${sub.id} to ${this.supercommand.fullID}`);
 		sub.supercommand = this.supercommand;
+		
 		//sub.permissions.inherit(this.supercommand.permissions);
 		sub.properties.inherit(this.supercommand.properties);
 		sub.category = this.supercommand.category;
@@ -155,8 +156,8 @@ class Command {
 		
 		this.parameters  = new Parameters(parameters, this);
 		this.properties  = new Properties(properties, this);
+		this.permissions = new CPermissions(permissions, this);
 		this.subcommands = new Subcommands(subcommands, this);
-		this.permissions = new CPermissions(permissions, this.fullID); // due to recursion, this has to come after subcommands resolve
 		this.fn = fn;
 	}
 	/**

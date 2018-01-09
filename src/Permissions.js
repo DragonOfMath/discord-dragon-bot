@@ -28,7 +28,7 @@ class Permissions {
 		@arg {Array<String>} [channels] - array of channel names that something is exclusive to
 		 * Empty implies it is usable everywhere
 	*/
-	constructor({ type = WHITELIST, users = [], roles = [], channels = [], servers = [] }, id = '') {
+	constructor({ type = WHITELIST, users = [], roles = [], channels = [], servers = [] }, binding) {
 		if (TYPES.indexOf(type) > -1) {
 			this.type = type;
 		} else {
@@ -44,19 +44,22 @@ class Permissions {
 		this.channels = channels;
 		this.servers  = servers;
 		
-		if (id) {
-			this.id = id;
+		if (binding) {
+			this.binding = binding;
 		}
 	}
-	set id(x) {
-		Object.defineProperty(this, '_id', {
-			value: x,
-			writable: false,
-			enumerable: false
+	set binding(b) {
+		Object.defineProperty(this, '_obj', {
+			value: b,
+			writable: false
 		});
 	}
+	get binding() {
+		return this._obj;
+	}
 	get id() {
-		return this._id || '(This)';
+		let o = this._obj;
+		return o.fullID || o.id || '(This)';
 	}
 	get isInclusive() {
 		return this.type == WHITELIST;

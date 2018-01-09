@@ -27,8 +27,8 @@ module.exports = class ConfigurablePermissions extends Permissions {
 		@arg {Array<String>} [channels] - array of channel names that a command is exclusive to
 		 * Empty implies it is usable everywhere
 	*/
-	constructor(descriptor, id = '') {
-		super(descriptor, id);
+	constructor(descriptor, binding) {
+		super(descriptor, binding);
 		
 		Object.defineProperties(this, {
 			'usesDefaultPermissions': {
