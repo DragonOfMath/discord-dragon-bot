@@ -383,6 +383,34 @@ class Permissions {
 		}
 		return this;
 	}
+	copy(p) {
+		switch (this.type) {
+			case PUBLIC:
+			case PRIVATE:
+				throw `${this.id} has ${this.type} accessibility.`;
+			case WHITELIST:
+			case BLACKLIST:
+				this.type = p.type;
+				for (let t of TARGETS) {
+					this[t] = p[t].slice();
+				}
+				break;
+		}
+		return this;
+	}
+	invert() {
+		switch (this.type) {
+			case PUBLIC:
+			case PRIVATE:
+				throw `${this.id} has ${this.type} accessibility.`;
+			case WHITELIST:
+				this.type = BLACKLIST;
+			case BLACKLIST:
+				this.type = WHITELIST;
+				break;
+		}
+		return this;
+	}
 	changeType(type) {
 		if (TYPES.indexOf(type) == -1) {
 			throw 'Invalid access type: ' + type;

@@ -65,5 +65,28 @@ module.exports = {
 				return 'No longer ignoring users.';
 			}
 		}
+	},
+	'alias': {
+		category: 'Admin',
+		info: 'Adds a temporary alias for a command.',
+		parameters: ['...command:alias'],
+		permissions: {
+			type: 'private'
+		},
+		fn({client, args}) {
+			var pairs = args.map(a => a.split(client.commands.KEY));
+			var result = [];
+			for (var [cmd,alias] of pairs) {
+				var cmds = client.commands.get(cmd);
+				if (cmds.length == 1) {
+					cmd = cmds[0];
+					cmd.addAlias(alias);
+					result.push(`\`${alias}\` => \`${cmd.fullID}\``);
+				} else {
+					throw `\`${cmd}\` is an invalid command identifier.`;
+				}
+			}
+			return result.join('\n');
+		}
 	}
 };

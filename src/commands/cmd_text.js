@@ -91,7 +91,7 @@ function zalgo(text, size = 'maxi') {
 
 module.exports = {
 	'b': {
-		aliases: ['bemoji', ':b:', '\uD83C\uDD71'],
+		aliases: ['bemoji', '\uD83C\uDD71'],
 		category: 'Fun',
 		title: ':b:',
 		info: 'Adds :b: emojis to your text fam.',
@@ -129,7 +129,7 @@ module.exports = {
 		}
 	},
 	'clap': {
-		aliases: ['clapemoji', ':clap:', '🐀𣰀'],
+		aliases: ['clapemoji', 'clapping', 'preach'],
 		category: 'Fun',
 		info: ':clap:Can:clap:you:clap:feel:clap:the:clap:memes:clap:tonight?:clap:',
 		parameters: ['...text'],
@@ -138,7 +138,7 @@ module.exports = {
 		}
 	},
 	'greentext': {
-		aliases: ['gt'],
+		aliases: ['gt', 'tfw', 'mfw', 'mrw'],
 		category: 'Fun',
 		info: '```css\n>Turns your text into greentext\n```',
 		parameters: ['...text'],

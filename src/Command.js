@@ -9,8 +9,9 @@ const DELIMITER = '.';
 const CATEGORY  = '&';
 const VARIABLE  = '$';
 const PREFIX    = '!';
+const KEY       = ':';
 const HELP      = '?';
-const RESERVED  = [WILDCARD,DELIMITER,CATEGORY,VARIABLE,PREFIX];
+const RESERVED  = [WILDCARD,DELIMITER,CATEGORY,VARIABLE,PREFIX,KEY];
 
 const DEFAULT_CATEGORY = 'Misc';
 const DEFAULT_TITLE    = '';
@@ -45,6 +46,7 @@ class Subcommands extends TypeMapBase {
 				aliases: ['subcommands'],
 				title: `Subcommands`,
 				info: '(Automatically generated subcommand for listing other subcommands)',
+				permissions: { type: 'public' },
 				fn: supercommand.listSubcommands.bind(supercommand)
 			});
 			this.addSubcommand(help);
@@ -202,6 +204,20 @@ class Command {
 	*/
 	hasAlias(a) {
 		return strcmp(this.id,a) || this.aliases.some(x => strcmp(x,a));
+	}
+	/**
+		Add Alias (if it is in dot notation, use the last part, then pass the rest to the supercommand)
+	*/
+	addAlias(a) {
+		var parts = a.split(DELIMITER);
+		var last = parts.pop();
+		if (!this.hasAlias(last)) {
+			this.aliases.push(last);
+		}
+		if (parts.length > 0 && this.supercommand) {
+			this.supercommand.addAlias(parts.join(DELIMITER));
+		}
+		return last;
 	}
 	/**
 		Resolve permissions and return a Grant

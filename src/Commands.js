@@ -8,6 +8,7 @@ const WILDCARD   = '*';
 const SUBCOMMAND = '.';
 const CATEGORY   = '&';
 const VARIABLE   = '$';
+const KEY        = ':';
 const FILE_REGEX = /^cmd_.+\.js$/;
 
 /*
@@ -41,7 +42,8 @@ class Commands extends TypeMapBase {
 			SUBCOMMAND,
 			WILDCARD,
 			CATEGORY,
-			FILE_REGEX
+			FILE_REGEX,
+			KEY
 		});
 	}
 	

@@ -217,6 +217,34 @@ module.exports = {
 					return 'Settings saved.' + showErrors(suppressedErrors);
 				}
 			},
+			'copy': {
+				info: 'Copy permission settings from one command to one or more commands.',
+				parameters: ['src_command','...commands'],
+				permissions: {
+					type: 'private'
+				},
+				fn({client, args, server}) {
+					var [src,...dest] = args;
+					var src_command = client.commands.get(src);
+					if (src_command.length != 1) {
+						throw 'Invalid source command.';
+					} else {
+						src_command = src_command[0];
+					}
+					var commands = client.commands.get(...dest);
+					
+					var suppressedErrors = [];
+					for (let command of commands) {
+						try {
+							command.permissions.copy(client, src_command.permissions);
+						} catch (e) {
+							suppressedErrors.push(e);
+						}
+					}
+					client.database.get('permissions').save();
+					return 'Settings saved.' + showErrors(suppressedErrors);
+				}
+			},
 			'setaccess': {
 				aliases: ['settype'],
 				info: 'Changes the accessibility scope of permissions of a command. Possible values: `private`, `public`, `inclusive`, `exclusive`. Warning: this command will wipe the current permissions for the new accessibility to take effect.',
@@ -228,6 +256,26 @@ module.exports = {
 					client.commands.get(args[0])[0].permissions.changeType(client, args[1]);
 					client.database.get('permissions').save();
 					return 'Access setting saved.';
+				}
+			},
+			'invert': {
+				info: 'Inverts the accessibility scope of permissions. Inclusive becomes exclusive, and vice versa. Public/private commands are not affected.',
+				parameters: ['...commands'],
+				permissions: {
+					type: 'private'
+				},
+				fn({client, args, server}) {
+					var suppressedErrors = [];
+					var commands = client.commands.get(...args);
+					for (let command of commands) {
+						try {
+							command.permissions.invert(client);
+						} catch (e) {
+							suppressedErrors.push(e);
+						}
+					}
+					client.database.get('permissions').save();
+					return 'Settings saved.' + showErrors(suppressedErrors);
 				}
 			},
 			'check': {
@@ -249,6 +297,35 @@ module.exports = {
 				},
 				fn({client, arg, server}) {
 					return client.commands.get(arg)[0].permissions.toDebugEmbed(client);
+				}
+			},
+			'move': {
+				aliases: ['replace', 'alias', 'rename'],
+				info: 'Replace permission entry keys with new ones, in case the names of commands change and are no longer binded. :warning: Warning! This is a low-level command, it will create or delete data regardless of validation!',
+				parameters: ['...old:new'],
+				permissions: {
+					type: 'private'
+				},
+				fn({client, args}) {
+					var pairs = args.map(a => a.split(':'));
+					var permissions = client.database.get('permissions');
+					var suppressedErrors = [];
+					for (let [o,n] of pairs) {
+						var p = permissions[o];
+						try {
+							if (p) {
+								delete permissions[o];
+								client.commands.get(n)[0].permissions.copy(p);
+							} else {
+								throw `${o} had no permission settings.`;
+							}
+						} catch (e) {
+							suppressedErrors.push(e);
+							//permissions[n] = p;
+						}
+					}
+					permissions.save();
+					return 'Settings saved.' + showErrors(suppressedErrors);
 				}
 			}
 		}

@@ -76,17 +76,19 @@ module.exports = class ConfigurablePermissions extends Permissions {
 		return this;
 	}
 	save(client) {
-		if (this.usesDefaultPermissions) {
-			throw `${this.id} is using default permissions and cannot be changed.`;
+		if (client) {
+			if (this.usesDefaultPermissions) {
+				throw `${this.id} is using default permissions and cannot be changed.`;
+			}
+			client.database.get('permissions').set(this.id, this);
 		}
-		client.database.get('permissions').set(this.id, this);
 		return this;
 	}
 	allow(client, p) {
 		if (this.usesDefaultPermissions) {
 			throw `${this.id} is using default permissions and cannot be changed.`;
 		}
-		this.load(client);
+		if (client) this.load(client);
 		super.allow(p);
 		return this.save(client);
 	}
@@ -94,7 +96,7 @@ module.exports = class ConfigurablePermissions extends Permissions {
 		if (this.usesDefaultPermissions) {
 			throw `${this.id} is using default permissions and cannot be changed.`;
 		}
-		this.load(client);
+		if (client) this.load(client);
 		super.deny(p);
 		return this.save(client);
 	}
@@ -102,15 +104,31 @@ module.exports = class ConfigurablePermissions extends Permissions {
 		if (this.usesDefaultPermissions) {
 			throw `${this.id} is using default permissions and cannot be changed.`;
 		}
-		this.load(client);
+		if (client) this.load(client);
 		super.clear(p);
+		return this.save(client);
+	}
+	copy(client, p) {
+		if (this.usesDefaultPermissions) {
+			throw `${this.id} is using default permissions and cannot be changed.`;
+		}
+		if (client) this.load(client);
+		super.copy(p);
+		return this.save(client);
+	}
+	invert(client) {
+		if (this.usesDefaultPermissions) {
+			throw `${this.id} is using default permissions and cannot be changed.`;
+		}
+		if (client) this.load(client);
+		super.invert();
 		return this.save(client);
 	}
 	changeType(client, type) {
 		if (this.usesDefaultPermissions) {
 			throw `${this.id} is using default permissions and cannot be changed.`;
 		}
-		this.load(client);
+		if (client) this.load(client);
 		super.changeType(type);
 		return this.save(client);
 	}

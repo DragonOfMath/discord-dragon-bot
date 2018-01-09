@@ -13,7 +13,10 @@ function betResults(reward, message) {
 	return {reward,message};
 }
 
-function RollDice(bet) {
+function RollDice(bet = 0) {
+	if (isNaN(bet)) {
+		bet = 0;
+	}
 	var multiplier = 0;
 	
 	var roll1 = random(1,6);
@@ -33,7 +36,11 @@ function RollDice(bet) {
 
 	return betResults(bet * multiplier, `rolled **${roll1 == 1 ? ':game_die:' : roll1}** and **${roll2 == 1 ? ':game_die:' : roll2}**.`);
 }
-function CoinToss(bet, prediction = 'heads') {
+function CoinToss(bet = 0, prediction = 'heads') {
+	if (isNaN(bet)) {
+		prediction = bet;
+		bet = 0;
+	}
 	prediction = prediction.toLowerCase();
 	switch (prediction) {
 		case 'h':
