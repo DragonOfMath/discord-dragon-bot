@@ -54,12 +54,8 @@ class Pokemon {
 		this._hp = this.hp;
 	}
 	get rarity() {
-		for (let type in SpecialPokemonList) {
-			if (SpecialPokemonList[type].indexOf(this.species) > -1) {
-				return type;
-			}
-		}
-		return '';
+		var spc = this.species;
+		return Object.keys(SpecialPokemonList).find(type => SpecialPokemonList[type].includes(spc));
 	}
 	displayInfo() {
 		return {
@@ -187,28 +183,15 @@ class PkmnAccount {
 			page = 1;
 		}
 		
-		let pkmn = this.pokemon;
-		let ids = pkmn.ids;
-		if (typeof(filter) === 'array' && filter.length) {
-			ids = ids.filter(id => {
-				let spc = pkmn[id].species;
-				return filter.some(f => SpecialPokemonList[f].includes(spc));
-			});
-		} else if (typeof(filter) === 'object') {
-			ids = ids.filter(id => {
-				let p = pkmn[id];
-				for (let k in filter) {
-					if (p[k] != filter[k]) {
-						return false;
-					}
-				}
-				return true;
-			});
+		let pokemon = this.pokemon;
+		let ids = pokemon.ids;
+		if (typeof(filter) === 'function') {
+			ids = ids.filter(id => filter(pokemon[id]));
 		}
 		
 		let embed = paginate(ids, page, PAGINATION, function(p, i) {
 			let id = p[i];
-			let mon = pkmn[id];
+			let mon = pokemon[id];
 			return {
 				name:  `${mon.starName} (ID: ${id})`,
 				value: `${mon.species} Lvl. ${mon.lvl}`,
@@ -404,14 +387,15 @@ class PokemonGame {
 		return embed;
 	}
 	static inventoryLegendaries(client, userID, page) {
+		const legendaries = this.specialPokemon;
 		let pkmn = this.get(client, userID);
-		let embed = pkmn.displayPokemonInventory(page, ['legendary','mythical','rare']);
+		let embed = pkmn.displayPokemonInventory(page, (pokemon) => legendaries.includes(pokemon.species));
 		embed.title = `${client.users[userID].username}'s Legendaries`;
 		return embed;
 	}
 	static inventoryFavorites(client, userID, page) {
 		let pkmn = this.get(client, userID);
-		let embed = pkmn.displayPokemonInventory(page, {fav: true});
+		let embed = pkmn.displayPokemonInventory(page, (pokemon) => !!pokemon.fav);
 		embed.title = `${client.users[userID].username}'s Favorites`;
 		return embed;
 	}

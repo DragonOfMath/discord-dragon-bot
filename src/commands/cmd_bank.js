@@ -273,6 +273,15 @@ module.exports = {
 					
 					return Bank.getBalance(client, thisUserID);
 				}
+			},
+			'top': {
+				aliases: ['leaderboard','hiscore'],
+				title: Bank.header + ' | Leaderboard',
+				info: 'Displays the top ranking users with the highest bank balances.',
+				parameters: ['[page]'],
+				fn({client, args, server}) {
+					return Bank.leaderboard(client, server, args[0]);
+				}
 			}
 		}
 	},

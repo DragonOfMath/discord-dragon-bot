@@ -4,7 +4,7 @@ const {Markdown:md,Format:fmt,paginate} = require('./Utils');
 const HEADER      = ':dragon::bank:Dragon Bank:tm:'
 const CURRENCY    = ':dragon:$'
 const ROUNDING    = 1
-const PAGINATION  = 25
+const PAGINATION  = 20
 
 const DEFAULT_AMOUNT     = 1000
 
@@ -451,8 +451,7 @@ class Bank {
 				page = 1
 			}
 			
-			let userTable = client.database.get('users')
-			let users = userTable.filter(u => !!server.members[u] && !!userTable.get(u).bank).map(u => new BankAccount(u, userTable.get(u).bank))
+			var users = getUsersOfThisServer(client, server);
 			let filenames = users.map(u => u.filename)
 			return FilePromise.readAll(filenames, false)
 			.catch(err => {
@@ -483,6 +482,14 @@ class Bank {
 				return history
 			})
 			.then(history => generateHistoryTranscript(history, page))
+		} catch (e) {
+			console.error(e)
+		}
+	}
+	static leaderboard(client, server, page) {
+		try {
+			var users = getUsersOfThisServer(client, server);
+			return generateLeaderboard(client, users, page);
 		} catch (e) {
 			console.error(e)
 		}
@@ -526,6 +533,10 @@ function compoundInterest(principle, rate, compounds, time) {
 function continuousInterest(principle, rate, time) {
 	return principle * (Math.exp(rate * time) - 1);
 }
+function getUsersOfThisServer(client, server) {
+	var userTable = client.database.get('users');
+	return userTable.filter(u => server.members[u] && userTable.get(u).bank).map(u => new BankAccount(u, userTable.get(u).bank));
+}
 function generateHistoryTranscript(history = [], page = 1) {
 	history = history.sort((a,b) => a.t > b.t ? -1 : a.t < b.t ? 1 : 0);
 
@@ -533,6 +544,21 @@ function generateHistoryTranscript(history = [], page = 1) {
 		return {
 			name: 'ID: ' + h[i].t,
 			value: md.mention(h[i].user) + ': ' + Object.keys(h[i].data).map(k => `${k}: ${h[i].data[k]}`).join(', ')
+		};
+	});
+}
+function generateLeaderboard(client, users, page = 1) {
+	// sort users by credits
+	users = users.sort((a,b) => {
+		if (a.credits < b.credits) return 1;
+		if (a.credits > b.credits) return -1;
+		return 0;
+	});
+	
+	return paginate(users, page, PAGINATION, function (u, i) {
+		return {
+			name: `#${i+1} | ${client.users[u[i].id].username}`,
+			value: formatCredits(u[i].credits)
 		};
 	});
 }

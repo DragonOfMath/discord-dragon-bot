@@ -137,10 +137,16 @@ module.exports = {
 	'roll': {
 		category: 'Fun',
 		title: ':game_die:',
-		info: 'Generic dice-roll command, specify number of sides and number of roles.',
-		parameters: ['sides','[rolls]'],
+		info: 'Generic dice-roll command, specify number of sides and number of roles. Alternatively, use the XdXX format to roll a XX-sided die X times.',
+		parameters: ['XdXX|sides','[rolls]'],
 		fn({args, userID}) {
-			s = randomDistribution(...args);
+			var rolls, sides;
+			try {
+				;[,rolls,sides] = args[0].match(/^(\d+)d(\d+)$/);
+			} catch (e) {
+				;[sides,rolls] = args;
+			}
+			s = randomDistribution(sides, rolls);
 			if (rolls == 1) {
 				return `<@${userID}> rolled a **${s.findIndex(x=>!!x)+1}**`;
 			} else {

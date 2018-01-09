@@ -9,7 +9,7 @@ module.exports = {
 		type: 'public'
 	},
 	resolver({message}) {
-		if (message == message.toUpperCase() && message.length > 4 && !/\w{2,}/gi.test(message)) {
+		if (message == message.toUpperCase() && /\w( \w){3,}/gm.test(message)) {
 			return 'wc';
 		}
 	},

@@ -8,7 +8,7 @@ const fs = require('fs');
 
 function snapshot(data) {
 	let time = new Date().toLocaleString().replace(/[:\\\/]/g,'-').replace(/\s+/g,'_');
-	let filename = `debug/snapshot_${time}.json`;
+	let filename = `discord-dragon-bot/debug/snapshot_${time}.json`;
 	fs.writeFile(filename, JSON.stringify(data), err => {
 		if (err) {
 			console.error(err);
