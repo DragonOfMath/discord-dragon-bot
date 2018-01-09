@@ -4,7 +4,14 @@ function paginate(items, page, itemsPerPage, callback) {
 	var totalItems = items.length || Object.keys(items).length;
 	var maxPages = Math.ceil(totalItems / itemsPerPage);
 	
-	page = Math.max(1, Math.min(page, maxPages));
+	if (typeof(page) !== 'number') {
+		page = Number(page);
+	}
+	if (isNaN(page) || page < 0) {
+		page = 1;
+	} else {
+		page = Math.max(1, Math.min(page, maxPages));
+	}
 	
 	var start = (page - 1) * itemsPerPage;
 	var end   = Math.min(start + itemsPerPage, totalItems) - 1;

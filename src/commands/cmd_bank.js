@@ -10,7 +10,8 @@ function resolveTargetUser(args, userID) {
 	let id = md.userID(args[0]);
 	if (id) args.splice(0,1);
 	else id = userID;
-	return id;
+	if (id) return id;
+	else throw 'Invalid user ID.';
 }
 
 module.exports = {
@@ -223,12 +224,40 @@ module.exports = {
 					if (Bank.checkAuth(client, userID)) {
 						// OK
 					} else if (thisUserID != userID) {
-						return 'Viewing another bank account not authorized.'
+						return 'Viewing another bank account\'s history is not authorized.'
 					}
 					
 					return Bank.history(client, thisUserID, args[0]);
 				},
 				subcommands: {
+					'save': {
+						title: Bank.header + ' | Save',
+						info: 'Backs up your account as proof of value for future issues.',
+						parameters: ['[user]'],
+						fn({client, args, userID, channelID}) {
+							let thisUserID = resolveTargetUser(args, userID);
+					
+							if (Bank.checkAuth(client, userID)) {
+								// OK
+							} else if (thisUserID != userID) {
+								return 'Saving another bank account is not authorized.'
+							}
+							
+							return Bank.pushHistory(client, thisUserID);
+						}
+					},
+					'load': {
+						aliases: ['revert'],
+						info: 'Reverts an account\'s state back to a log entry with the given timestamp ID.',
+						parameters: ['user', 'timestamp'],
+						permissions: {
+							type: 'private'
+						},
+						fn({client, args, userID, channelID}) {
+							let thisUserID = resolveTargetUser(args);
+							return Bank.revertToHistory(client, thisUserID, args[0]);
+						}
+					},
 					'purge': {
 						title: Bank.header + ' | Purge History',
 						info: 'Deletes account history, just in case...',
@@ -237,7 +266,7 @@ module.exports = {
 							type: 'private'
 						},
 						fn({client, args, user, userID, server, channelID}) {
-							let thisUserID = md.id(args[0]);
+							let thisUserID = resolveTargetUser(args);
 							return Bank.purgeHistory(client, thisUserID);
 						}
 					}
@@ -251,7 +280,7 @@ module.exports = {
 					if (Bank.checkAuth(client, userID)) {
 						// ok
 					} else {
-						return 'Accessing bank ledger not authorized.'
+						return 'Accessing bank ledger is not authorized.'
 					}
 					
 					return Bank.ledger(client, server, userID, args[0]);

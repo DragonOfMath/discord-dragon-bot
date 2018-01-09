@@ -1,411 +1,509 @@
-const FilePromise = require('./FilePromise');
+const FileLogger = require('./FileLogger');
 const {Markdown:md,Format:fmt,paginate} = require('./Utils');
 
-const HEADER      = ':dragon::bank:Dragon Bank:tm:'
-const CURRENCY    = ':dragon:$'
-const ROUNDING    = 1
-const PAGINATION  = 20
+const HEADER      = ':dragon::bank:Dragon Bank:tm:';
+const CURRENCY    = ':dragon:$';
+const ROUNDING    = 1;
+const PAGINATION  = 20;
 
-const DEFAULT_AMOUNT     = 1000
+const DEFAULT_AMOUNT     = 1000;
 
-const INTEREST_RATE      = 0.02
-const INTEREST_COMPOUND  = 1
+const INTEREST_RATE      = 0.02;
+const INTEREST_COMPOUND  = 1;
 
-const INVESTMENT_COST    = 250
-const INVESTMENT_MINIMUM = 1000
-const INVESTMENT_WAIT    = 60 * 60 * 1000
+const INVESTMENT_COST    = 250;
+const INVESTMENT_MINIMUM = 1000;
+const INVESTMENT_WAIT    = 60 * 60 * 1000;
 
-const DAILY_PAYROLL      = 500
-const DAILY_WAIT         = 24 * 60 * 60 * 1000
+const DAILY_PAYROLL      = 500;
+const DAILY_WAIT         = 24 * 60 * 60 * 1000;
+
+const STATE = {
+	OPEN:   'open',
+	BUSY:   'busy',
+	CLOSED: 'closed',
+	DEAD:   'dead'
+};
 
 class BankAccount {
 	/*
 		created = timestamp of the creation of the account
 		credits = amount of cash in the account
-		open    = can add/remove cash
-		dead    = can use bank commands
-		investing = is in an investment period
-		investingSince = time that investing started
+		status  = open, busy, closed, or dead
+			open   = can add/remove cash at will
+			busy   = investing, which restricts some usage
+			closed = transferring cash is prohibited, but the account can still be used
+			dead   = all usage of the account is prohibited
+		investing  = time that investing started, or 0 if not investing
 		authorized = has special privileges
 	*/
 	constructor(userID, acct) {
 		Object.defineProperty(this, 'id', {
 			value: userID,
 			enumerable: false
-		})
+		});
+		
 		if (typeof(acct) === 'object') {
-			this.created = acct.created
-			this.credits = Number(acct.credits)
-			this.open    = acct.open || false
-			this.dead    = acct.dead || false
-			this.investing = acct.investing || false
-			this.investingSince = acct.investingSince || 0
-			this.authorized = acct.authorized || false
-			this.dailyReceived = acct.dailyReceived || 0
+			this.init(acct);
 		} else {
-			this.create()
+			this.create();
 		}
 	}
+	init(data) {
+		if (data.state) {
+			// new bank data
+			this.state     = data.state;
+			this.created   = data.created;
+		} else {
+			// old bank data
+			this.state     = STATE.OPEN;
+			this.created   = Date.parse(data.created);
+			this.open      = data.open;
+			this.dead      = data.dead;
+		}
+		this.credits        = Number(data.credits);
+		this.investing      = data.investingSince;
+		this.authorized     = data.authorized    || false;
+		this.dailyReceived  = data.dailyReceived || 0;
+	}
 	get exists() {
-		return !!this.created
+		return !!this.created;
+	}
+	get open() {
+		this.state == STATE.OPEN;
+	}
+	set open(x) {
+		this.state = typeof(x) === 'boolean' && x ? STATE.OPEN : this.state;
+	}
+	get closed() {
+		return this.state == STATE.CLOSED;
+	}
+	set closed(x) {
+		this.state = typeof(x) === 'boolean' && x ? STATE.CLOSED : this.state;
+	}
+	get dead() {
+		this.state == STATE.DEAD;
+	}
+	set dead(x) {
+		this.state = typeof(x) === 'boolean' && x ? STATE.DEAD : this.state;
+	}
+	get investing() {
+		return this.investingSince > 0;
+	}
+	set investing(x) {
+		this.investingSince = typeof(x) === 'number' ? x : 0;
+		if (this.investing) {
+			this.state = STATE.BUSY;
+		}
 	}
 	get filename() {
-		return `${__dirname}/history/history_${this.id}.log`
+		return `${__dirname}/history/history_${this.id}.log`;
 	}
 	create(amt = DEFAULT_AMOUNT) {
 		if (this.exists) {
-			throw 'Account is already created.'
+			throw 'Account is already created.';
 		}
 		
-		this.created        = timestamp()
-		this.credits        = amt
-		this.open           = true
-		this.dead           = false
-		this.investing      = false
-		this.investingSince = 0
+		this.created        = Date.now();
+		this.credits        = amt;
+		this.state          = STATE.OPEN;
+		this.authorized     = false;
+		this.investingSince = 0;
+		this.dailyReceived  = 0;
 		
-		return this.record({action: 'created', balance: amt})
+		this.record({action: 'created'});
+		return md.mention(this.id) + ' Your account has been successfully created. To view your account, use ' + md.code('bank.summary');
 	}
-	readHistory() {
-		return FilePromise.read(this.filename, false)
-		.then(history => history.split('\n').filter(Boolean).map(JSON.parse).map(h => addProperty(h,'user',this.id)))
+	get history() {
+		return FileLogger.read(this.filename).map(i => addProperty(i,'user',this.id));
 	}
 	record(data = {}) {
-		let h = {
-			time: timestamp(),
-			t: milliseconds(),
-			data
-		}
-		return FilePromise.appendSync(this.filename, JSON.stringify(h) + '\n')
+		FileLogger.write(this.filename, Object.assign(data, this));
+		return md.mention(this.id) + ' Your account state has been preserved.';
 	}
 	recordCreditChange(type, amt) {
 		if (typeof(amt) !== 'number') {
-			amt = Number(amt)
+			amt = Number(amt);
 		}
-		let prev = this.credits
-		let next = prev + amt
+		let prev = this.credits;
+		let next = prev + amt;
 		if (next < 0) {
-			throw `Insufficient funds for ${type} (${prev} -> ${next})`
-		}
-		// the a3person phenomenon
-		if (isNaN(next) || !isFinite(next)) {
-			throw 'Congrats. You crashed the bank.'
+			throw `Insufficient funds for ${type} (${prev} -> ${next})`;
 		}
 		
-		prev = Number(prev.toFixed(ROUNDING))
-		next = Number(next.toFixed(ROUNDING))
-		if (typeof(next) !== 'number') {
-			console.error(typeof(prev),typeof(amt),typeof(next))
-			throw `Problem with the credits becoming a non-number (this should never happen!). Prev=${prev} (${typeof(prev)}), Change=${amt} (${typeof(amt)}), New=${next} (${typeof(next)}). Go fix it, Math.`
+		if (isNaN(next) || !isFinite(next)) {
+			throw 'Balance is NaN or Infinity.';
 		}
-		this.credits = next
+		
+		prev = Number(prev.toFixed(ROUNDING));
+		next = Number(next.toFixed(ROUNDING));
+		if (typeof(next) !== 'number') {
+			console.error(typeof(prev),typeof(amt),typeof(next));
+			throw `Problem with the credits becoming a non-number (this should never happen!). Prev=${prev} (${typeof(prev)}), Change=${amt} (${typeof(amt)}), New=${next} (${typeof(next)}). Go fix it, Math.`;
+		}
+		this.credits = next;
 		return this.record({
 			action: type,
 			prev,
-			transfer: amt,
-			next
-		})
-	}
-	open() {
-		if (this.open) throw 'Account is already open.'
-		
-		this.open = true
-		this.dead = false
-		this.investing = false
-		this.investingSince = 0
-		return this.record({action: 'reopened'})
-	}
-	close(permanent = false) {
-		if (!this.open && this.dead == permanent) throw 'Account already closed.'
-		
-		this.open = false
-		if (permanent) {
-			this.investing = false // shut down investing
-			this.investingSince = 0
-			this.dead = true
-			return this.record({action: 'closed permanently'})
-		} else {
-			return this.record({action: 'closed'})
-		}
+			transfer: amt
+		});
 	}
 	delete() {
-		return FilePromise.deleteSync(this.filename)
+		FileLogger.delete(this.filename);
+		return md.mention(this.id) + ' your history has been cleared.';
+	}
+	open() {
+		if (this.closed || this.dead) {
+			this.open = true;
+			this.investing = 0;
+			this.record({action: 'reopened'});
+			return md.mention(this.id) + ' Your account has been reopened!';
+		} else {
+			throw 'Account is already open.';
+		}
+	}
+	close() {
+		if (this.dead) {
+			throw 'Account is shut down.';
+		}else if (this.closed) {
+			throw 'Account already closed.';
+		} else {
+			this.closed = true;
+			this.investing = 0;
+			this.record({action: 'closed'});
+			return md.mention(this.id) + ' Your account has been closed. Transactions are no longer allowed, but it may still be used.';
+		}
+	}
+	shutdown() {
+		if (this.dead) {
+			throw 'Account is already shut down.';
+		} else {
+			this.dead = true;
+			this.investing = 0;
+			this.record({action: 'closed permanently'});
+			return md.mention(this.id) + ' Your account has been shut down. Contact an admin if you wish to have it reopened.';
+		}
 	}
 	authorize() {
-		if (this.dead)    throw 'Account is closed indefinitely.'
-		this.authorized = true
+		if (this.dead) {
+			throw 'Account is shut down.';
+		} else {
+			this.authorized = true;
+			return md.mention(this.id) + ' Your account has been authorized.';
+		}
 	}
 	unauthorize() {
-		if (this.dead)    throw 'Account is closed indefinitely.'
-		this.authorized = false
+		if (this.dead) {
+			throw 'Account is shut down.';
+		} else {
+			this.authorized = false;
+			return md.mention(this.id) + ' Your account has been de-authorized.';
+		}
+	}
+	checkBalance() {
+		if (this.dead) {
+			throw 'Account is shut down.';
+		} else {
+			return md.mention(this.id) + ' You have ' + formatCredits(user.credits) + '.';
+		}
 	}
 	deposit(amt = 0) {
-		if (this.dead)    throw 'Account is closed indefinitely.'
-		if (!this.open)   throw 'Account is currently closed.'
-		if (typeof(amt) !== 'number') {
-			amt = Number(amt)
+		if (this.dead) {
+			throw 'Account is shut down.';
+		} else if (this.closed) {
+			throw 'Account is currently closed.';
+		} else {
+			if (typeof(amt) !== 'number') {
+				amt = Number(amt);;
+			}
+			if (isNaN(amt) || amt <= 0) {
+				throw 'Invalid amount.';
+			}
+			this.recordCreditChange('deposit', amt);
+			return md.mention(this.id) + ' Your account balance has received ' + formatCredits(amt) + '.';
 		}
-		if (isNaN(amt) || amt <= 0) {
-			throw 'Invalid amount.'
-		}
-		return this.recordCreditChange('deposit', amt)
 	}
 	withdraw(amt = 0) {
-		if (this.dead)    throw 'Account is closed indefinitely.'
-		if (!this.open)   throw 'Account is currently closed.'
-		if (typeof(amt) !== 'number') {
-			amt = Number(amt)
+		if (this.dead) {
+			throw 'Account is shut down.';
+		} else if (this.closed) {
+			throw 'Account is currently closed.';
+		} else {
+			if (typeof(amt) !== 'number') {
+				amt = Number(amt);
+			}
+			if (isNaN(amt) || amt <= 0) {
+				throw 'Invalid amount.';
+			}
+			this.recordCreditChange('withdrawal', -amt);
+			return md.mention(userID) + ' Your account balance has been deducted by ' + formatCredits(amount) + '.';
 		}
-		if (isNaN(amt) || amt <= 0) {
-			throw 'Invalid amount.'
-		}
-		return this.recordCreditChange('withdrawal', -amt)
 	}
 	transfer(to, amt = 0) {
-		if (this.dead)    throw 'Account is closed indefinitely.'
-		if (!this.open)   throw 'Account is currently closed.'
-		if (this.investing) throw 'Account is currently in an investment period. Transactions are forbidden during this time.'
-		if (to.dead)      throw 'Recipient account is closed indefinitely.'
-		if (to.closed)    throw 'Recipient account is currently closed.'
-		if (typeof(amt) !== 'number') {
-			amt = Number(amt)
+		if (this.dead) {
+			throw 'Account is shut down.';
+		} else if (this.closed) {
+			throw 'Account is currently closed.';
+		} else if (this.investing) {
+			throw 'Account is currently in an investment period. Transactions are forbidden during this time.';
+		} else if (to.dead) {
+			throw 'Recipient account is shut down.';
+		} else if (to.closed) {
+			throw 'Recipient account is currently closed';
+		} else {
+			if (typeof(amt) !== 'number') {
+				amt = Number(amt);
+			}
+			if (isNaN(amt) || amt <= 0) {
+				throw 'Invalid amount.';
+			}
+			this.recordCreditChange('transfer', -amt);
+			to.recordCreditChange('transfer', amt);
+			return md.mention(this.id) + ' has transferred ' + formatCredits(amt) + ' to ' + md.mention(to.id) + '.';
 		}
-		if (isNaN(amt) || amt <= 0) {
-			throw 'Invalid amount.'
-		}
-		return this.recordCreditChange('transfer', -amt)
-		.then(() => to.recordCreditChange('transfer', amt)) 
 	}
 	startInvesting() {
-		if (this.dead)      throw 'Account is closed indefinitely.'
-		if (!this.open)     throw 'Account is currently closed.'
-		if (this.investing) throw 'Account is already in an investment period.'
-		
-		if (this.credits < INVESTMENT_MINIMUM) {
-			throw `Account does not meet the requirements to start investing (Balance must be at least ${formatCredits(INVESTMENT_MINIMUM)}).`
+		if (this.dead) {
+			throw 'Account is shut down.';
+		} else if (this.closed) {
+			throw 'Account is currently closed.';
+		} else if (this.investing) {
+			throw 'Account is already in an investment period.';
+		} else {
+			if (this.credits < INVESTMENT_MINIMUM) {
+				throw `Account does not meet the requirements to start investing (Balance must be at least ${formatCredits(INVESTMENT_MINIMUM)}).`;
+			}
+			
+			this.investing = Date.now();
+			this.recordCreditChange('investing started', -INVESTMENT_COST);
+			return `You have paid ${formatCredits(INVESTMENT_COST)} to invest. Your account will be locked for a minimum of ${formatTime(INVESTMENT_WAIT)}, and you cannot make transactions. However, your account will earn interest over time, which you can monitor with ${md.code('bank.invest check')}.`;
 		}
-		
-		this.investingSince = milliseconds()
-		this.investing = true
-		
-		return this.recordCreditChange('investing started', -INVESTMENT_COST).then(() => {
-			return `You have paid ${formatCredits(INVESTMENT_COST)} to invest. Your account will be locked for a minimum of 1 hour, and you cannot make transactions. However, your account will earn interest over time, which you can monitor with ${md.code('bank.invest check')}.`
-		})
 	}
 	stopInvesting() {
-		if (this.dead)       throw 'Account is closed indefinitely.'
-		if (!this.investing) throw 'Account is not in an investment period.'
-		
-		let timeElapsed = milliseconds() - this.investingSince
-		let timeRemaining = INVESTMENT_WAIT - timeElapsed
-		if (timeRemaining > 0) {
-			throw 'Account may not be reopened for another ' + formatTime(timeRemaining) + '.'
+		if (this.dead) {
+			throw 'Account is shut down.';
+		} else if (this.closed) {
+			throw 'Account is currently closed.';
+		} else if (!this.investing) {
+			throw 'Account is not in an investment period.';
+		} else {
+			var timeElapsed = Date.now() - this.investingSince;
+			var timeRemaining = INVESTMENT_WAIT - timeElapsed;
+			if (timeRemaining > 0) {
+				throw 'Account may not be reopened for another ' + formatTime(timeRemaining) + '.';
+			}
+			
+			var interestEarned = compoundInterest(this.credits, INTEREST_RATE, INTEREST_COMPOUND, timeElapsed/INVESTMENT_WAIT);
+			interestEarned = Number(interestEarned.toFixed(ROUNDING));
+			
+			this.open = true;
+			this.investing = 0;
+			this.recordCreditChange('investing stopped', interestEarned);
+			
+			return this.generateInvestmentTranscript('Investment Summary', timeElapsed, interestEarned);
 		}
-		
-		let interestEarned = compoundInterest(this.credits, INTEREST_RATE, INTEREST_COMPOUND, timeElapsed/INVESTMENT_WAIT)
-		interestEarned = Number(interestEarned.toFixed(ROUNDING))
-		
-		this.investingSince = 0
-		this.investing = false
-		
-		return this.recordCreditChange('investing stopped', interestEarned)
-		.then(() => this.generateInvestmentTranscript('Investment Summary', timeElapsed, interestEarned))
 	}
 	generateAccountSummary() {
 		return {
-			description: 'ID: '        + md.bold(this.id) +
-			           '\nBalance: '   + formatCredits(this.credits) + 
-					   '\nCurrently: ' + md.bold(this.investing?'Investing':this.open?'Open':this.dead?'Closed Indefinitely':'Closed')
-		}
-	}
-	generateInvestmentTranscript(title = 'Investment Transcript', timeElapsed, interestEarned) {
-		if (this.dead)       throw 'Account is closed indefinitely.'
-		
-		if (typeof(interestEarned) !== 'number') {
-			interestEarned = Number(interestEarned.toFixed(ROUNDING))
-		}
-		let netGain = interestEarned - INVESTMENT_COST
-		let timeToUnlock = INVESTMENT_WAIT - timeElapsed
-		return {
-			title,
+			description: 'For the account of ' + md.mention(this.id),
 			fields: [
 				{
-					name: 'Time Elapsed',
-					value: fmt.timestamp(timeElapsed) + (timeToUnlock > 0 ? ` (Unlocks in ${fmt.timestamp(timeToUnlock)})` : ''),
-					inline: true
+					name: 'Balance',
+					value: formatCredits(this.credits)
 				},
 				{
-					name: 'Interest Earned',
-					value: formatCredits(interestEarned) + ' at ' + fmt.percent(INTEREST_RATE) + ' (hourly)',
-					inline: true
-				},
-				{
-					name: 'Net Gain',
-					value: `Interest - Cost (${INVESTMENT_COST}) = ${formatCredits(netGain)}`,
-					inline: true
+					name: 'State',
+					value: this.investing ? 'Investing' : this.open ? 'Open' : this.dead ? 'Closed Indefinitely' : 'Closed'
 				}
 			]
+		};
+	}
+	generateInvestmentTranscript(title = 'Investment Transcript', timeElapsed, interestEarned) {
+		if (this.dead) {
+			throw 'Account is shut down.';
+		} else if (this.closed) {
+			throw 'Account is currently closed.';
+		} else {
+			if (typeof(interestEarned) !== 'number') {
+				interestEarned = Number(interestEarned.toFixed(ROUNDING));
+			}
+			var netGain = interestEarned - INVESTMENT_COST;
+			var timeToUnlock = INVESTMENT_WAIT - timeElapsed;
+			return {
+				title,
+				description: 'For the account of ' + md.mention(this.id),
+				fields: [
+					{
+						name: 'Time Elapsed',
+						value: fmt.timestamp(timeElapsed) + (timeToUnlock > 0 ? ` (Unlocks in ${fmt.timestamp(timeToUnlock)})` : ''),
+						inline: true
+					},
+					{
+						name: 'Interest Earned',
+						value: formatCredits(interestEarned) + ' at ' + fmt.percent(INTEREST_RATE) + ' (hourly)',
+						inline: true
+					},
+					{
+						name: 'Net Gain',
+						value: `Interest - Cost (${INVESTMENT_COST}) = ${formatCredits(netGain)}`,
+						inline: true
+					}
+				]
+			};
 		}
 	}
 	generateHistoryTranscript(page = 1) {
-		if (typeof(page) !== 'number') {
-			page = Number(page)
-		}
-		if (isNaN(page) || page < 0) {
-			page = 1
-		}
-		return this.readHistory()
-		.then(history => generateHistoryTranscript(history, page))
+		return generateHistoryTranscript(this.history, page);
 	}
 	addDaily() {
-		if (this.dead)      throw 'Account is closed indefinitely.'
-		if (!this.open)     throw 'Account is currently closed.'
-		if (this.investing) throw 'Account is currently investing. Daily cash cannot be received during this time.'
-		
-		let now = milliseconds()
-		let timeElapsed   = now - this.dailyReceived
-		let timeRemaining = DAILY_WAIT - timeElapsed
-		if (timeRemaining > 0) {
-			throw `Wait ${formatTime(timeRemaining)} before receiving your daily money!`
+		if (this.dead) {
+			throw 'Account is shut down.';
+		} else if (this.closed) {
+			throw 'Account is currently closed.';
+		} else if (this.investing) {
+			throw 'Account is currently investing. Daily cash cannot be received during this time.';
+		} else {
+			var now = Date.now();
+			var timeElapsed   = now - this.dailyReceived;
+			var timeRemaining = DAILY_WAIT - timeElapsed;
+			if (timeRemaining > 0) {
+				throw `Wait ${formatTime(timeRemaining)} before receiving your daily money!`;
+			}
+			
+			this.dailyReceived = now;
+			this.recordCreditChange('daily', DAILY_PAYROLL)
+			return md.mention(this.id) + ' You received your daily ' + formatCredits(DAILY_PAYROLL) + '.';
 		}
-		
-		this.dailyReceived = now
-		return this.recordCreditChange('daily', DAILY_PAYROLL)
 	}
 }
 
 class Bank {
 	static get header() {
-		return HEADER
+		return HEADER;
 	}
 	static get currency() {
-		return CURRENCY
+		return CURRENCY;
 	}
 	static get rounding() {
-		return ROUNDING
+		return ROUNDING;
 	}
 	static get startingAmount() {
-		return DEFAULT_AMOUNT
+		return DEFAULT_AMOUNT;
 	}
 	static get interestRate() {
-		return INTEREST_RATE
+		return INTEREST_RATE;
 	}
 	static get interestCompounding() {
-		return INTEREST_COMPOUND
+		return INTEREST_COMPOUND;
 	}
 	static get investmentCost() {
-		return INVESTMENT_COST
+		return INVESTMENT_COST;
 	}
 	static get investmentMinimum() {
-		return INVESTMENT_MINIMUM
+		return INVESTMENT_MINIMUM;
 	}
 	static get investmentWait() {
-		return INVESTMENT_WAIT
+		return INVESTMENT_WAIT;
 	}
 	static get historyPagination() {
-		return PAGINATION
+		return PAGINATION;
 	}
 	static get dailyPayroll() {
-		return DAILY_PAYROLL
+		return DAILY_PAYROLL;
 	}
 	static get dailyWait() {
-		return DAILY_WAIT
+		return DAILY_WAIT;
 	}
 	static formatCredits(c) {
-		return formatCredits(c)
+		return formatCredits(c);
 	}
 	static formatTime(t) {
-		return formatTime(t)
+		return formatTime(t);
 	}
 	static get(client, userID) {
 		if (!client.users[userID]) {
-			throw `Invalid user: \`${userID}\``
+			throw `Invalid user: \`${userID}\``;
 		}
-		let user = client.database.get('users').get(userID)
-		user.bank = new BankAccount(userID, user.bank)
-		return user.bank
+		var user = client.database.get('users').get(userID);
+		user.bank = new BankAccount(userID, user.bank);
+		return user.bank;
 	}
 	static set(client, userID, acct) {
-		let user = client.database.get('users').get(userID)
-		user.bank = acct
-		return this
+		if (!client.users[userID]) {
+			throw `Invalid user: \`${userID}\``;
+		}
+		var user = client.database.get('users').get(userID);
+		user.bank = acct;
+		return this;
 	}
 	static modify(client, userID, fn) {
 		if (!client.users[userID]) {
-			throw `Invalid user: \`${userID}\``
+			throw `Invalid user: \`${userID}\``;
 		}
-		let message = ''
+		var message = '';
 		client.database.get('users').modify(userID, user => {
-			user.bank = new BankAccount(userID, user.bank)
-			message = fn(user.bank, user)
-			return user
-		}).save()
-		return typeof(message) === 'string' ? `${md.mention(userID)} ${message}` : message
+			user.bank = new BankAccount(userID, user.bank);
+			message = fn(user.bank, user);
+			return user;
+		}).save();
+		return typeof(message) === 'string' ? `${md.mention(userID)} ${message}` : message;
 	}
 	static save(client) {
-		client.database.get('users').save()
-		return this
+		client.database.get('users').save();
+		return this;
 	}
 	static getBalance(client, userID) {
-		let user = this.get(client, userID)
-		return `${md.mention(userID)} You have ${formatCredits(user.credits)}.`
+		return this.get(client, userID).checkBalance();
 	}
 	static open(client, userID) {
-		this.modify(client, userID, bank => bank.create(DEFAULT_AMOUNT))
-		return md.mention(userID) + ' Your account has been successfully created. To view your account, use ' + md.code('bank.summary')
+		return this.modify(client, userID, bank => bank.create(DEFAULT_AMOUNT));
 	}
 	static close(client, userID) {
-		this.modify(client, userID, bank => bank.close(true))
-		return md.mention(userID) + ' Your account has been closed indefinitely. Contact an admin if you wish to have it reopened.'
+		return this.modify(client, userID, bank => bank.shutdown());
 	}
 	static reopen(client, userID) {
-		this.modify(client, userID, bank => bank.open(DEFAULT_AMOUNT))
-		return md.mention(userID) + ' Your account has been reopened!'
+		return this.modify(client, userID, bank => bank.open(DEFAULT_AMOUNT));
 	}
 	static delete(client, userID) {
-		let table = client.database.get('users')
-		let user = table.get(userID)
-		user.bank = new BankAccount(userID, user.bank)
-		user.bank.delete() // deletes the history log file
-		delete user.bank   // deletes the bank account object from the record
-		table.save()   // updates the record on file
-		return md.mention(userID) + ' Your account has been deleted.'
+		var table = client.database.get('users');
+		var user = table.get(userID);
+		user.bank = new BankAccount(userID, user.bank);
+		user.bank.delete(); // deletes the history log file
+		delete user.bank;   // deletes the bank account object from the record
+		table.save();   // updates the record on file
+		return md.mention(userID) + ' Your account has been deleted.';
 	}
 	static deposit(client, userID, amount = 0) {
-		this.modify(client, userID, bank => bank.deposit(amount))
-		return md.mention(userID) + ' Your account balance has received ' + formatCredits(amount) + '.'
+		return this.modify(client, userID, bank => bank.deposit(amount));
 	}
 	static withdraw(client, userID, amount = 0) {
-		this.modify(client, userID, bank => bank.withdraw(amount))
-		return md.mention(userID) + ' Your account balance has been deducted by ' + formatCredits(amount) + '.'
+		return this.modify(client, userID, bank => bank.withdraw(amount));
 	}
 	static transfer(client, fromUserID, toUserID, amount) {
-		let src = this.get(client, fromUserID)
-		let tgt = this.get(client, toUserID)
+		var src = this.get(client, fromUserID);
+		var tgt = this.get(client, toUserID);
 		
-		src.transfer(tgt, amount)
+		var message = src.transfer(tgt, amount);
 		
-		this.set(client, fromUserID, src)
-		this.set(client, toUserID, tgt)
-		this.save(client)
+		this.set(client, fromUserID, src).set(client, toUserID, tgt).save(client);
 		
-		return md.mention(fromUserID) + ' has transferred ' + formatCredits(amount) + ' to ' + md.mention(toUserID) + '.'
+		return message;
 	}
 	static invest(client, userID, option) {
-		let response = null
+		var response = null;
 		return this.modify(client, userID, bank => {
 			switch (option.toLowerCase()) {
 				case 'check':
 					if (!bank.investing) {
-						throw 'Account is not investing.'
+						throw 'Account is not investing.';
 					}
-					let timeElapsed    = milliseconds() - bank.investingSince
-					let interestEarned = compoundInterest(bank.credits, INTEREST_RATE, INTEREST_COMPOUND, timeElapsed/INVESTMENT_WAIT)
-					return bank.generateInvestmentTranscript('Investment Progress', timeElapsed, interestEarned)
+					var timeElapsed    = Date.now() - bank.investingSince;
+					var interestEarned = compoundInterest(bank.credits, INTEREST_RATE, INTEREST_COMPOUND, timeElapsed/INVESTMENT_WAIT);
+					return bank.generateInvestmentTranscript('Investment Progress', timeElapsed, interestEarned);
 				case 'start':
-					return bank.startInvesting()
+					return bank.startInvesting();
 				case 'stop':
-					return bank.stopInvesting()
+					return bank.stopInvesting();
 				default:
 					return {
 						title: `Help`,
@@ -424,35 +522,51 @@ class Bank {
 								value: 'To stop investing, use ' + md.code(client.PREFIX + 'bank.invest stop') + '. If at least an hour has passed, investing will cease, and the earned interest will be calculated and added to your account balance. You will then be able to transfer credits and receive daily payroll again.'
 							}
 						]
-					}
+					};
 			}
 		})
 	}
 	static daily(client, userID) {
-		this.modify(client, userID, bank => bank.addDaily())
-		return md.mention(userID) + ' You received your daily ' + formatCredits(DAILY_PAYROLL) + '.'
+		return this.modify(client, userID, bank => bank.addDaily());
 	}
 	static summary(client, userID) {
-		return this.get(client, userID).generateAccountSummary()
+		return this.get(client, userID).generateAccountSummary();
 	}
 	static history(client, userID, page) {
-		return this.get(client, userID).generateHistoryTranscript(page)
+		return this.get(client, userID).generateHistoryTranscript(page);
 	}
 	static purgeHistory(client, userID) {
-		this.modify(client, userID, bank => bank.delete())
-		return `${md.mention(userID)} your history has been cleared.`
+		return this.modify(client, userID, bank => bank.delete());
+	}
+	static pushHistory(client, userID) {
+		return this.get(client, userID).record();
+	}
+	static revertToHistory(client, userID, histID) {
+		var acct = this.get(client, userID);
+		var r = acct.history.find(h => h.t == histID);
+		if (r) {
+			acct.init(r.data);
+			Bank.set(client, userID, acct).save(client);
+			return md.mention(userID) + ' Your account has been reverted to data from ' + r.timestamp;
+		} else {
+			throw `There is no entry with the ID ${histID} in the history log for that user.`;
+		}
 	}
 	static ledger(client, server, userID, page) {
+		var users = getUsersOfThisServer(client, server);
+		var globalHistory = [];
+		for (var u of users) {
+			try {
+				globalHistory = globalHistory.concat(u.history);
+			} catch (e) {
+				console.error(`Could not read history of user ${u.id}: ${e}`);
+			}
+		}
+		return generateHistoryTranscript(globalHistory, page);
+		
+		/* Legacy code, do not use.
 		try {
-			if (typeof(page) !== 'number') {
-				page = Number(page)
-			}
-			if (isNaN(page) || page < 0) {
-				page = 1
-			}
-			
-			var users = getUsersOfThisServer(client, server);
-			let filenames = users.map(u => u.filename)
+			var filenames = users.map(u => u.filename);
 			return FilePromise.readAll(filenames, false)
 			.catch(err => {
 				// Not all files could be read, so try reading each one sequentially
@@ -483,30 +597,29 @@ class Bank {
 			})
 			.then(history => generateHistoryTranscript(history, page))
 		} catch (e) {
-			console.error(e)
+			console.error(e);
 		}
+		*/
 	}
 	static leaderboard(client, server, page) {
 		try {
 			var users = getUsersOfThisServer(client, server);
 			return generateLeaderboard(client, users, page);
 		} catch (e) {
-			console.error(e)
+			console.error(e);
 		}
 	}
 	static auth(client, userID) {
-		this.modify(client, userID, bank => bank.authorize())
-		return md.mention(userID) + ' you have been authorized.'
+		return this.modify(client, userID, bank => bank.authorize());
 	}
 	static unauth(client, userID) {
 		if (userID == client.ownerID) {
-			throw md.mention(userID) + ' cannot be unauthorized!'
+			throw md.mention(userID) + ' cannot be unauthorized!';
 		}
-		this.modify(client, userID, bank => bank.unauthorize())
-		return md.mention(userID) + ' you have been unauthorized.'
+		return this.modify(client, userID, bank => bank.unauthorize());
 	}
 	static checkAuth(client, userID) {
-		return this.get(client, userID).authorized
+		return this.get(client, userID).authorized;
 	}
 }
 
@@ -517,15 +630,6 @@ function formatCredits(c) {
 }
 function formatTime(t) {
 	return md.bold(fmt.time(t));
-}
-function timestamp() {
-	return new Date().toLocaleString();
-}
-function milliseconds() {
-	return Date.now();
-}
-function hoursElapsed(time) {
-	return (milliseconds() - time) / INVESTMENT_WAIT;
 }
 function compoundInterest(principle, rate, compounds, time) {
 	return principle * (Math.pow((1 + rate / compounds), compounds * time) - 1);
@@ -542,8 +646,8 @@ function generateHistoryTranscript(history = [], page = 1) {
 
 	return paginate(history, page, PAGINATION, function (h, i) {
 		return {
-			name: 'ID: ' + h[i].t,
-			value: md.mention(h[i].user) + ': ' + Object.keys(h[i].data).map(k => `${k}: ${h[i].data[k]}`).join(', ')
+			name: `ID: ${h[i].t} | ${h[i].timestamp}`,
+			value: md.mention(h[i].user) + ': ' + h[i].toDataString()
 		};
 	});
 }
