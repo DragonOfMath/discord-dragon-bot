@@ -133,6 +133,12 @@ class DragonBot extends DebugClient {
 			this.log('Input:  ', input.message);
 			//this.log('Output: ', input.response);
 			this.send(channelID, input.response)
+			.then(response => {
+				// self-destruct error messages
+				if (input.error) {
+					return this.wait(5000).then(() => this.delete(channelID, response.id));
+				}
+			})
 			.catch(e => {
 				this.warn(e);
 				return this.send(channelID, '<:fuck:351198367835095040> Uh oh! ' + e);

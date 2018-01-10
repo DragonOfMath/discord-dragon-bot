@@ -34,12 +34,12 @@ module.exports = {
 				title: Fishing.header,
 				info: 'Displays information about a fish by its type, name, or emoji. If no argument is passed, displays the types of fish to catch.',
 				parameters: ['[...fishtype|fishname|:fish:]'],
-				fn({client, arg, args, userID}) {
+				fn({client, arg, userID, serverID}) {
 					let fish = arg.trim().toLowerCase();
 					if (fish) {
 						for (let f of Fishing.fishes) {
 							if (strcmp(f.name,fish) || strcmp(f.type,fish) || f.things.includes(fish)) {
-								return Fishing.embedFishInfo(f);
+								return Fishing.showFishInfo(client, serverID, f);
 							}
 						}
 						return `\`${fish}\` is not a recognized fish type, name, or emoji.`;

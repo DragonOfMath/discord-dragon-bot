@@ -124,6 +124,10 @@ class FishingEvent extends Session {
 		this.last_channel_id = channelID;
 		//console.log(this.data);
 		
+		// slight chance the event is a powerful one
+		if (random() < 0.1) {
+			this.data.multiplier = random(20,40)/4;
+		}
 		while (this.data.multiplier == 0) {
 			// -100% to +400% boost in catch rate/value
 			this.data.multiplier = random(-4,16)/4;
@@ -138,9 +142,9 @@ class FishingEvent extends Session {
 	toString() {
 		var {type,fish,multiplier} = this.data;
 		if (type == 'rarity') {
-			return `${fish.name} is ${fmt.percent(multiplier,0)} ${multiplier>0?'more':'less'} common`;
+			return `${fish.name} is ${fmt.percent(Math.abs(multiplier),0)} ${multiplier>0?'more':'less'} common`;
 		} else {
-			return `${fish.name} is worth ${fmt.percent(multiplier,0)} ${multiplier>0?'more':'less'}`;
+			return `${fish.name} is worth ${fmt.percent(Math.abs(multiplier),0)} ${multiplier>0?'more':'less'}`;
 		}
 	}
 }
@@ -196,6 +200,16 @@ class Fishing {
 		});
 		return sessionIDs.map(sID => client.sessions[sID]);
 	}
+	static applyEventModifiers(client, serverID) {
+		var events = this.getEvents(client, serverID);
+		for (var fish of FishTable) {
+			fish._rarity = fish.rarity;
+			fish._value = fish.value;
+		}
+		for (var {data} of events) {
+			data.fish['_'+data.type] *= (1 + data.multiplier);
+		}
+	}
 	static fish(client, userID, channelID, serverID) {
 		return this.modify(client, userID, (fishing, bank) => {
 			// check bank credits
@@ -210,17 +224,7 @@ class Fishing {
 				throw `Wait **${Math.round(timeRemaining/100)/10} seconds** before fishing again!`;
 			}
 			
-			// get any fishing events on this server
-			var events = this.getEvents(client, serverID);
-			
-			// adjust the fish table with data from the events
-			for (var fish of FishTable) {
-				fish._rarity = fish.rarity;
-				fish._value = fish.value;
-			}
-			for (var {data} of events) {
-				data.fish['_'+data.type] *= (1 + data.multiplier);
-			}
+			this.applyEventModifiers(client, serverID);
 			
 			// fish for something
 			var magicNumber = calculateTotalRarity() * random();
@@ -297,48 +301,48 @@ class Fishing {
 		embed.title = `${client.users[userID].username}'s Inventory`;
 		return embed;
 	}
-	static embedFishInfo(fish) {
-		let embed = {
-			title: 'Fish Info',
-			color: COLOR,
-			fields: []
-		};
-		embed.fields.push({
-			name: 'Name',
-			value: fish.name,
-			inline: true
-		});
-		embed.fields.push({
-			name: 'Type',
-			value: fish.type,
-			inline: true
-		});
-		embed.fields.push({
-			name: 'Description',
-			value: fish.info
-		});
-		embed.fields.push({
-			name: 'Catches',
-			value: fish.things.join(' ')
-		});
-		let rarity = fish._rarity || fish.rarity;
-		let value = fish._value || fish.value;
-		embed.fields.push({
-			name: 'Value',
-			value: `**\$${value * COST}**`,
-			inline: true
-		});
-		let percent = Math.round(10000 * rarity / calculateTotalRarity()) / 100;
+	static showFishInfo(client, serverID, fish) {
+		this.applyEventModifiers(client, serverID);
+		var rarity = fish._rarity || fish.rarity;
+		var value = fish._value || fish.value;
+		var percent = Math.round(10000 * rarity / calculateTotalRarity()) / 100;
 		if (percent < 0.01) {
 			percent = '<0.01';
 		}
-		embed.fields.push({
-			name: 'Rarity',
-			value: `**${percent}%** chance to catch`,
-			inline: true
-		});
-		
-		return embed;
+		return {
+			title: 'Fish Info',
+			color: COLOR,
+			fields: [
+				{
+					name: 'Name',
+					value: fish.name,
+					inline: true
+				},
+				{
+					name: 'Type',
+					value: fish.type,
+					inline: true
+				},
+				{
+					name: 'Description',
+					value: fish.info
+				},
+				{
+					name: 'Catches',
+					value: fish.things.join(' ')
+				},
+				{
+					name: 'Value',
+					value: `**\$${value * COST}**`,
+					inline: true
+				},
+				{
+					name: 'Rarity',
+					value: `**${percent}%** chance to catch`,
+					inline: true
+				}
+			]
+		};
 	}
 	static showFishCategories() {
 		let embed = {

@@ -1,5 +1,5 @@
 const MapBase = require('./MapBase');
-const {PrototypeChain} = require('./utils/prototypechain');
+//const {PrototypeChain} = require('./utils/prototypechain');
 
 /**
 	TypeMapBase class
@@ -36,7 +36,8 @@ class TypeMapBase extends MapBase {
 	*/
 	create() {
 		// TypeMapBases can work now work for derived classes of the type
-		if (arguments.length == 1 && PrototypeChain(arguments[0]).includes(this.type.name)) {
+		//PrototypeChain(arguments[0]).includes(this.type.name)
+		if (arguments.length == 1 && arguments[0] instanceof this.type) {
 			return arguments[0];
 		} else {
 			return new this.type(...arguments);
