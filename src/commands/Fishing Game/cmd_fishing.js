@@ -23,10 +23,10 @@ module.exports = {
 				aliases: ['inv','catches'],
 				title: Fishing.header,
 				info: 'Displays how many of each type of fish you\'ve caught.',
-				parameters: ['[user]'],
+				parameters: ['[user]', '[categorized]'],
 				fn({client, args, userID}) {
 					let id = resolveTargetUser(args, userID);
-					return Fishing.inventory(client, id);
+					return Fishing.inventory(client, id, args[0]);
 				}
 			},
 			'info': {

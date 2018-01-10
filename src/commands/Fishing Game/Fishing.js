@@ -29,10 +29,12 @@ class FishingAccount {
 			this.inventory = f.inventory || {};
 			this.cooldown  = f.cooldown  || 0;
 			this.chests    = f.chests || 0;
+			this.birds     = f.birds  || 0;
 		} else {
 			this.inventory = {};
 			this.cooldown  = 0;
 			this.chests = 0;
+			this.birds  = 0;
 		}
 	}
 	get total() {
@@ -75,17 +77,37 @@ class FishingAccount {
 			throw `You do not have a ${type} in your inventory!`;
 		}
 	}
-	displayInventory() {
-		let embed = {
+	displayInventory(categorized = false) {
+		var embed = {
 			color: COLOR,
-			description: ''
+			description: '',
+			footer: { text: `Total: ${this.total} | Chests Unlocked: ${this.chests} | Birds Attacked By: ${this.birds}` }
 		};
-		let keys = Object.keys(this.inventory);
-		if (keys.length) {
-			embed.footer = { text: `Total: ${this.total} | Chests Unlocked: ${this.chests}` };
-			embed.description = keys.filter(e => this.inventory[e] > 0).map(e => `${e}x${this.inventory[e]}`).join('    ');
+		
+		if (categorized) {
+			embed.fields = [];
+			for (var fish of FishTable) {
+				var keys = [];
+				for (var f of fish.things) {
+					if (this.inventory[f]) {
+						keys.push(f);
+					}
+				}
+				if (keys.length) {
+					embed.fields.push({
+						name: fish.name,
+						value: keys.map(k => `${k}x${this.inventory[k]}`).join('  ')
+						//,inline: true
+					});
+				}
+			}
 		} else {
-			embed.description = 'Your inventory is empty! Try fishing for some.';
+			var keys = Object.keys(this.inventory);
+			if (keys.length) {
+				embed.description = keys.filter(e => this.inventory[e]).map(e => `${e}x${this.inventory[e]}`).join('  ');
+			} else {
+				embed.description = 'Your inventory is empty! Try fishing for some.';
+			}
 		}
 		
 		return embed;
@@ -124,13 +146,24 @@ class FishingEvent extends Session {
 		this.last_channel_id = channelID;
 		//console.log(this.data);
 		
+		// don't waste this event on worthless uneventful items
+		while (this.data.fish[this.data.type] == 0) {
+			this.data.fish = random(FishTable);
+		}
+		
 		// slight chance the event is a powerful one
 		if (random() < 0.1) {
+			// +500% to +1000%
 			this.data.multiplier = random(20,40)/4;
-		}
-		while (this.data.multiplier == 0) {
+		} else while (this.data.multiplier == 0) {
 			// -100% to +400% boost in catch rate/value
 			this.data.multiplier = random(-4,16)/4;
+		}
+		
+		// slight chance the event is long-lasting one
+		if (random() < 0.1) {
+			// 10 to 60 minutes
+			this.settings.expires = random(1,6) * 600000;
 		}
 	}
 	toField() {
@@ -245,6 +278,7 @@ class Fishing {
 
 				if (fish.type == 'bird') {
 					message = `was about to catch something, but a **${fish.name}** ${fishEmoji} swooped down and stole it! ${Bank.formatCredits(reward)}.`;
+					fishing.birds++;
 				} else {
 					message = `${random('caught','reeled in','hooked','snagged','got')} a **${fish.name}** ${fishEmoji}! `;
 					if (fish.type == 'chest') {
@@ -296,8 +330,8 @@ class Fishing {
 			}
 		});
 	}
-	static inventory(client, userID) {
-		let embed   = this.get(client, userID).displayInventory();
+	static inventory(client, userID, categorized = false) {
+		let embed   = this.get(client, userID).displayInventory(!!categorized);
 		embed.title = `${client.users[userID].username}'s Inventory`;
 		return embed;
 	}

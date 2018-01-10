@@ -144,7 +144,6 @@ class Session {
 			return input;
 		}
 		
-		this.last_channel_id = input.channelID;
 		if (!this.resolver) {
 			return input;
 		}
@@ -154,6 +153,7 @@ class Session {
 			input.error = e;
 			input.response = ':warning: **Error**: ' + (e.message||e);
 		} finally {
+			this.last_channel_id = input.channelID;
 			if (resolvedEvt && this.hasEvent(resolvedEvt)) {
 				this.uses++;
 				var result = this.fire(resolvedEvt, input);
