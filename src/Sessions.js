@@ -55,8 +55,12 @@ class Sessions extends Logger(TypeMapBase) {
 		}
 		if (data.filename) {
 			this.info('Starting session',id,'from',data.filename);
+		} else {
+			this.info('Starting session:',id);
 		}
-		var session = this.create(data, this);
+		//this.info(data instanceof Session);
+		var session = this.create(data);
+		session.manager = this;
 		return this.set(id, session);
 	}
 	end(id) {
@@ -84,8 +88,8 @@ class Sessions extends Logger(TypeMapBase) {
 	checkExpirations() {
 		for (var s of this.sessions) {
 			if (s.expired) {
-				if (!s.silent && s.last_channel_id) {
-					//this.client.send(s.last_channel_id, 'Session expired.');
+				if (!s.settings.silent && s.last_channel_id && s.events.goodbye) {
+					this.client.send(s.last_channel_id, s.fire('goodbye'));
 				}
 				this.end(s.id);
 			}

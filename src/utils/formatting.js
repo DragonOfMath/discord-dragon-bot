@@ -35,9 +35,9 @@ class Format {
 		}
 		return `${type}${this.insertCommas(amt.toFixed(precision))}`;
 	}
-	static percent(p) {
+	static percent(p, r = 2) {
 		p *= 100;
-		return p.toFixed(2) + '%';
+		return p.toFixed(r) + '%';
 	}
 	static time(t) {
 		t = t|0;

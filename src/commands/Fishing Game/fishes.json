@@ -84,7 +84,7 @@
 		"type": "key",
 		"info": "A peculiar key, not worth anything, but might become useful...",
 		"things": [":key:", ":key2:"],
-		"rarity": 3,
+		"rarity": 2,
 		"value": 0
 	},
 	{
@@ -92,7 +92,7 @@
 		"type": "chest",
 		"info": "A chest holding a small reward. Needs a key to open, or else it is discarded.",
 		"things": [":moneybag:", ":gift:", ":package:", ":confetti_ball:", ":tada:"],
-		"rarity": 3,
+		"rarity": 2,
 		"value": 200.0
 	},
 	{
@@ -100,7 +100,7 @@
 		"type": "chest",
 		"info": "A chest holding a large reward. Needs a key to open, or else it is discarded.",
 		"things": [":moneybag:", ":gift:", ":package:", ":confetti_ball:", ":tada:"],
-		"rarity": 1,
+		"rarity": 0.8,
 		"value": 2000.0
 	},
 	{

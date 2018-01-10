@@ -25,9 +25,9 @@ class Session {
 		settings = {},
 		data = {},
 		permissions = {},
-		resolver = function(){},
+		resolver,
 		events = {}
-	}, sessionsManager) {
+	}, sessionsManager = null) {
 		if (!id || typeof(id) !== 'string') {
 			throw new TypeError(`${this.constructor.name}() requires a string identifier`);
 		}
@@ -49,45 +49,25 @@ class Session {
 		if (typeof(permissions) !== 'object') {
 			throw new TypeError(`${this.constructor.name}.permissions must be an object`);
 		}
-		if (typeof(resolver) !== 'function') {
-			throw new TypeError(`${this.constructor.name}.resolver must be a function`);
+		if (typeof(resolver) !== 'undefined' && typeof(resolver) !== 'function') {
+			throw new TypeError(`${this.constructor.name}.resolver must be a function if used`);
 		}
 		if (typeof(events) !== 'object') {
 			throw new TypeError(`${this.constructor.name}.events must be an object`);
 		}
-		
 		Object.defineProperties(this, {
 			'id': {
 				value: id,
 				writable: false,
 				enumerable: false
-			},
-			'manager': {
-				value: sessionsManager,
-				writable: false,
-				enumerable: false
-			},
-			'started': {
-				value: Date.now(),
-				writable: true,
-				enumerable: false
-			},
-			'uses': {
-				value: 0,
-				writable: true,
-				enumerable: false
-			},
-			'misses': {
-				value: 0,
-				writable: true,
-				enumerable: false
-			},
-			'last_channel_id': {
-				value: null,
-				writable: true,
-				enumerable: false
 			}
 		});
+		
+		this.manager = null;
+		this.started = Date.now();
+		this.uses    = 0;
+		this.misses  = 0;
+		this.last_channel_id = null;
 		
 		this.category = category;
 		this.title = title;
@@ -129,14 +109,14 @@ class Session {
 		this.started = Date.now() - x;
 	}
 	get remaining() {
-		if (this.expires > 0) {
-			return this.expires - this.elapsed;
+		if (this.settings.expires > 0) {
+			return this.settings.expires - this.elapsed;
 		} else {
 			return 0;
 		}
 	}
 	set remaining(x) {
-		this.elapsed = this.expires - x;
+		this.elapsed = this.settings.expires - x;
 	}
 	get expired() {
 		return this.settings.expires > 0 && this.elapsed > this.settings.expires;
@@ -165,6 +145,9 @@ class Session {
 		}
 		
 		this.last_channel_id = input.channelID;
+		if (!this.resolver) {
+			return input;
+		}
 		try {
 			var resolvedEvt = this.resolver.call(this, input);
 		} catch (e) {

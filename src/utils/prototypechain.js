@@ -1,11 +1,20 @@
 function PrototypeChain(obj) {
 	var chain = [];
 	while (obj != null) {
-		chain.push(obj.name||typeof(obj));
+		switch (typeof(obj)) {
+			case 'function':
+				chain.push(obj.name);
+				break;
+			case 'object':
+				chain.push(obj.constructor.name);
+				break;
+			default:
+				chain.push(typeof(obj));
+		}
 		obj = Object.getPrototypeOf(obj);
 	}
 	chain.push('null');
-	console.log(chain.join('>'));
+	return chain;
 }
 
 module.exports = {PrototypeChain};

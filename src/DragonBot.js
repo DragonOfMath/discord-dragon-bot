@@ -157,4 +157,4 @@ class DragonBot extends DebugClient {
 
 module.exports = DragonBot;
 
-//Utils.PrototypeChain(DragonBot);
+//console.log(Utils.PrototypeChain(DragonBot));

@@ -101,18 +101,33 @@ class FishingEvent extends Session {
 			data: {
 				fish:       random(FishTable),
 				type:       random('rarity','value'),
-				multiplier: random(-4,16)/4  // -100% to +400% boost in catch rate/value
+				multiplier: 0 // allow this value to be rolled until it is nonzero
 			},
 			permissions: {
 				type: 'inclusive',
 				servers: [serverID]
 			},
 			settings: {
-				expires: random(1,10) * 60000 // 1 to 10 minutes
+				expires: random(1,10) * 60000, // 1 to 10 minutes
+				silent: false
+			},
+			events: {
+				goodbye() {
+					return {
+						title: 'Fishing Event Ended',
+						description: this.toString(),
+						color: COLOR
+					};
+				}
 			}
 		});
 		this.last_channel_id = channelID;
-		console.log(this.data);
+		//console.log(this.data);
+		
+		while (this.data.multiplier == 0) {
+			// -100% to +400% boost in catch rate/value
+			this.data.multiplier = random(-4,16)/4;
+		}
 	}
 	toField() {
 		var field = {};
@@ -123,9 +138,9 @@ class FishingEvent extends Session {
 	toString() {
 		var {type,fish,multiplier} = this.data;
 		if (type == 'rarity') {
-			return `${fish.name} is ${fmt.percent(multiplier)} ${multiplier>0?'more':'less'} common`;
+			return `${fish.name} is ${fmt.percent(multiplier,0)} ${multiplier>0?'more':'less'} common`;
 		} else {
-			return `${fish.name} is worth ${fmt.percent(multiplier)} ${multiplier>0?'more':'less'}`;
+			return `${fish.name} is worth ${fmt.percent(multiplier,0)} ${multiplier>0?'more':'less'}`;
 		}
 	}
 }
@@ -256,6 +271,7 @@ class Fishing {
 				);
 			}
 			
+			// apply reward and restriction
 			fishing.cooldown = now + Fishing.cooldown;
 			bank.credits    += reward - Fishing.cost;
 			
@@ -341,7 +357,14 @@ class Fishing {
 	}
 	static showEvents(client, serverID) {
 		var events = this.getEvents(client, serverID);
-		var embed = paginate(events, 1, 20, (e,i) => e[i].toField());
+		//console.log(events);
+		var embed = paginate(events, 1, 20, (e,i) => {
+			if (!e[i]) {
+				console.error(e,i);
+				throw 'Uhhhhh, invalid event? Index: ' + i;
+			}
+			return e[i].toField();
+		});
 		embed.title = 'Fishing Events';
 		embed.color = COLOR;
 		return embed;
