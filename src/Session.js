@@ -6,8 +6,11 @@ const {Markdown:md,Format:fmt,random} = require('./Utils');
 	Session
 	Stores ongoing data that persists after a command is ran.
 	Persists until the session ends or the client disconnects.
-	
-	Sessions rely on message triggers. These triggers can be a string, regex, object, or function
+	Can also be used for background scripts that trigger on
+	certain messages.
+	Can have a resolver function that checks messages before
+	firing an event; without one, it can just store data that
+	commands can use.
 */
 class Session {
 	/**
@@ -16,16 +19,20 @@ class Session {
 	*/
 	constructor({
 		id,
+		category = '',
 		title = '',
 		info = '',
 		settings = {},
 		data = {},
 		permissions = {},
-		resolver,
+		resolver = function(){},
 		events = {}
 	}, sessionsManager) {
 		if (!id || typeof(id) !== 'string') {
 			throw new TypeError(`${this.constructor.name}() requires a string identifier`);
+		}
+		if (typeof(category) !== 'string') {
+			throw new TypeError(`${this.constructor.name}.category must be a string`);
 		}
 		if (typeof(title) !== 'string') {
 			throw new TypeError(`${this.constructor.name}.title must be a string`);
@@ -82,6 +89,7 @@ class Session {
 			}
 		});
 		
+		this.category = category;
 		this.title = title;
 		this.info  = info;
 		
@@ -119,6 +127,16 @@ class Session {
 	}
 	set elapsed(x) {
 		this.started = Date.now() - x;
+	}
+	get remaining() {
+		if (this.expires > 0) {
+			return this.expires - this.elapsed;
+		} else {
+			return 0;
+		}
+	}
+	set remaining(x) {
+		this.elapsed = this.expires - x;
 	}
 	get expired() {
 		return this.settings.expires > 0 && this.elapsed > this.settings.expires;

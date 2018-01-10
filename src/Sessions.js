@@ -53,8 +53,9 @@ class Sessions extends Logger(TypeMapBase) {
 		if (this.has(id)) {
 			return this.error(`A session with with the ID ${id} already exists`);
 		}
-		
-		this.info('Starting session',id,'from',data.filename);
+		if (data.filename) {
+			this.info('Starting session',id,'from',data.filename);
+		}
 		var session = this.create(data, this);
 		return this.set(id, session);
 	}
@@ -84,7 +85,7 @@ class Sessions extends Logger(TypeMapBase) {
 		for (var s of this.sessions) {
 			if (s.expired) {
 				if (!s.silent && s.last_channel_id) {
-					this.client.sendMessage(s.last_channel_id, 'Session expired.');
+					//this.client.send(s.last_channel_id, 'Session expired.');
 				}
 				this.end(s.id);
 			}
