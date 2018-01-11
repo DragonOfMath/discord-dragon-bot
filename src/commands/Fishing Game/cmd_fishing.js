@@ -1,5 +1,5 @@
 const Fishing = require('./Fishing');
-const {Markdown:md,Format:fmt,strcmp} = require('../../Utils');
+const {Markdown:md,Format:fmt} = require('../../Utils');
 
 function resolveTargetUser(args, userID) {
 	let id = md.userID(args[0]);
@@ -23,10 +23,10 @@ module.exports = {
 				aliases: ['inv','catches'],
 				title: Fishing.header,
 				info: 'Displays how many of each type of fish you\'ve caught.',
-				parameters: ['[user]', '[categorized]'],
+				parameters: ['[user]', '[...category]'],
 				fn({client, args, userID}) {
 					let id = resolveTargetUser(args, userID);
-					return Fishing.inventory(client, id, args[0]);
+					return Fishing.inventory(client, id, args.join(' '));
 				}
 			},
 			'info': {
@@ -37,12 +37,7 @@ module.exports = {
 				fn({client, arg, userID, serverID}) {
 					let fish = arg.trim().toLowerCase();
 					if (fish) {
-						for (let f of Fishing.fishes) {
-							if (strcmp(f.name,fish) || strcmp(f.type,fish) || f.things.includes(fish)) {
-								return Fishing.showFishInfo(client, serverID, f);
-							}
-						}
-						return `\`${fish}\` is not a recognized fish type, name, or emoji.`;
+						return Fishing.showFishInfo(client, serverID, fish);
 					} else {
 						return Fishing.showFishCategories();
 					}
@@ -54,6 +49,14 @@ module.exports = {
 				info: 'Displays any fishing events on this server.',
 				fn({client, serverID}) {
 					return Fishing.showEvents(client, serverID);
+				}
+			},
+			'table': {
+				title: Fishing.header,
+				info: 'Displays the current catch rates of all fish types. Can sort by name, value, chance, or type.',
+				parameters: ['[sortby]'],
+				fn({client, args, serverID}) {
+					return Fishing.showFishTable(client, serverID, args[0]);
 				}
 			}
 		}

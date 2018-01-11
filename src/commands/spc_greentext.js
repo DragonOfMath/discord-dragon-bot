@@ -28,7 +28,8 @@ module.exports = {
 		message: ''
 	},
 	permissions: {
-		type: 'public'
+		type: 'exclusive',
+		users: ['172002275412279296'] // tatsu
 	},
 	resolver({message}) {
 		var gt = this.data.message = message.replace(IGNORE_REGEX, '').replace(/\s{2,}/g,'\n').match(GT_REGEX);

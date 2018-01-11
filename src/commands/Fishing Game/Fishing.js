@@ -1,26 +1,19 @@
 const Bank    = require('../../Bank');
 const Session = require('../../Session');
 const {Markdown:md,Format:fmt,random,strcmp,paginate} = require('../../Utils');
-const FishTable = require('./fishes.json');
+const BaseFishTable = require('./fishes.json');
 
-const COOLDOWN = 20000;
+const COOLDOWN = 20000; // TODO: reduce to 15000?
 const COST     = 5;
 const HEADER   = ':fishing_pole_and_fish:Fishing Game:tropical_fish:';
 const COLOR    = 0x0080ff;
-const EVENT_CHANCE = 0.08; // % chance of a fishing event starting
+const EVENT_CHANCE = 0.10; // % chance of a fishing event starting
 
-function getFishType(type) {
-	return FishTable.find(f => strcmp(f.type,type));
+function getFishByName(table, name) {
+	return table.find(f => strcmp(f.name,name));
 }
-function getFishName(name) {
-	return FishTable.find(f => strcmp(f.name,name));
-}
-function calculateTotalRarity() {
-	let r = 0;
-	for (let fish of FishTable) {
-		r += fish._rarity || fish.rarity;
-	}
-	return r;
+function getFishByType(table, type) {
+	return table.find(f => strcmp(f.type,type));
 }
 
 class FishingAccount {
@@ -48,7 +41,7 @@ class FishingAccount {
 		return !!this.inventory[fish];
 	}
 	hasType(type) {
-		let fish = getFishType(type);
+		let fish = getFishByType(BaseFishTable, type);
 		if (!fish) {
 			throw 'Invalid Fish type: ' + fish;
 		}
@@ -69,37 +62,78 @@ class FishingAccount {
 		return fish;
 	}
 	removeType(type) {
-		let fish = getFishType(type);
-		let thing = fish.things.find(f => !!this.inventory[f]);
+		var fish = getFishByType(BaseFishTable, type);
+		var thing = fish.things.find(f => !!this.inventory[f]);
 		if (thing) {
 			this.remove(thing);
 		} else {
 			throw `You do not have a ${type} in your inventory!`;
 		}
 	}
-	displayInventory(categorized = false) {
+	catch(fish) {
+		var reward = fish.value;
+		var f = random(fish.things);
+		if (fish.type == 'bird') {
+			this.birds++;
+			return {
+				reward,
+				message: `was about to catch something, but a **${fish.name}** ${f} swooped down and stole it! ${Bank.formatCredits(reward)}.`
+			};
+		}
+		
+		var message = `${random('caught','reeled in','hooked','snagged','got')} a **${fish.name}** ${f}! `;
+		if (fish.type == 'chest') {
+			try {
+				this.removeType('key');
+				this.chests++;
+				message += `\nYou opened it with a **Key** and received ${Bank.formatCredits(reward)}!\n(1 **Key** was removed from your inventory)`;
+			} catch (e) {
+				reward  = 0;
+				message += `\nUnfortunately, you couldn't open it without a **Key**. Oh well...`;
+			}
+		} else {
+			this.add(f);
+			if (fish.type == 'key') {
+				message += '\nA **Key** can open a **Chest** you might catch in the future.';
+			} else {
+				message += '\nCatch Value: ' + (reward ? Bank.formatCredits(reward) : '__Nothing__');
+			}
+		}
+		
+		return {reward,message};
+	}
+	displayInventory(category) {
 		var embed = {
 			color: COLOR,
 			description: '',
 			footer: { text: `Total: ${this.total} | Chests Unlocked: ${this.chests} | Birds Attacked By: ${this.birds}` }
 		};
 		
-		if (categorized) {
+		if (category) {
 			embed.fields = [];
-			for (var fish of FishTable) {
+			
+			var fishing = this;
+			function addThings(fish) {
 				var keys = [];
 				for (var f of fish.things) {
-					if (this.inventory[f]) {
+					if (fishing.inventory[f]) {
 						keys.push(f);
 					}
 				}
 				if (keys.length) {
 					embed.fields.push({
 						name: fish.name,
-						value: keys.map(k => `${k}x${this.inventory[k]}`).join('  ')
+						value: keys.map(k => `${k}x${fishing.inventory[k]}`).join('  ')
 						//,inline: true
 					});
 				}
+			}
+			
+			var fish = getFishByName(BaseFishTable, category);
+			if (fish) {
+				addThings(fish);
+			} else {
+				BaseFishTable.forEach(addThings);
 			}
 		} else {
 			var keys = Object.keys(this.inventory);
@@ -121,7 +155,7 @@ class FishingEvent extends Session {
 			category: 'fishing',
 			info: 'A fishing event is happening!',
 			data: {
-				fish:       random(FishTable),
+				fish:       random(BaseFishTable),
 				type:       random('rarity','value'),
 				multiplier: 0 // allow this value to be rolled until it is nonzero
 			},
@@ -148,7 +182,7 @@ class FishingEvent extends Session {
 		
 		// don't waste this event on worthless uneventful items
 		while (this.data.fish[this.data.type] == 0) {
-			this.data.fish = random(FishTable);
+			this.data.fish = random(BaseFishTable);
 		}
 		
 		// slight chance the event is a powerful one
@@ -168,7 +202,7 @@ class FishingEvent extends Session {
 	}
 	toField() {
 		var field = {};
-		field.value = 'Expires in ' + fmt.time(this.remaining);
+		field.value = 'Expires: ' + md.bold(fmt.time(this.remaining));
 		field.name  = this.toString();
 		return field;
 	}
@@ -179,6 +213,41 @@ class FishingEvent extends Session {
 		} else {
 			return `${fish.name} is worth ${fmt.percent(Math.abs(multiplier),0)} ${multiplier>0?'more':'less'}`;
 		}
+	}
+}
+
+/**
+	Creates a copy of the base fish table with event modifiers applied
+*/
+class FishTable {
+	constructor(fevents) {
+		this.table = BaseFishTable.map(f => Object.assign({}, f));
+		if (fevents) for (var {data} of fevents) {
+			this.getFishByName(data.fish.name)[data.type] *= (1 + data.multiplier);
+		}
+		for (var f of this.table) {
+			f.value *= COST;
+		}
+	}
+	get totalRarity() {
+		return this.table.reduce((r,f) => (r + f.rarity), 0);
+	}
+	get randomFish() {
+		var magicNumber = this.totalRarity * random();
+		return this.table.find(f => {
+			if (magicNumber > f.rarity) {
+				magicNumber -= f.rarity;
+				return false;
+			} else {
+				return true;
+			}
+		});
+	}
+	getFishByName(name) {
+		return getFishByName(this.table, name);
+	}
+	getFishByType(type) {
+		return getFishByType(this.table, type);
 	}
 }
 
@@ -194,9 +263,6 @@ class Fishing {
 	}
 	static get color() {
 		return COLOR;
-	}
-	static get fishes() {
-		return FishTable;
 	}
 	static get(client, userID) {
 		if (!client.users[userID]) {
@@ -233,15 +299,9 @@ class Fishing {
 		});
 		return sessionIDs.map(sID => client.sessions[sID]);
 	}
-	static applyEventModifiers(client, serverID) {
+	static createModifiedFishTable(client, serverID) {
 		var events = this.getEvents(client, serverID);
-		for (var fish of FishTable) {
-			fish._rarity = fish.rarity;
-			fish._value = fish.value;
-		}
-		for (var {data} of events) {
-			data.fish['_'+data.type] *= (1 + data.multiplier);
-		}
+		return new FishTable(events);
 	}
 	static fish(client, userID, channelID, serverID) {
 		return this.modify(client, userID, (fishing, bank) => {
@@ -257,58 +317,12 @@ class Fishing {
 				throw `Wait **${Math.round(timeRemaining/100)/10} seconds** before fishing again!`;
 			}
 			
-			this.applyEventModifiers(client, serverID);
+			// copy the base fishing table and apply event modifiers
+			var ft = this.createModifiedFishTable(client, serverID);
 			
-			// fish for something
-			var magicNumber = calculateTotalRarity() * random();
-			var fish = FishTable.find(f => {
-				if (magicNumber > f._rarity) {
-					magicNumber -= f._rarity;
-					return false;
-				} else {
-					return true;
-				}
-			});
-			
-			// process catch
-			var fishEmoji, reward, message;
-			if (fish) {
-				fishEmoji = random(fish.things);
-				reward = Fishing.cost * fish._value;
+			// catch a random fish
+			var {reward,message} = fishing.catch(ft.randomFish);
 
-				if (fish.type == 'bird') {
-					message = `was about to catch something, but a **${fish.name}** ${fishEmoji} swooped down and stole it! ${Bank.formatCredits(reward)}.`;
-					fishing.birds++;
-				} else {
-					message = `${random('caught','reeled in','hooked','snagged','got')} a **${fish.name}** ${fishEmoji}! `;
-					if (fish.type == 'chest') {
-						if (fishing.hasType('key')) {
-							fishing.removeType('key');
-							message += `\nYou opened it with a **Key** and received ${Bank.formatCredits(reward)}!\n(1 **Key** was removed from your inventory)`;
-							fishing.chests++;
-						} else {
-							reward  = 0;
-							message += `\nUnfortunately, you couldn't open it without a **Key**. Oh well...`;
-						}
-					} else {
-						fishing.add(fishEmoji);
-						if (fish.type == 'key') {
-							message += '\nA **Key** can open a **Chest** you might catch in the future.';
-						} else {
-							message += '\nCatch Value: ' + (reward ? Bank.formatCredits(reward) : '__Nothing__');
-						}
-					}
-				}
-			} else {
-				reward  = 0;
-				message = random(
-					'Sorry, you didn\'t catch anything...',
-					'You cast your reel, but nothing bites...',
-					'The sea is quiet...',
-					'You wait, but no fish comes...'
-				);
-			}
-			
 			// apply reward and restriction
 			fishing.cooldown = now + Fishing.cooldown;
 			bank.credits    += reward - Fishing.cost;
@@ -317,6 +331,7 @@ class Fishing {
 			if (random() < EVENT_CHANCE) {
 				var evt = new FishingEvent(serverID, channelID);
 				client.sessions.start(evt);
+				message = `${md.mention(userID)} ${message}`;
 				return {
 					message,
 					embed: {
@@ -330,19 +345,18 @@ class Fishing {
 			}
 		});
 	}
-	static inventory(client, userID, categorized = false) {
-		let embed   = this.get(client, userID).displayInventory(!!categorized);
+	static inventory(client, userID, category) {
+		let embed   = this.get(client, userID).displayInventory(category);
 		embed.title = `${client.users[userID].username}'s Inventory`;
 		return embed;
 	}
-	static showFishInfo(client, serverID, fish) {
-		this.applyEventModifiers(client, serverID);
-		var rarity = fish._rarity || fish.rarity;
-		var value = fish._value || fish.value;
-		var percent = Math.round(10000 * rarity / calculateTotalRarity()) / 100;
-		if (percent < 0.01) {
-			percent = '<0.01';
+	static showFishInfo(client, serverID, fname) {
+		var ft = this.createModifiedFishTable(client, serverID);
+		var fish = ft.getFishByName(fname) || ft.getFishByType(fname);
+		if (!fish) {
+			return `\`${fname}\` is not a recognized fish type, or name.`;
 		}
+		
 		return {
 			title: 'Fish Info',
 			color: COLOR,
@@ -367,31 +381,99 @@ class Fishing {
 				},
 				{
 					name: 'Value',
-					value: `**\$${value * COST}**`,
+					value: Bank.formatCredits(fish.value),
 					inline: true
 				},
 				{
 					name: 'Rarity',
-					value: `**${percent}%** chance to catch`,
+					value: `**${fmt.percent(fish.rarity / ft.totalRarity, 2)}** chance to catch`,
 					inline: true
 				}
 			]
 		};
 	}
 	static showFishCategories() {
-		let embed = {
+		return {
 			title: 'Fish Categories',
 			color: COLOR,
-			fields: []
+			fields: BaseFishTable.map(fish => {
+				return {
+					name: fish.name,
+					value: fish.things.join(' '),
+					inline: true
+				};
+			})
 		};
-		for (let fish of FishTable) {
-			embed.fields.push({
-				name: fish.name,
-				value: fish.things.join(' '),
-				inline: true
-			});
+	}
+	static showFishTable(client, serverID, sortBy = 'chance') {
+		var ft = this.createModifiedFishTable(client, serverID);
+		var tr = ft.totalRarity;
+		
+		switch (sortBy.toLowerCase()) {
+			case '%':
+			case 'chance':
+			case 'chances':
+			case 'rarity':
+			case 'rarities':
+			case 'rareness':
+			case 'probability':
+			case 'probabilities':
+				ft.table = ft.table.sort((a,b) => {
+					if (a.rarity > b.rarity) return -1;
+					if (a.rarity < b.rarity) return 1;
+					return 0;
+				});
+				break;
+			case '$':
+			case 'value':
+			case 'values':
+			case 'price':
+			case 'prices':
+				ft.table = ft.table.sort((a,b) => {
+					if (a.value > b.value) return -1;
+					if (a.value < b.value) return 1;
+					return 0;
+				});
+				break;
+			case 'name':
+			case 'names':
+				ft.table = ft.table.sort((a,b) => {
+					if (a.name > b.name) return -1;
+					if (a.name < b.name) return 1;
+					return 0;
+				});
+				break;
 		}
-		return embed;
+		
+		var nameColumn = ['--------'], valueColumn = ['--------'], rarityColumn = ['--------'];
+		
+		for (let fish of ft.table) {
+			nameColumn.push(fish.name);
+			valueColumn.push(md.bold(fmt.currency(fish.value,'$',1)));
+			rarityColumn.push(md.bold(fmt.percent(fish.rarity/tr, 2)));
+		}
+		
+		return {
+			title: 'Fish Probabilities',
+			color: COLOR,
+			fields: [
+				{
+					name: 'Name',
+					value: nameColumn.join('\n'),
+					inline: true
+				},
+				{
+					name: 'Value',
+					value: valueColumn.join('\n'),
+					inline: true
+				},
+				{
+					name: '% Chance',
+					value: rarityColumn.join('\n'),
+					inline: true
+				}
+			]
+		};
 	}
 	static showEvents(client, serverID) {
 		var events = this.getEvents(client, serverID);

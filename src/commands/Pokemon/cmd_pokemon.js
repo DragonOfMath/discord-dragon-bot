@@ -29,6 +29,7 @@ module.exports = {
 				}
 			},
 			'legendaries': {
+				aliases: ['lgds'],
 				title: PokemonGame.header,
 				info: 'Displays all legendary Pokémon you have caught.',
 				parameters: ['[user]','[page]'],
@@ -38,6 +39,7 @@ module.exports = {
 				}
 			},
 			'favorites': {
+				aliases: ['faves'],
 				title: PokemonGame.header,
 				info: 'Displays all your faved Pokémon.',
 				parameters: ['[user]','[page]'],

@@ -57,7 +57,7 @@ class BankAccount {
 		} else {
 			// old bank data
 			this.state     = STATE.OPEN;
-			this.created   = Date.parse(data.created);
+			this.created   = Date.parse(data.created) || data.created;
 			this.open      = data.open;
 			this.dead      = data.dead;
 		}
@@ -112,7 +112,7 @@ class BankAccount {
 		this.dailyReceived  = 0;
 		
 		this.record({action: 'created'});
-		return md.mention(this.id) + ' Your account has been successfully created. To view your account, use ' + md.code('bank.summary');
+		return 'Your account has been successfully created. To view your account, use ' + md.code('bank.summary');
 	}
 	get history() {
 		return FileLogger.read(this.filename).map(i => addProperty(i,'user',this.id));
@@ -150,7 +150,7 @@ class BankAccount {
 	}
 	delete() {
 		FileLogger.delete(this.filename);
-		return md.mention(this.id) + ' your history has been cleared.';
+		return 'Your history has been cleared.';
 	}
 	open() {
 		if (this.closed || this.dead) {
@@ -171,7 +171,7 @@ class BankAccount {
 			this.closed = true;
 			this.investing = 0;
 			this.record({action: 'closed'});
-			return md.mention(this.id) + ' Your account has been closed. Transactions are no longer allowed, but it may still be used.';
+			return 'Your account has been closed. Transactions are no longer allowed, but it may still be used.';
 		}
 	}
 	shutdown() {
@@ -181,7 +181,7 @@ class BankAccount {
 			this.dead = true;
 			this.investing = 0;
 			this.record({action: 'closed permanently'});
-			return md.mention(this.id) + ' Your account has been shut down. Contact an admin if you wish to have it reopened.';
+			return 'Your account has been shut down. Contact an admin if you wish to have it reopened.';
 		}
 	}
 	authorize() {
@@ -189,7 +189,7 @@ class BankAccount {
 			throw 'Account is shut down.';
 		} else {
 			this.authorized = true;
-			return md.mention(this.id) + ' Your account has been authorized.';
+			return 'Your account has been authorized.';
 		}
 	}
 	unauthorize() {
@@ -197,7 +197,7 @@ class BankAccount {
 			throw 'Account is shut down.';
 		} else {
 			this.authorized = false;
-			return md.mention(this.id) + ' Your account has been de-authorized.';
+			return 'Your account has been de-authorized.';
 		}
 	}
 	checkBalance() {
@@ -220,7 +220,7 @@ class BankAccount {
 				throw 'Invalid amount.';
 			}
 			this.recordCreditChange('deposit', amt);
-			return md.mention(this.id) + ' Your account balance has received ' + formatCredits(amt) + '.';
+			return 'Your account balance has received ' + formatCredits(amt) + '.';
 		}
 	}
 	withdraw(amt = 0) {
@@ -236,7 +236,7 @@ class BankAccount {
 				throw 'Invalid amount.';
 			}
 			this.recordCreditChange('withdrawal', -amt);
-			return md.mention(userID) + ' Your account balance has been deducted by ' + formatCredits(amount) + '.';
+			return 'Your account balance has been deducted by ' + formatCredits(amt) + '.';
 		}
 	}
 	transfer(to, amt = 0) {
@@ -372,7 +372,7 @@ class BankAccount {
 			
 			this.dailyReceived = now;
 			this.recordCreditChange('daily', DAILY_PAYROLL)
-			return md.mention(this.id) + ' You received your daily ' + formatCredits(DAILY_PAYROLL) + '.';
+			return ' You received your daily ' + formatCredits(DAILY_PAYROLL) + '.';
 		}
 	}
 }
