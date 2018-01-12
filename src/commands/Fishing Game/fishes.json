@@ -4,71 +4,71 @@
 		"type": "junk",
 		"info": "Worthless junk floating in the virtual ocean.",
 		"things": [":battery:", ":athletic_shoe:", ":mans_shoe:", ":gear:", ":paperclip:", ":paperclips:", ":chains:", ":shopping_cart:", ":shell:"],
-		"rarity": 80,
+		"rarity": 25,
 		"value": 0
 	},
 	{
 		"name": "Piece of Treasure",
-		"type": "rare junk",
+		"type": "treasure",
 		"info": "A valuable scrap of treasure that floated away from somewhere.",
 		"things": [":dollar:", ":yen:", ":euro:", ":pound:", ":gem:", ":ring:", ":crown:", ":stopwatch:"],
-		"rarity": 6,
+		"rarity": 3,
 		"value": 15.0
 	},
 	{
 		"name": "Bug",
-		"type": "common",
+		"type": "bug",
 		"info": "Small critters that aren't that valuable for how rare they are.",
 		"things": [":bug:",":snail:",":ant:",":spider:"],
-		"rarity": 30,
+		"rarity": 15,
 		"value": 0.6
 	},
 	{
 		"name": "Cool Bug",
-		"type": "rare",
+		"type": "bug",
 		"info": "Rare bugs, which are much more valuable.",
 		"things": [":butterfly:", ":beetle:", ":bee:"],
-		"rarity": 10,
+		"rarity": 5,
 		"value": 5.0
 	},
 	{
 		"name": "Fish",
-		"type": "common",
+		"type": "fish",
 		"info": "Basic nameless fish, common and only nominally valuable.",
 		"things": [":fish:"],
-		"rarity": 100,
+		"rarity": 35,
 		"value": 1.2
 	},
 	{
 		"name": "Cool Fish",
-		"type": "uncommon",
+		"type": "fish",
 		"info": "An interesting species of fish, rare and quite valuable.",
 		"things": [":tropical_fish:", ":blowfish:"],
-		"rarity": 32,
+		"rarity": 10,
 		"value": 3.2
 	},
 	{
 		"name": "Critter",
-		"type": "rare",
+		"type": "critter",
 		"info": "Various animals you might catch, they fetch a nice price.",
 		"things": [":snake:", ":crab:", ":shrimp:", ":lizard:", ":frog:"],
-		"rarity": 12,
+		"rarity": 5,
 		"value": 8.0
 	},
 	{
 		"name": "Cool Critter",
-		"type": "rare",
+		"type": "critter",
 		"info": "Unique and rare animals, worth quite a lot.",
 		"things": [":turtle:", ":crocodile:", ":octopus:", ":squid:"],
-		"rarity": 8,
+		"rarity": 2.5,
 		"value": 20.0
 	},
 	{
 		"name": "Awesome Critter",
-		"type": "very rare",
+		"type": "critter",
 		"info": "Even more rare, and that much more awesome. They're very valuable.",
 		"things": [":whale:", ":whale2:", ":shark:", ":dolphin:"],
-		"rarity": 5,
+		"rarity": 1,
 		"value": 100.0
 	},
 	{
@@ -76,15 +76,15 @@
 		"type": "legendary",
 		"info": "The rarest and most valuable creatures of them all.",
 		"things": [":dragon:", ":unicorn:"],
-		"rarity": 0.2,
+		"rarity": 0.1,
 		"value": 10000.0
 	},
 	{
 		"name": "Key",
-		"type": "key",
+		"type": "item",
 		"info": "A peculiar key, not worth anything, but might become useful...",
 		"things": [":key:", ":key2:"],
-		"rarity": 2,
+		"rarity": 1,
 		"value": 0
 	},
 	{
@@ -92,7 +92,7 @@
 		"type": "chest",
 		"info": "A chest holding a small reward. Needs a key to open, or else it is discarded.",
 		"things": [":moneybag:", ":gift:", ":package:", ":confetti_ball:", ":tada:"],
-		"rarity": 2,
+		"rarity": 1.2,
 		"value": 200.0
 	},
 	{
@@ -100,7 +100,7 @@
 		"type": "chest",
 		"info": "A chest holding a large reward. Needs a key to open, or else it is discarded.",
 		"things": [":moneybag:", ":gift:", ":package:", ":confetti_ball:", ":tada:"],
-		"rarity": 0.8,
+		"rarity": 0.5,
 		"value": 2000.0
 	},
 	{
@@ -108,7 +108,7 @@
 		"type": "chest",
 		"info": "A chest holding a massive reward. Needs a key to open, or else it is discarded.",
 		"things": [":moneybag:", ":gift:", ":package:", ":confetti_ball:", ":tada:"],
-		"rarity": 0.1,
+		"rarity": 0.075,
 		"value": 20000.0
 	},
 	{
@@ -116,7 +116,23 @@
 		"type": "bird",
 		"info": "Pesky birds that steal yo' catch and yo' money.",
 		"things": [":bird:",":eagle:",":duck:"],
-		"rarity": 3,
-		"value": -4.0
+		"rarity": 10,
+		"value": -5.0
+	},
+	{
+		"name": "Ammo",
+		"type": "item",
+		"info": "Some firepower! Next time a bird tries to steal your catch, you can shoot them down. If you do, you get your fish back!",
+		"things": [":gun:"],
+		"rarity": 1.7,
+		"value": 0
+	},
+	{
+		"name": "Artifact",
+		"type": "item",
+		"info": "A strange object, said to alter reality and luck itself.",
+		"things": [":white_flower:"],
+		"rarity": 2,
+		"value": 0
 	}
 ]

@@ -126,11 +126,11 @@ class DragonBot extends DebugClient {
 		
 		// a response should be immediately handled
 		if (input.response) {
-			this.ln();
-			this.log('Time:   ', new Date().toLocaleString());
-			this.log('Channel:', input.channelID, input.channel.name);
-			this.log('User:   ', input.userID,    input.user.username);
-			this.log('Input:  ', input.message);
+			//this.ln();
+			//this.log('Time:   ', new Date().toLocaleString());
+			//this.log('Channel:', input.channelID, input.channel.name);
+			//this.log('User:   ', input.userID,    input.user.username);
+			//this.log('Input:  ', input.message);
 			//this.log('Output: ', input.response);
 			this.send(channelID, input.response)
 			.then(response => {

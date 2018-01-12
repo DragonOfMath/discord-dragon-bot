@@ -159,14 +159,14 @@ class BankAccount {
 			this.record({action: 'reopened'});
 			return md.mention(this.id) + ' Your account has been reopened!';
 		} else {
-			throw 'Account is already open.';
+			return 'Account is already open.';
 		}
 	}
 	close() {
 		if (this.dead) {
-			throw 'Account is shut down.';
+			return 'Account is shut down.';
 		}else if (this.closed) {
-			throw 'Account already closed.';
+			return 'Account already closed.';
 		} else {
 			this.closed = true;
 			this.investing = 0;
@@ -176,7 +176,7 @@ class BankAccount {
 	}
 	shutdown() {
 		if (this.dead) {
-			throw 'Account is already shut down.';
+			return 'Account is already shut down.';
 		} else {
 			this.dead = true;
 			this.investing = 0;
@@ -186,7 +186,7 @@ class BankAccount {
 	}
 	authorize() {
 		if (this.dead) {
-			throw 'Account is shut down.';
+			return 'Account is shut down.';
 		} else {
 			this.authorized = true;
 			return 'Your account has been authorized.';
@@ -194,7 +194,7 @@ class BankAccount {
 	}
 	unauthorize() {
 		if (this.dead) {
-			throw 'Account is shut down.';
+			return 'Account is shut down.';
 		} else {
 			this.authorized = false;
 			return 'Your account has been de-authorized.';
@@ -202,16 +202,16 @@ class BankAccount {
 	}
 	checkBalance() {
 		if (this.dead) {
-			throw 'Account is shut down.';
+			return 'Account is shut down.';
 		} else {
 			return md.mention(this.id) + ' You have ' + formatCredits(user.credits) + '.';
 		}
 	}
 	deposit(amt = 0) {
 		if (this.dead) {
-			throw 'Account is shut down.';
+			return 'Account is shut down.';
 		} else if (this.closed) {
-			throw 'Account is currently closed.';
+			return 'Account is currently closed.';
 		} else {
 			if (typeof(amt) !== 'number') {
 				amt = Number(amt);;
@@ -225,9 +225,9 @@ class BankAccount {
 	}
 	withdraw(amt = 0) {
 		if (this.dead) {
-			throw 'Account is shut down.';
+			return 'Account is shut down.';
 		} else if (this.closed) {
-			throw 'Account is currently closed.';
+			return 'Account is currently closed.';
 		} else {
 			if (typeof(amt) !== 'number') {
 				amt = Number(amt);
@@ -241,15 +241,15 @@ class BankAccount {
 	}
 	transfer(to, amt = 0) {
 		if (this.dead) {
-			throw 'Account is shut down.';
+			return 'Account is shut down.';
 		} else if (this.closed) {
-			throw 'Account is currently closed.';
+			return 'Account is currently closed.';
 		} else if (this.investing) {
-			throw 'Account is currently in an investment period. Transactions are forbidden during this time.';
+			return 'Account is currently in an investment period. Transactions are forbidden during this time.';
 		} else if (to.dead) {
-			throw 'Recipient account is shut down.';
+			return 'Recipient account is shut down.';
 		} else if (to.closed) {
-			throw 'Recipient account is currently closed';
+			return 'Recipient account is currently closed';
 		} else {
 			if (typeof(amt) !== 'number') {
 				amt = Number(amt);
@@ -264,14 +264,14 @@ class BankAccount {
 	}
 	startInvesting() {
 		if (this.dead) {
-			throw 'Account is shut down.';
+			return 'Account is shut down.';
 		} else if (this.closed) {
-			throw 'Account is currently closed.';
+			return 'Account is currently closed.';
 		} else if (this.investing) {
-			throw 'Account is already in an investment period.';
+			return 'Account is already in an investment period.';
 		} else {
 			if (this.credits < INVESTMENT_MINIMUM) {
-				throw `Account does not meet the requirements to start investing (Balance must be at least ${formatCredits(INVESTMENT_MINIMUM)}).`;
+				return `Account does not meet the requirements to start investing (Balance must be at least ${formatCredits(INVESTMENT_MINIMUM)}).`;
 			}
 			
 			this.investing = Date.now();
@@ -281,16 +281,16 @@ class BankAccount {
 	}
 	stopInvesting() {
 		if (this.dead) {
-			throw 'Account is shut down.';
+			return 'Account is shut down.';
 		} else if (this.closed) {
-			throw 'Account is currently closed.';
+			return 'Account is currently closed.';
 		} else if (!this.investing) {
-			throw 'Account is not in an investment period.';
+			return 'Account is not in an investment period.';
 		} else {
 			var timeElapsed = Date.now() - this.investingSince;
 			var timeRemaining = INVESTMENT_WAIT - timeElapsed;
 			if (timeRemaining > 0) {
-				throw 'Account may not be reopened for another ' + formatTime(timeRemaining) + '.';
+				return 'Account may not be reopened for another ' + formatTime(timeRemaining) + '.';
 			}
 			
 			var interestEarned = compoundInterest(this.credits, INTEREST_RATE, INTEREST_COMPOUND, timeElapsed/INVESTMENT_WAIT);
@@ -320,9 +320,9 @@ class BankAccount {
 	}
 	generateInvestmentTranscript(title = 'Investment Transcript', timeElapsed, interestEarned) {
 		if (this.dead) {
-			throw 'Account is shut down.';
+			return 'Account is shut down.';
 		} else if (this.closed) {
-			throw 'Account is currently closed.';
+			return 'Account is currently closed.';
 		} else {
 			if (typeof(interestEarned) !== 'number') {
 				interestEarned = Number(interestEarned.toFixed(ROUNDING));
@@ -357,11 +357,11 @@ class BankAccount {
 	}
 	addDaily() {
 		if (this.dead) {
-			throw 'Account is shut down.';
+			return 'Account is shut down.';
 		} else if (this.closed) {
-			throw 'Account is currently closed.';
+			return 'Account is currently closed.';
 		} else if (this.investing) {
-			throw 'Account is currently investing. Daily cash cannot be received during this time.';
+			return 'Account is currently investing. Daily cash cannot be received during this time.';
 		} else {
 			var now = Date.now();
 			var timeElapsed   = now - this.dailyReceived;
@@ -495,7 +495,7 @@ class Bank {
 			switch (option.toLowerCase()) {
 				case 'check':
 					if (!bank.investing) {
-						throw 'Account is not investing.';
+						return 'Account is not investing.';
 					}
 					var timeElapsed    = Date.now() - bank.investingSince;
 					var interestEarned = compoundInterest(bank.credits, INTEREST_RATE, INTEREST_COMPOUND, timeElapsed/INVESTMENT_WAIT);
@@ -549,7 +549,7 @@ class Bank {
 			Bank.set(client, userID, acct).save(client);
 			return md.mention(userID) + ' Your account has been reverted to data from ' + r.timestamp;
 		} else {
-			throw `There is no entry with the ID ${histID} in the history log for that user.`;
+			return `There is no entry with the ID ${histID} in the history log for that user.`;
 		}
 	}
 	static ledger(client, server, userID, page) {

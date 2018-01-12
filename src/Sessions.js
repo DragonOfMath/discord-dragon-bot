@@ -75,7 +75,7 @@ class Sessions extends Logger(TypeMapBase) {
 			try {
 				s.resolve(input);
 				if (input.response) {
-					this.info('Session returned:', s.id);
+					this.info('Session:', s.id);
 					break;
 				}
 			} catch (e) {

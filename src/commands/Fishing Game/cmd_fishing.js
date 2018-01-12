@@ -44,11 +44,19 @@ module.exports = {
 				}
 			},
 			'events': {
-				aliases: ['event', 'evts', 'evt'],
+				aliases: ['evts'],
 				title: Fishing.header,
 				info: 'Displays any fishing events on this server.',
 				fn({client, serverID}) {
 					return Fishing.showEvents(client, serverID);
+				}
+			},
+			'event': {
+				aliases: ['evt', 'artifact'],
+				title: Fishing.header,
+				info: 'Consumes an Artifact in your inventory to generate a random Fishing Event.',
+				fn({client, userID, channelID, serverID}) {
+					return Fishing.consumeArtifact(client, userID, serverID, channelID);
 				}
 			},
 			'table': {
@@ -57,6 +65,25 @@ module.exports = {
 				parameters: ['[sortby]'],
 				fn({client, args, serverID}) {
 					return Fishing.showFishTable(client, serverID, args[0]);
+				}
+			},
+			'newevent': {
+				title: Fishing.header,
+				info: '(Admin only) Starts a new fishing event, either from given parameters or randomized.',
+				parameters: ['[...fish name]','[<rarity|value>]','[multiplier]', '[expires]'],
+				permissions: {
+					type: 'private'
+				},
+				fn({client, args, channelID, serverID}) {
+					var fish, type, multiplier, expires;
+					type = args.find(a => a=='rarity'||a=='value');
+					if (type) {
+						var idx = args.indexOf(type);
+						fish       = args.slice(0,idx).join(' ');
+						multiplier = args[idx+1];
+						expires    = args[idx+2];
+					}
+					return Fishing.createFishingEvent(client, serverID, channelID, {fish, type, multiplier, expires});
 				}
 			}
 		}

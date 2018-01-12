@@ -7,13 +7,36 @@ const COOLDOWN = 20000; // TODO: reduce to 15000?
 const COST     = 5;
 const HEADER   = ':fishing_pole_and_fish:Fishing Game:tropical_fish:';
 const COLOR    = 0x0080ff;
-const EVENT_CHANCE = 0.10; // % chance of a fishing event starting
+const EVENT_CHANCE      = 0.05; // % chance of a fishing event starting on any catch
+const RARE_EVENT_CHANCE = 0.10; // % chance of a fishing event being rare
+const HIT_CHANCE        = 0.25; // % chance of shooting a bird
 
 function getFishByName(table, name) {
 	return table.find(f => strcmp(f.name,name));
 }
-function getFishByType(table, type) {
-	return table.find(f => strcmp(f.type,type));
+function getFishesByType(table, type) {
+	return table.filter(f => strcmp(f.type,query));
+}
+function getFishes(table, query) {
+	query = query.toLowerCase();
+	return table.filter(f => strcmp(f.name,query) || strcmp(f.type,query));
+}
+
+function times(x) {
+	switch (x) {
+		case 0: return 'none';
+		case 1: return 'once';
+		case 2: return 'twice';
+		//case 3: return 'thrice';
+		default: return x + ' times';
+	}
+}
+function a(x) {
+	if ('aeiou'.indexOf(x[0].toLowerCase()) > -1) {
+		return 'an';
+	} else {
+		return 'a';
+	}
 }
 
 class FishingAccount {
@@ -23,11 +46,13 @@ class FishingAccount {
 			this.cooldown  = f.cooldown  || 0;
 			this.chests    = f.chests || 0;
 			this.birds     = f.birds  || 0;
+			this.wins      = f.wins   || 0;
 		} else {
 			this.inventory = {};
 			this.cooldown  = 0;
 			this.chests = 0;
 			this.birds  = 0;
+			this.wins   = 0;
 		}
 	}
 	get total() {
@@ -40,12 +65,19 @@ class FishingAccount {
 	has(fish) {
 		return !!this.inventory[fish];
 	}
-	hasType(type) {
-		let fish = getFishByType(BaseFishTable, type);
+	hasName(name) {
+		let fish = getFishByName(BaseFishTable, name);
 		if (!fish) {
-			throw 'Invalid Fish type: ' + fish;
+			throw 'Invalid fish type: ' + fish;
 		}
 		return fish.things.some(f => !!this.inventory[f]);
+	}
+	hasType(type) {
+		let fishes = getFishesByType(BaseFishTable, type);
+		if (!fishes.length) {
+			throw 'Invalid Fish type: ' + type;
+		}
+		return fishes.some(fish => fish.things.some(f => !!this.inventory[f]));
 	}
 	add(fish) {
 		if (!this.inventory[fish]) {
@@ -61,87 +93,144 @@ class FishingAccount {
 		this.inventory[fish] -= 1;
 		return fish;
 	}
-	removeType(type) {
-		var fish = getFishByType(BaseFishTable, type);
+	removeByName(name) {
+		var fish = getFishByName(BaseFishTable, name);
 		var thing = fish.things.find(f => !!this.inventory[f]);
 		if (thing) {
 			this.remove(thing);
 		} else {
-			throw `You do not have a ${type} in your inventory!`;
+			throw `You do not have ${a(name)} ${name} in your inventory!`;
 		}
 	}
-	catch(fish) {
-		var reward = fish.value;
-		var f = random(fish.things);
-		if (fish.type == 'bird') {
-			this.birds++;
-			return {
-				reward,
-				message: `was about to catch something, but a **${fish.name}** ${f} swooped down and stole it! ${Bank.formatCredits(reward)}.`
-			};
+	removeByType(type) {
+		var fishes = getFishesByType(BaseFishTable, type);
+		var things = fishes.reduce((t,f) => t.concat(f.things), []);
+		var thing  = things.find(f => !!this.inventory[f]);
+		if (thing) {
+			this.remove(thing);
+		} else {
+			throw `You do not have ${a(type)} ${type} in your inventory!`;
+		}
+	}
+	catch(table) {
+		var message = '', reward = 0, bonus = 0, fish, thing;
+		var ammo = this.inventory[':gun:'] || 0, shotsFired = 0, birdsAttacked = 0, hit = false;
+		
+		function rollForFish() {
+			fish   = table.randomFish;
+			thing  = random(fish.things);
+			reward = fish.value;
 		}
 		
-		var message = `${random('caught','reeled in','hooked','snagged','got')} a **${fish.name}** ${f}! `;
+		rollForFish();
+		
+		// engage a bird encounter
+		while (fish.name == 'Bird') {
+			this.birds++;
+			birdsAttacked++;
+			
+			// check if this is the first bird
+			if (birdsAttacked > 1) {
+				message += `Another **${fish.name}** ${thing} flew in and stole your catch again!\n`;
+			} else {
+				message += `A **${fish.name}** ${thing} flew in and stole your catch!\n`;
+			}
+			
+			// check ammo
+			if (ammo == 0) {
+				message += `Sadly, you had no **Ammo** to shoot the **${fish.name}**, and it got away.`
+				return { reward, message };
+			}
+			
+			shotsFired = 0;
+			hit = false;
+			while (ammo > 0 && !hit) {
+				ammo--;
+				shotsFired++;
+				hit = random() < HIT_CHANCE; // true = hit, false = miss
+			}
+			
+			if (hit) {
+				message += `You shot **${times(shotsFired)}** and knocked the **${fish.name}** out!\n`;
+				bonus += Math.abs(fish.value);
+			} else {
+				message += `You shot **${times(shotsFired)}** but missed, letting the **${fish.name}** escape!`;
+				return { reward, message };
+			}
+			
+			rollForFish();
+		}
+		
+		if (birdsAttacked) {
+			message += `You recovered your catch and got `;
+		} else {
+			message = `${random('caught','reeled in','hooked','snagged','got')} `;
+		}
+		message += `${a(fish.name)} **${fish.name}** ${thing}!`;
+		
 		if (fish.type == 'chest') {
 			try {
-				this.removeType('key');
+				this.removeByName('Key');
 				this.chests++;
-				message += `\nYou opened it with a **Key** and received ${Bank.formatCredits(reward)}!\n(1 **Key** was removed from your inventory)`;
+				message += `\nYou unlocked it with a **Key** and received the reward within!\n(1 **Key** was consumed)`;
 			} catch (e) {
 				reward  = 0;
 				message += `\nUnfortunately, you couldn't open it without a **Key**. Oh well...`;
 			}
 		} else {
-			this.add(f);
-			if (fish.type == 'key') {
-				message += '\nA **Key** can open a **Chest** you might catch in the future.';
-			} else {
-				message += '\nCatch Value: ' + (reward ? Bank.formatCredits(reward) : '__Nothing__');
+			this.add(thing);
+			switch (fish.name) {
+				case 'Key':
+					message += '\n**Keys** are used for unlocking **Chests**.';
+					break;
+				case 'Ammo':
+					message += '\n**Ammo** is used for shooting down **Birds** that may steal your catch.';
+					break;
+				case 'Artifact':
+					message += '\n**Artifacts**, when consumed, activate a random Fishing Event.';
+					break;
 			}
 		}
 		
-		return {reward,message};
+		return {reward,bonus,message};
 	}
-	displayInventory(category) {
+	displayInventory(query) {
+		var total = this.total;
 		var embed = {
 			color: COLOR,
 			description: '',
-			footer: { text: `Total: ${this.total} | Chests Unlocked: ${this.chests} | Birds Attacked By: ${this.birds}` }
+			footer: { text: `Total: ${total} | Chests Unlocked: ${this.chests} | Birds Encountered: ${this.birds}` }
 		};
 		
-		if (category) {
+		if (total == 0) {
+			embed.description = 'Your inventory is empty! Try fishing for some.';
+		} else if (query) {
 			embed.fields = [];
 			
 			var fishing = this;
-			function addThings(fish) {
-				var keys = [];
+			var fishes = getFishes(BaseFishTable, query);
+			if (fishes.length == 0) {
+				fishes = BaseFishTable;
+			}
+			
+			for (var fish of fishes) {
+				var keys = [], count = 0;
 				for (var f of fish.things) {
 					if (fishing.inventory[f]) {
 						keys.push(f);
+						count += fishing.inventory[f];
 					}
 				}
-				if (keys.length) {
+				if (keys.length && count > 0) {
 					embed.fields.push({
-						name: fish.name,
+						name: `${fish.name} (${count} | ${fmt.percent(count/total)})`,
 						value: keys.map(k => `${k}x${fishing.inventory[k]}`).join('  ')
 						//,inline: true
 					});
 				}
 			}
-			
-			var fish = getFishByName(BaseFishTable, category);
-			if (fish) {
-				addThings(fish);
-			} else {
-				BaseFishTable.forEach(addThings);
-			}
 		} else {
-			var keys = Object.keys(this.inventory);
-			if (keys.length) {
-				embed.description = keys.filter(e => this.inventory[e]).map(e => `${e}x${this.inventory[e]}`).join('  ');
-			} else {
-				embed.description = 'Your inventory is empty! Try fishing for some.';
-			}
+			embed.description = Object.keys(this.inventory).filter(e => this.inventory[e]).map(e => `${e}x${this.inventory[e]}`).join('  ');
 		}
 		
 		return embed;
@@ -149,24 +238,24 @@ class FishingAccount {
 }
 
 class FishingEvent extends Session {
-	constructor(serverID, channelID) {
+	constructor(serverID, channelID, {fish,type,multiplier,expires}) {
+		fish       = fish || random(BaseFishTable);
+		type       = type || random('rarity','value');
+		multiplier = Number(multiplier) || FishingEvent.randomMultiplier();
+		expires    = Number(expires)    || FishingEvent.randomExpiration();
+		
+		// don't waste this event on worthless uneventful items
+		while (fish[type] == 0) {
+			fish = random(BaseFishTable);
+		}
+		
 		super({
 			id: String(Date.now()),
 			category: 'fishing',
 			info: 'A fishing event is happening!',
-			data: {
-				fish:       random(BaseFishTable),
-				type:       random('rarity','value'),
-				multiplier: 0 // allow this value to be rolled until it is nonzero
-			},
-			permissions: {
-				type: 'inclusive',
-				servers: [serverID]
-			},
-			settings: {
-				expires: random(1,10) * 60000, // 1 to 10 minutes
-				silent: false
-			},
+			data: { fish, type, multiplier },
+			permissions: { type: 'inclusive', servers: [serverID] },
+			settings: { expires, silent: false },
 			events: {
 				goodbye() {
 					return {
@@ -178,27 +267,6 @@ class FishingEvent extends Session {
 			}
 		});
 		this.last_channel_id = channelID;
-		//console.log(this.data);
-		
-		// don't waste this event on worthless uneventful items
-		while (this.data.fish[this.data.type] == 0) {
-			this.data.fish = random(BaseFishTable);
-		}
-		
-		// slight chance the event is a powerful one
-		if (random() < 0.1) {
-			// +500% to +1000%
-			this.data.multiplier = random(20,40)/4;
-		} else while (this.data.multiplier == 0) {
-			// -100% to +400% boost in catch rate/value
-			this.data.multiplier = random(-4,16)/4;
-		}
-		
-		// slight chance the event is long-lasting one
-		if (random() < 0.1) {
-			// 10 to 60 minutes
-			this.settings.expires = random(1,6) * 600000;
-		}
 	}
 	toField() {
 		var field = {};
@@ -214,6 +282,34 @@ class FishingEvent extends Session {
 			return `${fish.name} is worth ${fmt.percent(Math.abs(multiplier),0)} ${multiplier>0?'more':'less'}`;
 		}
 	}
+	toEmbed() {
+		return {
+			title: 'New Fishing Event Started!',
+			color: COLOR,
+			fields: [this.toField()]
+		};
+	}
+	static randomMultiplier() {
+		var m = 0;
+		// slight chance the event is a powerful one
+		if (random() < RARE_EVENT_CHANCE) {
+			// +500% to +1000%
+			m = random(20,40)/4;
+		} else while (m == 0) {
+			// -100% to +400% boost in catch rate/value, except 0%
+			m = random(-4,16)/4;
+		}
+		return m;
+	}
+	static randomExpiration() {
+		// slight chance the event is long-lasting one
+		if (random() < RARE_EVENT_CHANCE) {
+			// 10 to 60 minutes
+			return random(1,6) * 600000;
+		} else {
+			return random(1,10) * 60000; // 1 to 10 minutes
+		}
+	}
 }
 
 /**
@@ -221,12 +317,13 @@ class FishingEvent extends Session {
 */
 class FishTable {
 	constructor(fevents) {
-		this.table = BaseFishTable.map(f => Object.assign({}, f));
+		this.table = BaseFishTable.map(f => Object.assign({_rarity:1,_value:1}, f));
 		if (fevents) for (var {data} of fevents) {
-			this.getFishByName(data.fish.name)[data.type] *= (1 + data.multiplier);
+			this.getFishByName(data.fish.name)['_'+data.type] += data.multiplier;
 		}
 		for (var f of this.table) {
-			f.value *= COST;
+			f.rarity *= f._rarity;
+			f.value  *= f._value * COST;
 		}
 	}
 	get totalRarity() {
@@ -246,8 +343,11 @@ class FishTable {
 	getFishByName(name) {
 		return getFishByName(this.table, name);
 	}
-	getFishByType(type) {
-		return getFishByType(this.table, type);
+	getFishesByType(type) {
+		return getFishesByType(this.table, type);
+	}
+	getFishes(query) {
+		return getFishes(this.table, query);
 	}
 }
 
@@ -321,38 +421,62 @@ class Fishing {
 			var ft = this.createModifiedFishTable(client, serverID);
 			
 			// catch a random fish
-			var {reward,message} = fishing.catch(ft.randomFish);
-
+			var {reward = 0, bonus = 0, message = ''} = fishing.catch(ft);
+			if (reward > 0) {
+				message += '\nReward: ' + Bank.formatCredits(reward);
+			} else if (reward < 0) {
+				message += '\nLoss: ' + Bank.formatCredits(reward);
+			}
+			if (bonus > 0) {
+				message += '\nBonus: ' + Bank.formatCredits(bonus);
+			}
+			
+			reward += bonus;
+			if (typeof(reward) !== 'number') {
+				throw 'OH NO! Reward value is NaN!';
+			}
+			
 			// apply reward and restriction
 			fishing.cooldown = now + Fishing.cooldown;
 			bank.credits    += reward - Fishing.cost;
 			
 			// roll for a random fishing event
 			if (random() < EVENT_CHANCE) {
-				var evt = new FishingEvent(serverID, channelID);
+				var evt = new FishingEvent(serverID, channelID, {});
 				client.sessions.start(evt);
 				message = `${md.mention(userID)} ${message}`;
 				return {
 					message,
-					embed: {
-						title: 'New Fishing Event Started!',
-						color: COLOR,
-						fields: [evt.toField()]
-					}
+					embed: evt.toEmbed()
 				};
 			} else {
 				return message;
 			}
 		});
 	}
-	static inventory(client, userID, category) {
-		let embed   = this.get(client, userID).displayInventory(category);
+	static consumeArtifact(client, userID, serverID, channelID) {
+		return this.modify(client, userID, fishing => {
+			try {
+				fishing.removeByName('Artifact');
+				var evt = new FishingEvent(serverID, channelID, {});
+				client.sessions.start(evt);
+				return {
+					message: `${md.mention(userID)} activated an **Artifact**.`,
+					embed: evt.toEmbed()
+				};
+			} catch (e) {
+				return e;
+			}
+		});
+	}
+	static inventory(client, userID, query) {
+		let embed   = this.get(client, userID).displayInventory(query);
 		embed.title = `${client.users[userID].username}'s Inventory`;
 		return embed;
 	}
-	static showFishInfo(client, serverID, fname) {
+	static showFishInfo(client, serverID, query) {
 		var ft = this.createModifiedFishTable(client, serverID);
-		var fish = ft.getFishByName(fname) || ft.getFishByType(fname);
+		var fish = ft.getFishes(query)[0];
 		if (!fish) {
 			return `\`${fname}\` is not a recognized fish type, or name.`;
 		}
@@ -381,7 +505,7 @@ class Fishing {
 				},
 				{
 					name: 'Value',
-					value: Bank.formatCredits(fish.value),
+					value: fish.value ? Bank.formatCredits(fish.value) : '--',
 					inline: true
 				},
 				{
@@ -449,7 +573,7 @@ class Fishing {
 		
 		for (let fish of ft.table) {
 			nameColumn.push(fish.name);
-			valueColumn.push(md.bold(fmt.currency(fish.value,'$',1)));
+			valueColumn.push(md.bold(fish.value ? fmt.currency(fish.value,'$',1) : '--'));
 			rarityColumn.push(md.bold(fmt.percent(fish.rarity/tr, 2)));
 		}
 		
@@ -478,16 +602,18 @@ class Fishing {
 	static showEvents(client, serverID) {
 		var events = this.getEvents(client, serverID);
 		//console.log(events);
-		var embed = paginate(events, 1, 20, (e,i) => {
-			if (!e[i]) {
-				console.error(e,i);
-				throw 'Uhhhhh, invalid event? Index: ' + i;
-			}
-			return e[i].toField();
-		});
+		var embed = paginate(events, 1, 20, (e,i) => e[i].toField());
 		embed.title = 'Fishing Events';
 		embed.color = COLOR;
 		return embed;
+	}
+	static createFishingEvent(client, serverID, channelID, descriptor = {}) {
+		if (descriptor.fish) {
+			descriptor.fish = getFishByName(BaseFishTable, descriptor.fish);
+		}
+		var evt = new FishingEvent(serverID, channelID, descriptor);
+		client.sessions.start(evt);
+		return evt.toEmbed();
 	}
 }
 

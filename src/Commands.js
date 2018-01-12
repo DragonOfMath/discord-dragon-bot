@@ -38,7 +38,7 @@ class Commands extends TypeMapBase {
 		this.setProperties({
 			client,
 			logger,
-			'PREFIX': client.PREFIX,
+			PREFIX: client.PREFIX,
 			SUBCOMMAND,
 			WILDCARD,
 			CATEGORY,
@@ -152,6 +152,7 @@ class Commands extends TypeMapBase {
 				command.resolve(input);
 				
 				if (input.grant == 'granted') {
+					this.info('Command:', input.cmd);
 					command.run(input);
 				} else {
 					input.response = input.grant;
