@@ -46,6 +46,8 @@ const THINKING =
 ⠀⠀⠛⢿⣿⣿⣿⣿⣿⣿⡿⠟
 ⠀⠀⠀⠀⠀⠉⠉⠉`;
 
+const LENNYFACE = `( ͡° ͜ʖ ͡°)`;
+
 module.exports = {
 	id: 'memes',
 	info: 'Reply with maymays',
@@ -59,6 +61,7 @@ module.exports = {
 		else if (/^(oof|ouch|ow|owie)$/i.test(message)) return 'oof';
 		else if (/you know (i|he|she|they) had to do it to (th)?em/i.test(message)) return 'ykihtditt';
 		else if (/really makes you think/i.test(message)) return 'thinking';
+		else if (/lenny ?face/i.test(message)) return 'lennyface';
 		return false;
 	},
 	events: {
@@ -119,6 +122,9 @@ module.exports = {
 		},
 		thinking() {
 			return '```\n' + THINKING + '\n```';
+		},
+		lennyface() {
+			return LENNYFACE;
 		}
 	}
 };

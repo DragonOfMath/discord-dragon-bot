@@ -152,7 +152,7 @@ class Commands extends TypeMapBase {
 				command.resolve(input);
 				
 				if (input.grant == 'granted') {
-					this.info('Command:', input.cmd);
+					this.logger.info('Command:', input.cmd);
 					command.run(input);
 				} else {
 					input.response = input.grant;

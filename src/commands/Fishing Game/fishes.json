@@ -90,7 +90,7 @@
 	{
 		"name": "Small Treasure Chest",
 		"type": "chest",
-		"info": "A chest holding a small reward. Needs a key to open, or else it is discarded.",
+		"info": "A chest holding a small reward. Needs a **Key** to open, or else it is discarded.",
 		"things": [":moneybag:", ":gift:", ":package:", ":confetti_ball:", ":tada:"],
 		"rarity": 1.2,
 		"value": 200.0
@@ -98,7 +98,7 @@
 	{
 		"name": "Large Treasure Chest",
 		"type": "chest",
-		"info": "A chest holding a large reward. Needs a key to open, or else it is discarded.",
+		"info": "A chest holding a large reward. Needs a **Key** to open, or else it is discarded.",
 		"things": [":moneybag:", ":gift:", ":package:", ":confetti_ball:", ":tada:"],
 		"rarity": 0.5,
 		"value": 2000.0
@@ -106,7 +106,7 @@
 	{
 		"name": "Legendary Treasure Chest",
 		"type": "chest",
-		"info": "A chest holding a massive reward. Needs a key to open, or else it is discarded.",
+		"info": "A chest holding a massive reward. Needs a **Key** to open, or else it is discarded.",
 		"things": [":moneybag:", ":gift:", ":package:", ":confetti_ball:", ":tada:"],
 		"rarity": 0.075,
 		"value": 20000.0
@@ -114,7 +114,7 @@
 	{
 		"name": "Bird",
 		"type": "bird",
-		"info": "Pesky birds that steal yo' catch and yo' money.",
+		"info": "Pesky birds that steal yo' catch and yo' money.\nYou will need **Ammo** for your gun to fend yourself.",
 		"things": [":bird:",":eagle:",":duck:"],
 		"rarity": 10,
 		"value": -5.0
@@ -122,7 +122,7 @@
 	{
 		"name": "Ammo",
 		"type": "item",
-		"info": "Some firepower! Next time a bird tries to steal your catch, you can shoot them down. If you do, you get your fish back!",
+		"info": "Some firepower! Next time a **Bird** tries to steal your catch, you can shoot them down. If you do, you get your fish back!\nTo view the probability of hitting, use `fish.hittable`.",
 		"things": [":gun:"],
 		"rarity": 1.7,
 		"value": 0
@@ -130,7 +130,7 @@
 	{
 		"name": "Artifact",
 		"type": "item",
-		"info": "A strange object, said to alter reality and luck itself.",
+		"info": "A strange object, said to alter reality and luck itself.\nTo see what happens, try `fish.artifact`.",
 		"things": [":white_flower:"],
 		"rarity": 2,
 		"value": 0

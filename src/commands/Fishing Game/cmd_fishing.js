@@ -85,6 +85,15 @@ module.exports = {
 					}
 					return Fishing.createFishingEvent(client, serverID, channelID, {fish, type, multiplier, expires});
 				}
+			},
+			'hittable': {
+				title: Fishing.header,
+				info: 'Calculates the probability of hitting a bird, given a few sample Ammo values and the current hit percentage.',
+				parameters: ['[user]','[ammo]'],
+				fn({client, args, userID}) {
+					let id = resolveTargetUser(args, userID);
+					return Fishing.hitProbabilityTable(client, id, args[0]);
+				}
 			}
 		}
 	}

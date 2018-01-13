@@ -1,6 +1,6 @@
 const Bank    = require('../../Bank');
 const Session = require('../../Session');
-const {Markdown:md,Format:fmt,random,strcmp,paginate} = require('../../Utils');
+const {Markdown:md,Format:fmt,random,strcmp,paginate,tableify} = require('../../Utils');
 const BaseFishTable = require('./fishes.json');
 
 const COOLDOWN = 20000; // TODO: reduce to 15000?
@@ -9,7 +9,7 @@ const HEADER   = ':fishing_pole_and_fish:Fishing Game:tropical_fish:';
 const COLOR    = 0x0080ff;
 const EVENT_CHANCE      = 0.05; // % chance of a fishing event starting on any catch
 const RARE_EVENT_CHANCE = 0.10; // % chance of a fishing event being rare
-const HIT_CHANCE        = 0.25; // % chance of shooting a bird
+const HIT_CHANCE        = 0.20; // % chance of shooting a bird
 
 function getFishByName(table, name) {
 	return table.find(f => strcmp(f.name,name));
@@ -38,6 +38,19 @@ function a(x) {
 		return 'a';
 	}
 }
+function plural(x,noun) {
+	if (x > 1) {
+		return `${x} ${noun}s`;
+	} else if (x == 1) {
+		return `${x} ${noun}`;
+	} else {
+		return `no ${noun}s`;
+	}
+}
+
+function calculateHitChance(ammo) {
+	return 1 - Math.pow(1 - HIT_CHANCE, ammo);
+}
 
 class FishingAccount {
 	constructor(f) {
@@ -61,6 +74,9 @@ class FishingAccount {
 			sum += this.inventory[e];
 		}
 		return sum;
+	}
+	get ammo() {
+		return this.inventory[':gun:'] || 0;
 	}
 	has(fish) {
 		return !!this.inventory[fish];
@@ -114,7 +130,7 @@ class FishingAccount {
 	}
 	catch(table) {
 		var message = '', reward = 0, bonus = 0, fish, thing;
-		var ammo = this.inventory[':gun:'] || 0, shotsFired = 0, birdsAttacked = 0, hit = false;
+		var ammo = this.ammo, shotsFired = 0, birdsAttacked = 0, hit = false;
 		
 		function rollForFish() {
 			fish   = table.randomFish;
@@ -138,8 +154,13 @@ class FishingAccount {
 			
 			// check ammo
 			if (ammo == 0) {
-				message += `Sadly, you had no **Ammo** to shoot the **${fish.name}**, and it got away.`
+				message += 'Sadly, you had no **Ammo** to shoot the ' + md.bold(fish.name) + ', and it got away.';
+				reward -= bonus;
 				return { reward, message };
+			} else if (birdsAttacked > 1) {
+				message += 'With ' + md.bold(plural(ammo,'bullet')) + ' left, you shot ';
+			} else {
+				message += 'You shot ';
 			}
 			
 			shotsFired = 0;
@@ -150,11 +171,20 @@ class FishingAccount {
 				hit = random() < HIT_CHANCE; // true = hit, false = miss
 			}
 			
+			message += ':gun: ' + md.bold(times(shotsFired));
+			
 			if (hit) {
-				message += `You shot **${times(shotsFired)}** and knocked the **${fish.name}** out!\n`;
+				message += random([
+					' and knocked the ' + md.bold(fish.name) + ' out!',
+					' and landed a solid hit on the ' + md.bold(fish.name) + '!',
+					' and got a bullseye on the ' + md.bold(fish.name) + '!',
+					', knocking the ' + md.bold(fish.name) + ' out of the sky!',
+					', landing a solid hit on the ' + md.bold(fish.name) + '!'
+				]) + '\n';
 				bonus += Math.abs(fish.value);
 			} else {
-				message += `You shot **${times(shotsFired)}** but missed, letting the **${fish.name}** escape!`;
+				message += ' but missed, letting the ' + md.bold(fish.name) + ' escape!';
+				reward -= bonus;
 				return { reward, message };
 			}
 			
@@ -162,9 +192,9 @@ class FishingAccount {
 		}
 		
 		if (birdsAttacked) {
-			message += `You recovered your catch and got `;
+			message += 'You recovered your catch and got ';
 		} else {
-			message = `${random('caught','reeled in','hooked','snagged','got')} `;
+			message = random('caught','reeled in','hooked','snagged','got') + ' ';
 		}
 		message += `${a(fish.name)} **${fish.name}** ${thing}!`;
 		
@@ -172,10 +202,24 @@ class FishingAccount {
 			try {
 				this.removeByName('Key');
 				this.chests++;
-				message += `\nYou unlocked it with a **Key** and received the reward within!\n(1 **Key** was consumed)`;
+				message += '\nYou unlocked it with a **Key** and received the reward within!\n(1 **Key** was consumed)';
 			} catch (e) {
-				reward  = 0;
-				message += `\nUnfortunately, you couldn't open it without a **Key**. Oh well...`;
+				if (random() < 0.03) {
+					reward *= 0.5;
+					message += '\n' + random([
+						'By sheer strength, you pry open the chest like a brute!',
+						'By dumb luck, the chest was already unlocked.',
+						'Thanks to locksmith training, you cleverly use a paperclip to unlock the chest!',
+						'You say "Open Sesame!" and the chest magically opens!',
+						'A bird precision :poop:s right into the lock, somehow unlocking it.',
+						'1. Get a chest.  2. ???  3. Profit.',
+						'You kick the side of the chest and it pops open!',
+						'lmao it\'s not locked.'
+					]);
+				} else {
+					reward  = 0;
+					message += '\nUnfortunately, you couldn\'t open it without a **Key**. Oh well...';
+				}
 			}
 		} else {
 			this.add(thing);
@@ -187,7 +231,7 @@ class FishingAccount {
 					message += '\n**Ammo** is used for shooting down **Birds** that may steal your catch.';
 					break;
 				case 'Artifact':
-					message += '\n**Artifacts**, when consumed, activate a random Fishing Event.';
+					message += '\n**Artifacts**, when consumed, activate a random **Fishing Event**.';
 					break;
 			}
 		}
@@ -478,7 +522,7 @@ class Fishing {
 		var ft = this.createModifiedFishTable(client, serverID);
 		var fish = ft.getFishes(query)[0];
 		if (!fish) {
-			return `\`${fname}\` is not a recognized fish type, or name.`;
+			return `\`${query}\` is not a recognized fish type, or name.`;
 		}
 		
 		return {
@@ -569,35 +613,40 @@ class Fishing {
 				break;
 		}
 		
-		var nameColumn = ['--------'], valueColumn = ['--------'], rarityColumn = ['--------'];
-		
-		for (let fish of ft.table) {
-			nameColumn.push(fish.name);
-			valueColumn.push(md.bold(fish.value ? fmt.currency(fish.value,'$',1) : '--'));
-			rarityColumn.push(md.bold(fmt.percent(fish.rarity/tr, 2)));
+		var embed = tableify(['Name','Value','% Chance'], ft.table, function (fish) {
+			return [
+				fish.name,
+				md.bold(fish.value ? fmt.currency(fish.value,'$',1) : '--'),
+				md.bold(fmt.percent(fish.rarity/tr, 2))
+			];
+		});
+		embed.title = 'Fish Probabilities';
+		embed.color = COLOR;
+		return embed;
+	}
+	static hitProbabilityTable(client, userID, ammo = 0) {
+		if (ammo > 0) {
+			var chance = calculateHitChance(ammo);
+			return `The chance of hitting with ${md.bold(ammo)} ammo is ${md.bold(fmt.percent(chance))}.`;
+		} else {
+			ammo = this.get(client, userID).ammo;
 		}
 		
-		return {
-			title: 'Fish Probabilities',
-			color: COLOR,
-			fields: [
-				{
-					name: 'Name',
-					value: nameColumn.join('\n'),
-					inline: true
-				},
-				{
-					name: 'Value',
-					value: valueColumn.join('\n'),
-					inline: true
-				},
-				{
-					name: '% Chance',
-					value: rarityColumn.join('\n'),
-					inline: true
-				}
-			]
-		};
+		// Table will show the probability of a hit with respect to how many bullets are shot
+		var sample = [1,2,3,4,5,10,15,20]
+		if (ammo > 0 && !sample.includes(ammo)) sample.push(ammo);
+		sample = sample.sort((a,b)=>((a>b)?1:(a<b)?-1:0));
+		var embed = tableify(['Ammo','% Chance'], sample, function (a) {
+			var row = [a,fmt.percent(calculateHitChance(a))];
+			if (a == ammo) {
+				row = row.map(r => md.bold(r + ' (You)'));
+			}
+			return row;
+		});
+		embed.title = 'Hit Probability Table';
+		embed.color = COLOR;
+		embed.description = `Values are based on the current hit chance of ${md.bold(fmt.percent(HIT_CHANCE))}.`;
+		return embed;
 	}
 	static showEvents(client, serverID) {
 		var events = this.getEvents(client, serverID);
