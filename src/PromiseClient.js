@@ -1,7 +1,7 @@
 const Discord = require('discord.io');
 const Promise = require('bluebird');
 
-const MY_NAME = __dirname.split('/').slice(1,3).join('/');
+const MY_NAME = new RegExp(__dirname.split('\\').slice(1,3).join('\\\\'), 'gi');
 
 /**
 	Standard callback function used by discord.io made to suit Promises
@@ -152,7 +152,7 @@ class PromiseClient extends Discord.Client {
 			({message, embed} = embed);
 		}
 		if (typeof(message) === 'string') {
-			message = message.replace(new RegExp(MY_NAME,'igm'), '(Me)'); // remove my name if it EVER shows up
+			message = message.replace(MY_NAME, '(Me)'); // remove my name if it EVER shows up
 		}
 		checkPayloadLength(message, embed);
 		return this.sendMessage({to,message,embed});
