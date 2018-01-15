@@ -154,7 +154,7 @@ class Moderation {
 				if (modlogID) {
 					client.send(modlogID, modlog(modID, userID, 'Strike', reason));
 				}
-				return `${md.mention(userID)} **Strike ${strikes}** ${strikes == 2 ? ':x::x:' : ':x:'}! ${strikes == 2 ? 'Continue any more and you're outta here.' : 'Continue with your behavior and you will receive another Strike.'}`;
+				return `${md.mention(userID)} **Strike ${strikes}** ${strikes == 2 ? ':x::x:' : ':x:'}! ${strikes == 2 ? 'Continue any more and you are outta here.' : 'Continue with your behavior and you will receive another Strike.'}`;
 			}
 		});
 	}
@@ -173,7 +173,7 @@ class Moderation {
 				if (modlogID) {
 					client.send(modlogID, modlog(modID, userID, 'Strike Removed', `Strikes: ${strikes}`));
 				}
-				return `${md.mention(targetUserID)} one of your Strikes was removed. Keep up the good behavior and you won't receive one again.`;
+				return `${md.mention(userID)} one of your Strikes was removed. Keep up the good behavior and you won't receive one again.`;
 			}
 		});
 	}
