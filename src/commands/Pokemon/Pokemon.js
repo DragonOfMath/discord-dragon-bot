@@ -3,10 +3,14 @@ const TypeMapBase = require('../../TypeMapBase');
 const {Markdown:md,Format:fmt,paginate,random,strcmp} = require('../../Utils');
 const PokemonList        = require('./pokemon.json');
 const SpecialPokemonList = require('./pokemon_special.json');
+const PokemonItemList    = require('./pokemon_items.json');
 
 const HEADER     = `Pokémon:tm:`;
 const COLOR      = 0xFF0000;
-const COOLDOWN   = 2 * 60 * 60 * 1000; // 2 hours
+const CATCH_COOLDOWN    = 2 * 60 * 60 * 1000; // 2 hours
+const TRAIN_COOLDOWN    =     30 * 60 * 1000; // 30 minutes
+const SCAVENGE_COOLDOWN = 2 * 60 * 60 * 1000; // 2 hours
+const TRAIN_XP = 5;
 const PAGINATION = 15; // items per page
 
 class Pokemon {
@@ -14,16 +18,22 @@ class Pokemon {
 		if (typeof(p) === 'object') {
 			this.name    = p.name;
 			this.spc     = p.spc;
-			this.lvl     = p.lvl;
+			//this.lvl     = p.lvl;
 			this.xp      = p.xp;
 			this.fav     = p.fav;
 		} else {
 			this.name    = p;
 			this.species = p;
-			this.lvl     = 1;
+			//this.lvl     = 1;
 			this.xp      = 0;
 			this.fav     = false;
 		}
+	}
+	get lvl() {
+		return 1 + Math.floor(Math.sqrt(this.xp/2));
+	}
+	set lvl(l) {
+		this.xp = Math.round(2 * Math.pow(l-1, 2));
 	}
 	get species() {
 		return PokemonList[this.spc];
@@ -48,10 +58,6 @@ class Pokemon {
 	}
 	get sprite2() {
 		return `https://cdn.rawgit.com/msikma/pokesprite/master/icons/pokemon/regular/${this.speciesWeb}.png`;
-	}
-	initBattle() {
-		this.hp  = this.lvl * 10;
-		this._hp = this.hp;
 	}
 	get rarity() {
 		var spc = this.species;
@@ -119,13 +125,19 @@ class Pokedex extends TypeMapBase {
 class PkmnAccount {
 	constructor(user) {
 		if (typeof(user) === 'object') {
-			this.pokemon = new Pokedex(user.pokemon);
-			this.cooldown = user.cooldown || 0;
+			this.pokemon     = new Pokedex(user.pokemon);
+			this.items       = user.items || {};
 			this.totalCaught = user.totalCaught || 0;
+			this.cooldown    = user.cooldown || 0;
+			this.trained     = user.trained || 0;
+			this.scavenged   = user.scavenged || 0;
 		} else {
-			this.pokemon = new Pokedex();
-			this.cooldown = 0;
+			this.pokemon     = new Pokedex();
+			this.items       = {};
 			this.totalCaught = 0;
+			this.cooldown    = 0;
+			this.trained     = 0;
+			this.scavenged   = 0;
 		}
 	}
 	get(pokeID) {
@@ -172,8 +184,17 @@ class PkmnAccount {
 		if (timeLeft > 0) {
 			return `Wait ${md.bold(fmt.time(timeLeft))} before catching another Pokémon!`;
 		}
-		this.cooldown = now + COOLDOWN;
+		this.cooldown = now + CATCH_COOLDOWN;
 		return this.addPokemon(random(PokemonList));
+	}
+	scavengeForARandomItem() {
+		let now = Date.now();
+		let timeLeft = this.scavenged - now;
+		if (timeLeft > 0) {
+			return `Wait ${md.bold(fmt.time(timeLeft))} before scavenging again!`;
+		}
+		this.scavenged = now + SCAVENGE_COOLDOWN;
+		return this.addItem(random(PokemonItemList));
 	}
 	displayPokemonInventory(page, filter) {
 		if (typeof(page) !== 'number') {
@@ -224,7 +245,7 @@ class PokemonGame {
 		return COLOR;
 	}
 	static get cooldown() {
-		return COOLDOWN;
+		return CATCH_COOLDOWN;
 	}
 	static get pagination() {
 		return PAGINATION;
@@ -245,7 +266,7 @@ class PokemonGame {
 		return this.legendaryPokemon.concat(this.mythicalPokemon, this.rarePokemon);
 	}
 	static get catchCooldownTime() {
-		return fmt.time(COOLDOWN);
+		return fmt.time(CATCH_COOLDOWN);
 	}
 	static get(client, userID) {
 		if (!client.users[userID]) {

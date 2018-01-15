@@ -116,15 +116,15 @@
 		"type": "bird",
 		"info": "Pesky birds that steal yo' catch and yo' money.\nYou will need **Ammo** for your gun to fend yourself.",
 		"things": [":bird:",":eagle:",":duck:"],
-		"rarity": 10,
-		"value": -5.0
+		"rarity": 12,
+		"value": -2.0
 	},
 	{
 		"name": "Ammo",
 		"type": "item",
 		"info": "Some firepower! Next time a **Bird** tries to steal your catch, you can shoot them down. If you do, you get your fish back!\nTo view the probability of hitting, use `fish.hittable`.",
 		"things": [":gun:"],
-		"rarity": 1.7,
+		"rarity": 1.5,
 		"value": 0
 	},
 	{

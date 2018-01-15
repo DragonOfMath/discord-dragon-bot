@@ -1,0 +1,162 @@
+[
+	{
+		"name": "Pokeball",
+		"type": "pokeball",
+		"info": "A basic pokeball for capturing Pokemon.",
+		"value": 50,
+		"rarity": 20,
+		"data": {
+			"catch": 0.1
+		}
+	},
+	{
+		"name": "Adept Pokeball",
+		"type": "pokeball",
+		"info": "A pokeball with modifications suited for experienced trainers, made to make capturing mid-sized Pokemon easier.",
+		"value": 400,
+		"rarity": 8,
+		"data": {
+			"catch": 0.4
+		}
+	},
+	{
+		"name": "Advanced Pokeball",
+		"type": "pokeball",
+		"info": "A stronger version of the pokeball for catching dangerous Pokemon. Has a high chance to capture.",
+		"value": 1200,
+		"rarity": 2,
+		"data": {
+			"catch": 0.75
+		}
+	},
+	{
+		"name": "Master Pokeball",
+		"type": "pokeball",
+		"info": "The most powerful pokeball, almost guaranteed to catch any Pokemon. Very expensive, indeed.",
+		"value": 10000,
+		"rarity": 0.2,
+		"data": {
+			"catch": 0.98
+		}
+	},
+	
+	{
+		"name": "Medkit",
+		"type": "healing",
+		"info": "A basic medkit to heal minor injuries on a Pokemon in combat.",
+		"value": 100,
+		"rarity": 15,
+		"data": {
+			"health": 0.25
+		}
+	},
+	{
+		"name": "Adept Medkit",
+		"type": "healing",
+		"info": "A larger medkit to bring an injured Pokemon to a much better condition.",
+		"value": 500,
+		"rarity": 6,
+		"data": {
+			"health": 0.50
+		}
+	},
+	{
+		"name": "Advanced Medkit",
+		"type": "healing",
+		"info": "A medkit used by professionals to bring Pokemon out of critical injuries.",
+		"value": 2000,
+		"rarity": 1,
+		"data": {
+			"health": 0.75
+		}
+	},
+	{
+		"name": "Master Medkit",
+		"type": "healing",
+		"info": "A medkit with the most advanced restorative options. Can bring a Pokemon from the brink of death back to full health.",
+		"value": 9000,
+		"rarity": 1,
+		"data": {
+			"health": 1.00
+		}
+	},
+	
+	{
+		"name": "Berry",
+		"type": "booster",
+		"info": "A fruit which boosts Attack power temporarily. +20% ATK for 2 rounds.",
+		"value": 35,
+		"rarity": 16,
+		"data": {
+			"attack": 0.20,
+			"duration": 2
+		}
+	},
+	{
+		"name": "Super Berry",
+		"type": "booster",
+		"info": "A sweet fruit which greatly boosts Attack power temporarily. +50% ATK for 2 rounds.",
+		"value": 450,
+		"rarity": 6,
+		"data": {
+			"attack": 0.50,
+			"duration": 2
+		}
+	},
+	{
+		"name": "Golden Berry",
+		"type": "booster",
+		"info": "A potent fruit packed with nutrients that doubles Attack power for a short time. +100% ATK for 2 rounds.",
+		"value": 4000,
+		"rarity": 0.5,
+		"data": {
+			"attack": 1.00,
+			"duration": 2
+		}
+	},
+	
+	{
+		"name": "Citrus",
+		"type": "booster",
+		"info": "A citrus fruit which balances a Pokemon's chi, giving them greater defense. +30% DEF for 2 rounds.",
+		"value": 40,
+		"rarity": 15,
+		"data": {
+			"defense": 0.30,
+			"duration": 2
+		}
+	},
+	{
+		"name": "Super Citrus",
+		"type": "booster",
+		"info": "A more concentrated citrus fruit that nourishes lost vitamins, boosting defense even more. +60% DEF for 2 rounds.",
+		"value": 550,
+		"rarity": 5,
+		"data": {
+			"defense": 0.60,
+			"duration": 2
+		}
+	},
+	{
+		"name": "Golden Citrus",
+		"type": "booster",
+		"info": "An exotic citrus fruit that instantly replenishes lost nutrients and doubles defensive capabilities. +100% DEF for 2 rounds.",
+		"value": 5000,
+		"rarity": 0.4,
+		"data": {
+			"defense": 1.00,
+			"duration": 2
+		}
+	},
+	
+	{
+		"name": "Rare Candy",
+		"type": "instant",
+		"info": "A sugary delight that instantly increases your Pokemon's level by 1.",
+		"value": 15000,
+		"rarity": 0.1,
+		"data": {
+			"xp": 1.0
+		}
+	}
+]

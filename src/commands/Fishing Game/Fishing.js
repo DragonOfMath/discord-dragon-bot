@@ -59,13 +59,11 @@ class FishingAccount {
 			this.cooldown  = f.cooldown  || 0;
 			this.chests    = f.chests || 0;
 			this.birds     = f.birds  || 0;
-			this.wins      = f.wins   || 0;
 		} else {
 			this.inventory = {};
 			this.cooldown  = 0;
 			this.chests = 0;
 			this.birds  = 0;
-			this.wins   = 0;
 		}
 	}
 	get total() {

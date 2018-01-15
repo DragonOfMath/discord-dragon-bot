@@ -178,10 +178,6 @@ class Commands extends TypeMapBase {
 					value: `To invoke a command, add \`${client.PREFIX}\` at the start of your message. In case other bots on the server use the same prefix, you can @mention me ${md.mention(client.id)} in place of the prefix.`
 				},
 				{
-					name: 'Using Subcommands',
-					value: `Some commands have subcommands to divide their functionality. They share the namespace with their parent command, so several subcommands of the same name can exist. To invoke subcommands, use \`${SUBCOMMAND}\` after a command name, and follow it with the subcommand. Example: \`!fish.inventory\``
-				},
-				{
 					name: 'Subcommands',
 					value: 'Some commands have further divisions in their functionality called **subcommands**. You can use these subcommands with dot notation -- `command.sub`, `command.sub.subsub` and so on. You can use the built-in subcommand `command.?` to list them.'
 				},
@@ -190,12 +186,8 @@ class Commands extends TypeMapBase {
 					value: `Commands are divided these groups: ${this.categories.join(', ')}. You can see what commands are in the group by using \`&\` character followed by the category's name.`
 				}
 			]
-		}
+		};
 	}
 }
 
 module.exports = Commands;
-
-//const {PrototypeChain} = require('./utils/prototypechain.js');
-//PrototypeChain(Commands);
-//  Commands>LoggerBase>TypeMapBase>MapBase>function>object>null

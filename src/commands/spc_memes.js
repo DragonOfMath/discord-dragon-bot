@@ -62,6 +62,7 @@ module.exports = {
 		else if (/you know (i|he|she|they) had to do it to (th)?em/i.test(message)) return 'ykihtditt';
 		else if (/really makes you think/i.test(message)) return 'thinking';
 		else if (/lenny ?face/i.test(message)) return 'lennyface';
+		else if (/omae wa mou shindeiru/i.test(message)) return 'nani';
 		return false;
 	},
 	events: {
@@ -125,6 +126,9 @@ module.exports = {
 		},
 		lennyface() {
 			return LENNYFACE;
+		},
+		nani() {
+			return '*NANI?!*';
 		}
 	}
 };

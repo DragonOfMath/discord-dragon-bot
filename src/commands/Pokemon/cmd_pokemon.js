@@ -1,3 +1,4 @@
+return;
 const PokemonGame = require('./Pokemon');
 const {Markdown:md} = require('../../Utils');
 
@@ -51,7 +52,7 @@ module.exports = {
 			'id': {
 				title: PokemonGame.header + ' | PokeID',
 				info: 'Displays information about a Pokémon from your inventory.',
-				parameters: ['...ID|name'],
+				parameters: ['...pokemonID'],
 				fn({client, arg, userID}) {
 					return PokemonGame.displayPokemon(client, userID, arg);
 				}
@@ -59,7 +60,7 @@ module.exports = {
 			'gif': {
 				title: PokemonGame.header + ' | GIF',
 				info: 'Embeds a GIF of a Pokémon. (if none selected, one is chosen at random)',
-				parameters: ['[...pokeID|name]'],
+				parameters: ['[...pokemonID]'],
 				fn({client, arg}) {
 					return PokemonGame.GIF(arg);
 				}
@@ -113,7 +114,7 @@ module.exports = {
 				aliases: ['release'],
 				title: PokemonGame.header + ' | Release',
 				info: 'Remove a Pokémon from your inventory by its ID. If you do so, your cooldown will decrease by an hour.',
-				parameters: ['ID'],
+				parameters: ['pokemonID'],
 				fn({client, args, userID}) {
 					return PokemonGame.releasePokemon(client, userID, args[0]);
 				}
@@ -122,7 +123,7 @@ module.exports = {
 				aliases: ['give'],
 				title: PokemonGame.header + ' | Trade',
 				info: 'Trade Pokémon and items with a friend! (Name is reset upon trading)',
-				parameters: ['user', '...ID|name'],
+				parameters: ['user', '...pokemonID'],
 				fn({client, args, userID}) {
 					let [targetUserID, ...pokeID] = args;
 					pokeID = pokeID.join('');
@@ -131,8 +132,8 @@ module.exports = {
 			},
 			'sell': {
 				title: PokemonGame.header + ' | Sell',
-				info: 'Sell Pokémon or items for cash.',
-				parameters: ['...ID|name'],
+				info: 'Sell Pokémon or items for cash. Pokémon you have trained and leveled up will be more valuable.',
+				parameters: ['...pokemonID'],
 				fn({client, arg, userID}) {
 					return PokemonGame.sellPokemon(client, userID, arg);
 				}
@@ -141,7 +142,7 @@ module.exports = {
 				aliases: ['fav', 'favorite', 'favourite'],
 				title: PokemonGame.header + ' | Fave',
 				info: 'Favorite a Pokémon in your inventory.',
-				parameters: ['...ID|name'],
+				parameters: ['...pokemonID'],
 				fn({client, arg, userID}) {
 					return PokemonGame.favoritePokemon(client, userID, arg);
 				}
@@ -150,7 +151,7 @@ module.exports = {
 				aliases: ['unfav', 'unfavorite', 'unfavourite'],
 				title: PokemonGame.header + ' | Fave',
 				info: 'Un-favorite a Pokémon in your inventory.',
-				parameters: ['...ID|name'],
+				parameters: ['...pokemonID'],
 				fn({client, arg, userID}) {
 					return PokemonGame.unfavoritePokemon(client, userID, arg);
 				}
@@ -166,8 +167,40 @@ module.exports = {
 			'item': {
 				title: PokemonGame.header + ' | Item',
 				info: 'Scavenge for items that you can use in battle or sell for cash!',
-				fn() {
-					return 'Coming Soon: Pokémon battles, items, and training.';
+				fn({client, userID}) {
+					return PokemonGame.scavengeItem(client, userID);
+				}
+			},
+			'train': {
+				title: PokemonGame.header + ' | Train',
+				info: `Train one of your Pokémon instantly! 5 XP is given to one Pokémon of your choice. You must wait ${PokemonGame.trainingCooldownTime} before training again.`,
+				parameters: ['...pokemonID'],
+				fn({client, arg, userID}) {
+					return PokemonGame.trainPokemon(client, userID, arg);
+				}
+			},
+			'shop': {
+				title: PokemonGame.header + ' | Shop',
+				info: 'The PokéShop has a variety of things for sale, such as Pokéballs, battle items, and a limited selection of Pokémon. Have a look around!',
+				subcommands: {
+					'browse': {
+						aliases: ['view', 'inventory', 'inv'],
+						title: PokemonGame.header + ' | Shop | Browse',
+						info: 'View the current inventory and prices of the PokéShop.',
+						parameters: ['[item]'],
+						fn({client, arg, serverID}) {
+							return PokemonGame.showShopInventory(client, serverID, arg);
+						}
+					},
+					'buy': {
+						aliases: ['purchase'],
+						title: PokemonGame.header + ' | Shop | Buy Item',
+						info: 'Purchase an item or Pokémon from the PokéShop.',
+						parameters: ['item', '[amount]'],
+						fn({client, args, serverID}) {
+							return PokemonGame.purchaseFromShop(client, serverID, args[0], args[1]);
+						}
+					}
 				}
 			}
 		}

@@ -3,8 +3,9 @@
 	Command file for archiving/cleaning up messages.
 */
 
+const Moderation = require('../Moderation');
 const {embedMessage,hasContent} = require('../DiscordUtils');
-const {Markdown:md} = require('../Utils');
+const {Markdown:md,Format:fmt} = require('../Utils');
 
 module.exports = {
 	'archive': {
@@ -16,34 +17,7 @@ module.exports = {
 			type: 'inclusive'
 		},
 		fn({client, args, channelID, serverID}) {
-			let limit = ~~args[0];
-			limit = Math.max(1, Math.min(limit, 99)) + 1;
-			
-			let serverTable = client.database.get('servers');
-			let archiveID = serverTable.get(serverID).archiveID;
-			if (!archiveID) {
-				return 'No archive channel set.';
-			}
-			
-			return client.getAll(channelID, limit)
-			.then(messages => {
-				function next() {
-					if (messages.length == 0) {
-						return true;
-					}
-					
-					let message = messages.pop();
-					
-					if (message.content.match(/archive/)) {
-						return client.delete(message.channel_id, message.id).then(next);
-					} else {
-						let embed = embedMessage(message);
-						return client.send(archiveID,`From ${md.channel(message.channel_id)}:`,embed).then(() => client.delete(message.channel_id, message.id)).then(next);
-					}
-				}
-				return next();
-			})
-			.then(res => `${count-1} message${count>2?"s were":" was"} archived in ${md.channel(archiveID)}.`);
+			return Moderation.archive(client, serverID, channelID, args[0]);
 		},
 		subcommands: {
 			'setup': {
@@ -52,25 +26,16 @@ module.exports = {
 				info: 'Setup the archive channel.',
 				parameters: ['channel'],
 				fn({client, args, channelID, server}) {
-					let archiveID = md.id(args[0]);
-					if (!archiveID || !server.channels[archiveID]) {
-						throw 'Invalid channel ID.';
-					}
-					client.database.get('servers').modify(server.id, s => {
-						s.archiveID = archiveID;
-						return s;
-					}).save();
-					
-					return 'Archive channel ID set: ' + md.channel(archiveID);
+					return Moderation.setArchiveChannel(client, server, args[0]);
 				}
 			},
 			'id': {
-				aliases: ['channelid'],
+				aliases: ['channel', 'channelid'],
 				title: 'Archive | ID',
 				info: 'Gets the archive channel ID if one is set.',
 				fn({client, channelID, serverID}) {
-					let id = client.database.get('servers').get(serverID).archiveID;
-					return id ? md.channel(id) : 'No archive channel set.';
+					let archiveID = Moderation.getArchiveChannel(client, serverID);
+					return archiveID ? md.channel(archiveID) : 'No archive channel set.';
 				}
 			}
 		}
@@ -79,28 +44,109 @@ module.exports = {
 		aliases: ['delete', 'nuke'],
 		category: 'Moderation',
 		title: 'Cleanup',
-		info: 'Delete up to 100 messages in the current channel. (Specify `count` and any flags (`-media`, `-pinned`) to prevent deleting images or pinned messages.)',
-		parameters: ['[count]','[flag1]','[flag2]'],
+		info: 'Delete up to 100 messages in the current channel. (Specify `count` and any flags (`-media`, `-pinned`, `-text`) to prevent deleting images, pinned messages, or text messages.)',
+		parameters: ['[count]','[...flags]'],
 		permissions: {
 			type: 'inclusive'
 		},
 		fn({client, args, channelID}) {
-			let [count = 50, ...flags] = args;
-			count = Math.max(1, Math.min(~~count, 99)) + 1;
-			
-			client.getAll(channelID, count)
-			.then(messages => {
-				if (flags.indexOf('-media') > -1) {
-					messages = messages.filter(hasContent);
+			return Moderation.cleanup(client, channelID, args[0], args.slice(1));
+		}
+	},
+	'mod': {
+		aliases: ['moderation'],
+		category: 'Moderation',
+		title: 'Moderation',
+		info: 'The subset of commands for moderating the users: kicking, banning, unbanning, and issuing strikes.',
+		permissions: {
+			type: 'inclusive'
+		},
+		subcommands: {
+			'setup': {
+				aliases: ['init'],
+				title: 'Moderation | Setup Modlog',
+				info: 'Setup a modlog channel that keeps a log of moderation cases.',
+				parameters: ['channel'],
+				permissions: {
+					type: 'private'
+				},
+				fn({client, args, channelID, server}) {
+					return Moderation.setModlogChannel(client, server, args[0]);
 				}
-				if (flags.indexOf('-pinned') > -1) {
-					messages = messages.filter(m => !m.pinned);
+			},
+			'id': {
+				aliases: ['channel', 'channelid'],
+				title: 'Moderation | Modlog ID',
+				info: 'Get the modlog channel ID if one is set.',
+				fn({client, channelID, serverID}) {
+					var modlogID = Moderation.getModlogChannel(client, serverID);
+					return modlogID ? md.channel(modlogID) : 'No modlog channel set.';
 				}
-				if (messages.length) {
-					let messageIDs = messages.map(x => x.id);
-					return client.deleteAll(channelID, messageIDs);
+			},
+			'strike': {
+				aliases: ['x'],
+				title: 'Moderation | Strike',
+				info: 'Issue a strike to a user. If they accumulate 3 strikes, they are automatically banned.',
+				parameters: ['user', '...reason'],
+				fn({client, args, server, userID}) {
+					return Moderation.strike(client, server, args[0], userID, args.slice(1).join(' '));
 				}
-			});
+			},
+			'unstrike': {
+				aliases: ['unx'],
+				title: 'Moderation | Unstrike',
+				info: 'Remove a strike from a user. This is if they display continuous good behavior.',
+				parameters: ['user'],
+				fn({client, args, server, userID}) {
+					return Moderation.unstrike(client, server, args[0], userID);
+				}
+			},
+			'checkstrikes': {
+				aliases: ['checkx'],
+				title: 'Moderation | Check Strikes',
+				info: 'Get the strike count for a given user.',
+				parameters: ['user'],
+				permissions: {
+					type: 'inclusive'
+				},
+				fn({client, args, server, userID}) {
+					var strikes = Moderation.getStrikes(client, server, args[0]);
+					return `That user has **${fmt.plural(strikes,'Strikes')}** on record.`;
+				}
+			},
+			'kick': {
+				title: 'Moderation | Kick',
+				info: 'Kick a user from the server and give a reason why.',
+				parameters: ['user', '...reason'],
+				permissions: {
+					type: 'inclusive'
+				},
+				fn({client, args, server, userID}) {
+					return Moderation.kick(client, server, args[0], userID, args.slice(1).join(' '));
+				}
+			},
+			'ban': {
+				title: 'Moderation | Ban',
+				info: 'Ban a user from the server and give a reason why.',
+				parameters: ['user', '...reason'],
+				permissions: {
+					type: 'inclusive'
+				},
+				fn({client, args, server, userID}) {
+					return Moderation.ban(client, server, args[0], userID, args.slice(1).join(' '));
+				}
+			},
+			'unban': {
+				title: 'Moderation | Unban',
+				info: 'Unban a user.',
+				parameters: ['user'],
+				permissions: {
+					type: 'inclusive'
+				},
+				fn({client, args, server, userID}) {
+					return Moderation.unban(client, server, args[0], userID);
+				}
+			}
 		}
 	}
-}
+};

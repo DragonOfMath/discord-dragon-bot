@@ -32,6 +32,7 @@ module.exports = {
 		users: ['172002275412279296'] // tatsu
 	},
 	resolver({message}) {
+		if (1) return; // disable for now
 		var gt = this.data.message = message.replace(IGNORE_REGEX, '').replace(/\s{2,}/g,'\n').match(GT_REGEX);
 		if (gt && gt.some(ln => ln[0] == '>' && ln[1] != '>')) {
 			return 'greentext';

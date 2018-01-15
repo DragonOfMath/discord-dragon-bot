@@ -101,8 +101,8 @@ module.exports = {
 			let vowels = 'aeiou'.split('');
 			return args.map(word => {
 				let first = word[0].toLowerCase();
-				if (consonants.includes(word[0])) {
-					return word.replace(new RegExp(word[0],'gi'),':b:');
+				if (consonants.includes(first)) {
+					return word.replace(new RegExp(first,'gi'),':b:');
 				} else if (word.length > 3) {
 					return word.replace(/[bvdpg]/gi,':b:');
 				} else {
