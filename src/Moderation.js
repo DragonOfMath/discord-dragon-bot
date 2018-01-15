@@ -86,10 +86,10 @@ class Moderation {
 		})
 		.then(res => `${fmt.plural(limit,'message')} archived in ${md.channel(archiveID)}.`);
 	}
-	static cleanup(client, serverID, channelID, limit, flags) {
+	static cleanup(client, channelID, limit, flags) {
 		limit = Math.max(1, Math.min(~~limit, 100));
-		var lastMessage = client.channels[channelID].last_message_id;
-		return client.getMessages({channelID,limit,before:lastMessage})
+		//var lastMessage = client.channels[channelID].last_message_id;
+		return client.getMessages({channelID,limit})
 		.then(messages => {
 			if (flags.includes('-text') || flags.includes('-t')) {
 				messages = messages.filter(hasContent);

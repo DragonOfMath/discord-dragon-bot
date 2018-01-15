@@ -50,7 +50,7 @@ module.exports = {
 			type: 'inclusive'
 		},
 		fn({client, args, channelID}) {
-			return Moderation.cleanup(client, channelID, args[0], args.slice(1));
+			Moderation.cleanup(client, channelID, args[0], args.slice(1));
 		}
 	},
 	'mod': {
@@ -111,7 +111,7 @@ module.exports = {
 				},
 				fn({client, args, server, userID}) {
 					var strikes = Moderation.getStrikes(client, server, args[0]);
-					return `That user has **${fmt.plural(strikes,'Strikes')}** on record.`;
+					return `That user has **${fmt.plural('Strike',strikes)}** on record.`;
 				}
 			},
 			'kick': {
