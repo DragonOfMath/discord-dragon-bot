@@ -23,19 +23,19 @@ module.exports = {
 				aliases: ['inv','catches'],
 				title: Fishing.header,
 				info: 'Displays how many of each type of fish you\'ve caught.',
-				parameters: ['[user]', '[...category]'],
+				parameters: ['[user]', '[category]'],
 				fn({client, args, userID}) {
 					let id = resolveTargetUser(args, userID);
-					return Fishing.inventory(client, id, args.join(' '));
+					return Fishing.inventory(client, id, args[0]);
 				}
 			},
 			'info': {
 				aliases: ['fish'],
 				title: Fishing.header,
 				info: 'Displays information about a fish by its type, name, or emoji. If no argument is passed, displays the types of fish to catch.',
-				parameters: ['[...fishtype|fishname|:fish:]'],
+				parameters: ['[fishtype|fishname|:fish:]'],
 				fn({client, arg, userID, serverID}) {
-					let fish = arg.trim().toLowerCase();
+					let fish = arg.toLowerCase();
 					if (fish) {
 						return Fishing.showFishInfo(client, serverID, fish);
 					} else {
@@ -63,26 +63,19 @@ module.exports = {
 				title: Fishing.header,
 				info: 'Displays the current catch rates of all fish types. Can sort by name, value, chance, or type.',
 				parameters: ['[sortby]'],
-				fn({client, args, serverID}) {
-					return Fishing.showFishTable(client, serverID, args[0]);
+				fn({client, arg, serverID}) {
+					return Fishing.showFishTable(client, serverID, arg);
 				}
 			},
 			'newevent': {
 				title: Fishing.header,
 				info: '(Admin only) Starts a new fishing event, either from given parameters or randomized.',
-				parameters: ['[...fish name]','[<rarity|value>]','[multiplier]', '[expires]'],
+				parameters: ['[fish]','[<rarity|value>]','[multiplier]', '[expires]'],
 				permissions: {
 					type: 'private'
 				},
 				fn({client, args, channelID, serverID}) {
-					var fish, type, multiplier, expires;
-					type = args.find(a => a=='rarity'||a=='value');
-					if (type) {
-						var idx = args.indexOf(type);
-						fish       = args.slice(0,idx).join(' ');
-						multiplier = args[idx+1];
-						expires    = args[idx+2];
-					}
+					var [fish, type, multiplier, expires] = args;
 					return Fishing.createFishingEvent(client, serverID, channelID, {fish, type, multiplier, expires});
 				}
 			},

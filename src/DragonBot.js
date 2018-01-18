@@ -5,7 +5,7 @@ const Commands    = require('./Commands');
 const Sessions    = require('./Sessions');
 const Analytics   = require('./Analytics');
 
-const {Markdown:md} = Utils;
+const {Markdown:md,parseString} = Utils;
 
 class DragonBot extends DebugClient {
 	constructor({token,ownerID,prefix,version,source}) {
@@ -39,7 +39,7 @@ class DragonBot extends DebugClient {
 			} else {
 				input = text.substring(mentionStr.length).trim();
 			}
-			let [cmd, ...args] = input.split(' ');
+			let [cmd, ...args] = parseString(input);
 			let arg = args.join(' ');
 			let cmds = cmd.split('.');
 			return { input, cmd, cmds, arg, args };
@@ -151,7 +151,7 @@ class DragonBot extends DebugClient {
 		}
 		
 		// analytics is updated if the command was successfully resolved
-		if (input.cmd && input.grant == 'granted') {
+		if (input.cmd && !input.cmd.endsWith('.?') && input.grant == 'granted') {
 			try {
 				Analytics.push(this, input.serverID, input.cmd);
 			} catch (e) {

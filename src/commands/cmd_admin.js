@@ -12,6 +12,7 @@ module.exports = {
 		permissions: {
 			type: 'private'
 		},
+		suppress: true,
 		fn({client,clientID,input,cmd,cmds,arg,args,channel,channelID,server,serverID,user,userID,message,messageID}) {
 			return eval(arg);
 		}
@@ -25,6 +26,7 @@ module.exports = {
 		permissions: {
 			type: 'private'
 		},
+		suppress: true,
 		fn({client, args}) {
 			return client.stop(args);
 		}
@@ -37,6 +39,7 @@ module.exports = {
 		permissions: {
 			type: 'private'
 		},
+		suppress: true,
 		fn({client, args, channelID}) {
 			let [target,...message] = args;
 			try {
@@ -57,6 +60,7 @@ module.exports = {
 		permissions: {
 			type: 'private'
 		},
+		suppress: true,
 		fn({client, args, channelID}) {
 			client._ignoreUsers = !!args[0];
 			if (client._ignoreUsers) {
@@ -73,6 +77,7 @@ module.exports = {
 		permissions: {
 			type: 'private'
 		},
+		suppress: true,
 		fn({client, args}) {
 			var pairs = args.map(a => a.split(client.commands.KEY));
 			var result = [];

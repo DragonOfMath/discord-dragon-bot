@@ -78,7 +78,7 @@ module.exports = {
 						}
 						var bet = Math.max(0,Math.min(Number(args[0]),user.credits));
 						var {reward,message} = RollDice(bet);
-						user.credits += reward;
+						user.changeCredits(reward);
 						return message;
 					});
 				}
@@ -96,7 +96,7 @@ module.exports = {
 						var prediction = args[1];
 						var bet = Math.max(0,Math.min(Number(args[0]),user.credits));
 						var {reward,message} = CoinToss(bet, prediction);
-						user.credits += reward;
+						user.changeCredits(reward);
 						return message;
 					});
 				}

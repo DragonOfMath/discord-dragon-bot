@@ -62,7 +62,7 @@ module.exports = {
 	'caniuse': {
 		aliases: ['allowed'],
 		category: 'Info',
-		title: 'Can I Use...?',
+		title: 'Can I Use...',
 		info: 'Checks your permissions to use a command.',
 		parameters: ['command'],
 		permissions: {
@@ -72,13 +72,12 @@ module.exports = {
 			let cmd = client.commands.get(arg)[0];
 			if (!cmd) {
 				throw `\`${arg}\` is not a recognized command.`;
-				
 			}
 			var g = cmd.permissions.check({client, user, channel, server});
 			if (g.granted) {
-				return 'Yes.';
+				return `\`${cmd.fullID}\`? Yes.`;
 			} else {
-				return 'No. ' + g.reason;
+				return `\`${cmd.fullID}\`? No. ${g.reason}`;
 			}
 		}
 	},

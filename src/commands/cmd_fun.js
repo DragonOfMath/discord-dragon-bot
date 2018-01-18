@@ -26,9 +26,11 @@ module.exports = {
 		aliases: ['choose','choices'],
 		category: 'Fun',
 		title: ':scales:',
-		info: 'Let me choose between your choices (use `OR` to separate mult-word choices; if left out, all words are choices)',
+		info: 'Let me choose between your choices (use quotation marks to separate mult-word choices; if left out, all words are choices)',
 		parameters: ['...choices'],
 		fn({args,userID}) {
+			let decisions = args;
+			/*
 			let decisions = [];
 			let or = args.indexOf('OR');
 			
@@ -42,7 +44,7 @@ module.exports = {
 			} else {
 				decisions = args;
 			}
-			
+			*/
 			return `<@${userID}> ` + random(
 				'I\'d go with ',
 				'I choose ',
@@ -183,7 +185,7 @@ module.exports = {
 				aliases: ['let','l'],
 				title: 'Random | Letter',
 				info: 'Get a random letter from the standard English alphabet, or your own charset.',
-				parameters: ['[...letters]'],
+				parameters: ['[letters]'],
 				fn({arg, userID}) {
 					return `<@${userID}> ${random((arg||'abcdefghijklmnopqrstuvwxyz').split(''))}`;
 				}

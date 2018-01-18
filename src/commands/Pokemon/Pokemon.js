@@ -1,6 +1,6 @@
 const Bank        = require('../../Bank');
 const TypeMapBase = require('../../TypeMapBase');
-const {Markdown:md,Format:fmt,paginate,random,strcmp} = require('../../Utils');
+const {Markdown:md,Format:fmt,paginate,tableify,random,strcmp} = require('../../Utils');
 const PokemonList        = require('./pokemon.json');
 const SpecialPokemonList = require('./pokemon_special.json');
 const PokemonItemList    = require('./pokemon_items.json');
@@ -63,6 +63,25 @@ class Pokemon {
 		var spc = this.species;
 		return Object.keys(SpecialPokemonList).find(type => SpecialPokemonList[type].includes(spc));
 	}
+	get value() {
+		var base = 0;
+		var mult = 1 + Math.log10(this.lvl);
+		switch (this.rarity) {
+			case 'legendary':
+				base = 100000;
+				break;
+			case 'mythical':
+				base = 50000;
+				break;
+			case 'rare':
+				base = 10000;
+				break;
+			default:
+				base = 500;
+				break;
+		}
+		return Math.floor(base * mult);
+	}
 	displayInfo() {
 		return {
 			color: COLOR,
@@ -90,6 +109,11 @@ class Pokemon {
 				{
 					name: 'XP',
 					value: this.xp,
+					inline: true
+				},
+				{
+					name: 'Value',
+					value: Bank.formatCredits(this.value),
 					inline: true
 				}
 			],
@@ -120,17 +144,50 @@ class Pokedex extends TypeMapBase {
 	get mons() {
 		return this.items;
 	}
+	get(pokeID) {
+		if (this.has(pokeID)) {
+			return this[pokeID];
+		} else {
+			let p = this.mons.find(m => strcmp(m.name, pokeID));
+			if (p) return p;
+		}
+		throw `Invalid Pokemon ID: ${pokeID}`;
+	}
+	getID(pokeID) {
+		if (this.has(pokeID)) {
+			return pokeID;
+		} else {
+			let p = this.ids.find(id => strcmp(this[id].name, pokeID));
+			if (p) return p;
+		}
+		throw `Invalid Pokemon ID: ${pokeID}`;
+	}
+	add(id,p) {
+		if (!(p instanceof Pokemon)) {
+			p = new Pokemon(p);
+		}
+		p.name = p.species + '#' + id;
+		this.set(id, p);
+		return p;
+	}
+	remove(id) {
+		id = this.getID(id);
+		let p = this.get(id);
+		p.fav = false;
+		this.delete(id);
+		return p;
+	}
 }
 
 class PkmnAccount {
 	constructor(user) {
 		if (typeof(user) === 'object') {
 			this.pokemon     = new Pokedex(user.pokemon);
-			this.items       = user.items || {};
+			this.items       = user.items       || {};
 			this.totalCaught = user.totalCaught || 0;
-			this.cooldown    = user.cooldown || 0;
-			this.trained     = user.trained || 0;
-			this.scavenged   = user.scavenged || 0;
+			this.cooldown    = user.cooldown    || 0;
+			this.trained     = user.trained     || 0;
+			this.scavenged   = user.scavenged   || 0;
 		} else {
 			this.pokemon     = new Pokedex();
 			this.items       = {};
@@ -140,39 +197,12 @@ class PkmnAccount {
 			this.scavenged   = 0;
 		}
 	}
-	get(pokeID) {
-		if (this.pokemon.has(pokeID)) {
-			return this.pokemon.get(pokeID);
-		} else {
-			let p = this.pokemon.mons.find(m => strcmp(m.name, pokeID));
-			if (p) return p;
-		}
-		throw `Invalid Pokemon ID: ${pokeID}`;
-	}
-	getID(pokeID) {
-		if (this.pokemon.has(pokeID)) {
-			return pokeID;
-		} else {
-			let p = this.pokemon.ids.find(id => strcmp(this.pokemon[id].name, pokeID));
-			if (p) return p;
-		}
-		throw `Invalid Pokemon ID: ${pokeID}`;
-	}
 	addPokemon(p) {
-		if (!(p instanceof Pokemon)) {
-			p = new Pokemon(p);
-		}
 		let id = this.totalCaught++;
-		p.name = p.species + '#' + id;
-		this.pokemon.set(id, p);
-		return p;
+		return this.pokemon.add(id, p);
 	}
 	removePokemon(id) {
-		id = this.getID(id);
-		let p = this.get(id);
-		p.fav = false;
-		this.pokemon.delete(id);
-		return p;
+		return this.pokemon.remove(id);
 	}
 	tradePokemon(to, id) {
 		let p = this.removePokemon(id);
@@ -187,6 +217,37 @@ class PkmnAccount {
 		this.cooldown = now + CATCH_COOLDOWN;
 		return this.addPokemon(random(PokemonList));
 	}
+	trainPokemon(id) {
+		let now = Date.now();
+		let timeLeft = this.trained - now;
+		if (timeLeft > 0) {
+			return `Wait ${md.bold(fmt.time(timeLeft))} before training your Pokémon!`;
+		}
+		
+		let p = this.pokemon.get(id);
+		p.xp += TRAIN_XP;
+		
+		this.trained = now + TRAIN_COOLDOWN;
+		
+		return `${md.bold(p.name)} gained ${md.bold(TRAIN_XP+' XP')} from training! `;
+	}
+	hasItem(item) {
+		return !!this.items[item.id];
+	}
+	addItem(item, amt = 1) {
+		let id = item.id;
+		this.items[id] = (this.items[id] || 0) + amt;
+		return item;
+	}
+	removeItem(item, amt = 1) {
+		let id = item.id;
+		if (this.items[id]) {
+			this.items[id] -= amt;
+		} else {
+			throw `${item.name} is not in your inventory!`;
+		}
+		return this;
+	}
 	scavengeForARandomItem() {
 		let now = Date.now();
 		let timeLeft = this.scavenged - now;
@@ -194,16 +255,19 @@ class PkmnAccount {
 			return `Wait ${md.bold(fmt.time(timeLeft))} before scavenging again!`;
 		}
 		this.scavenged = now + SCAVENGE_COOLDOWN;
-		return this.addItem(random(PokemonItemList));
+		
+		let totalRarity = PokemonItemList.reduce((r,i) => r += i.rarity, 0);
+		let magicNumber = random(totalRarity);
+		for (var item of PokemonItemList) {
+			if (magicNumber > item.rarity) {
+				magicNumber -= item.rarity;
+			} else {
+				break;
+			}
+		}
+		return this.addItem(item);
 	}
 	displayPokemonInventory(page, filter) {
-		if (typeof(page) !== 'number') {
-			page = Number(page);
-		}
-		if (isNaN(page) || page < 0) {
-			page = 1;
-		}
-		
 		let pokemon = this.pokemon;
 		let ids = pokemon.ids;
 		if (typeof(filter) === 'function') {
@@ -222,18 +286,123 @@ class PkmnAccount {
 		embed.color = COLOR;
 		return embed;
 	}
+	displayItemInventory(page) {
+		let color = COLOR;
+		let fields = {};
+		let ikeys = Object.keys(this.items);
+		for (let {id,name,title} of PokemonItemList) {
+			if (ikeys.includes(id)) {
+				(fields[title] || (fields[title] = [])).push(`${name} (x${this.items[id]})`);
+			}
+		}
+		fields = Object.keys(fields).map(name => ({name,value:fields[name].join('\n'),inline:true}));
+		return { color, fields };
+	}
 	displayPokemonInfo(pokeID) {
-		return this.get(pokeID).displayInfo();
+		return this.pokemon.get(pokeID).displayInfo();
 	}
 	favoritePokemon(pokeID) {
-		let p = this.get(pokeID);
+		let p = this.pokemon.get(pokeID);
 		p.fav = true;
 		return p;
 	}
 	unfavoritePokemon(pokeID) {
-		let p = this.get(pokeID);
+		let p = this.pokemon.get(pokeID);
 		p.fav = false;
 		return p;
+	}
+}
+
+class PokeShop {
+	static inventory() {
+		let fields = {};
+		for (let item of PokemonItemList) {
+			(fields[item.title] || (fields[item.title] = [])).push([item.name, md.bold(fmt.currency(item.value,'$',1))]);
+		}
+		let embed = tableify(['Item','Price'], Object.keys(fields), function (name) {
+			return [
+				md.bold(name) + '\n' + fields[name].map(i => i[0]).join('\n'),
+				'----'        + '\n' + fields[name].map(i => i[1]).join('\n')
+			];
+		});
+		embed.title = 'PokéShop Inventory';
+		embed.color = COLOR;
+		return embed;
+	}
+	static displayItemInfo(item) {
+		item = getItemDescriptor(item);
+		if (!item) {
+			throw 'Invalid item.';
+		}
+		return {
+			title: 'PokéShop Item Info',
+			color: COLOR,
+			fields: [
+				{
+					name: 'Name',
+					value: item.name,
+					inline: true
+				},
+				{
+					name: 'ID',
+					value: item.id,
+					inline: true
+				},
+				{
+					name: 'Type',
+					value: item.type,
+					inline: true
+				},
+				{
+					name: 'Description',
+					value: item.info,
+					inline: true
+				},
+				{
+					name: 'Value',
+					value: Bank.formatCredits(item.value),
+					inline: true
+				}
+			]
+		};
+	}
+	static buy(pkmn, bank, itemname, quantity = 1) {
+		var item = getItemDescriptor(itemname);
+		if (!item) {
+			throw `Shop inventory does not have a "${itemname}"!`;
+		}
+		quantity = Number(quantity);
+		if (isNaN(quantity) || quantity < 1) {
+			throw `Please specify how many items you wish to buy (1 or more).`;
+		}
+		var total = item.value * quantity;
+		if (bank.credits < total) {
+			throw md.italics(`Insufficient funds for purchase: Overdraw of ${Bank.formatCredits(bank.credits-total)}`);
+		}
+		
+		bank.changeCredits(-total);
+		//var msg = bank.withdraw(total);
+		pkmn.addItem(item, quantity);
+		return `You bought ${md.bold(fmt.plural(item.name,quantity))} for ${Bank.formatCredits(total)}!`;
+	}
+	static sell(pkmn, bank, itemname, quantity = 1) {
+		item = getItemDescriptor(itemname);
+		if (!item) {
+			throw `Shop inventory does not have a "${itemname}"!`;
+		}
+		quantity = Number(quantity);
+		if (isNaN(quantity) || quantity < 1) {
+			throw `Please specify how many items you wish to sell (1 or more).`;
+		}
+		if ((pkmn.items[item.id]||0) < quantity) {
+			throw `You cannot sell ${quantity} when you only have ${pkmn.items[item.id]||0}!`;
+		}
+		
+		var total = (item.value / 2) * quantity;
+		bank.changeCredits(total);
+		//var msg = bank.deposit(total);
+		pkmn.removeItem(item, quantity);
+		return `You sold ${md.bold(fmt.plural(item.name,quantity))} for ${Bank.formatCredits(total)}!`;
 	}
 }
 
@@ -246,6 +415,12 @@ class PokemonGame {
 	}
 	static get cooldown() {
 		return CATCH_COOLDOWN;
+	}
+	static get scavengingCooldown() {
+		return SCAVENGE_COOLDOWN;
+	}
+	static get trainingCooldown() {
+		return TRAIN_COOLDOWN;
 	}
 	static get pagination() {
 		return PAGINATION;
@@ -266,7 +441,13 @@ class PokemonGame {
 		return this.legendaryPokemon.concat(this.mythicalPokemon, this.rarePokemon);
 	}
 	static get catchCooldownTime() {
-		return fmt.time(CATCH_COOLDOWN);
+		return md.bold(fmt.time(CATCH_COOLDOWN));
+	}
+	static get scavengingCooldownTime() {
+		return md.bold(fmt.time(SCAVENGE_COOLDOWN));
+	}
+	static get trainingCooldownTime() {
+		return md.bold(fmt.time(TRAIN_COOLDOWN));
 	}
 	static get(client, userID) {
 		if (!client.users[userID]) {
@@ -308,26 +489,28 @@ class PokemonGame {
 	static catchPokemon(client, userID) {
 		return this.modify(client, userID, pkmn => {
 			let pokemonCaught = pkmn.catchARandomPokemon();
-			if (pokemonCaught instanceof Pokemon) {
-				let pokeID = pkmn.getID(pokemonCaught.name);
-				let type = pokemonCaught.rarity;
-				let embed = {
-					color: COLOR,
-					url: pokemonCaught.wiki,
-					image: { url: pokemonCaught.gif },
-					footer: {
-						text: `Inventory ID: ${pokeID}`
-					}
-				};
-				if (type) {
-					embed.description = `${md.mention(userID)} caught the ${md.underline(type)} ${md.bold(pokemonCaught.species)}!`;
-				} else {
-					embed.description = `${md.mention(userID)} caught a ${md.bold(pokemonCaught.species)}!`;
+			let pokeID = pkmn.pokemon.getID(pokemonCaught.name);
+			let type = pokemonCaught.rarity;
+			let embed = {
+				color: COLOR,
+				url: pokemonCaught.wiki,
+				image: { url: pokemonCaught.gif },
+				footer: {
+					text: `Inventory ID: ${pokeID}`
 				}
-				return embed;
+			};
+			if (type) {
+				embed.description = `${md.mention(userID)} caught the ${md.underline(type)} ${md.bold(pokemonCaught.species)}!`;
 			} else {
-				return pokemonCaught;
+				embed.description = `${md.mention(userID)} caught a ${md.bold(pokemonCaught.species)}!`;
 			}
+			return embed;
+		});
+	}
+	static scavengeItem(client, userID) {
+		return this.modify(client, userID, pkmn => {
+			let itemGot = pkmn.scavengeForARandomItem();
+			return `got a ${md.bold(itemGot.name)}!`;
 		});
 	}
 	static releasePokemon(client, userID, pokeID) {
@@ -357,25 +540,11 @@ class PokemonGame {
 	static sellPokemon(client, userID, pokeID) {
 		return this.modify(client, userID, (pkmn, user) => {
 			let pokemonSold = pkmn.removePokemon(pokeID);
-			let sellValue;
-			switch (pokemonSold.rarity) {
-				case 'legendary':
-					sellValue = 100000;
-					break;
-				case 'mythical':
-					sellValue = 50000;
-					break;
-				case 'rare':
-					sellValue = 10000;
-					break;
-				default:
-					sellValue = 500;
-					break;
-			}
+			let sellValue = pokemonSold.value;
 			
-			Bank.get(client, userID).credits += sellValue;
+			Bank.get(client, userID).changeCredits(sellValue);
 			
-			return `You sold ${md.bold(pokemonSold.name)} ${md.strikethrough('to slavery on the Black PokéMarket')} for ${Bank.formatCredits(sellValue)}.`;
+			return `sold ${md.bold(pokemonSold.name)} ${md.strikethrough('to slavery on the Black PokéMarket')} for ${Bank.formatCredits(sellValue)}.`;
 		});
 	}
 	static renamePokemon(client, userID, pokeID, name) {
@@ -383,7 +552,12 @@ class PokemonGame {
 			let p = pkmn.get(pokeID);
 			let oldName = p.name;
 			p.name = name;
-			return `Your ${md.bold(oldName)} is now ${md.bold(p.name)}!`;
+			return `'s ${md.bold(oldName)} is now ${md.bold(p.name)}!`;
+		});
+	}
+	static trainPokemon(client, userID, pokeID) {
+		return this.modify(client, userID, pkmn => {
+			return pkmn.trainPokemon(pokeID);
 		});
 	}
 	static displayPokemon(client, userID, pokeID) {
@@ -392,13 +566,13 @@ class PokemonGame {
 	static favoritePokemon(client, userID, pokeID) {
 		return this.modify(client, userID, pkmn => {
 			let p = pkmn.favoritePokemon(pokeID);
-			return `You favorited ${md.bold(p.name)}!`;
+			return `favorited ${md.bold(p.name)}!`;
 		});
 	}
 	static unfavoritePokemon(client, userID, pokeID) {
 		return this.modify(client, userID, pkmn => {
 			let p = pkmn.unfavoritePokemon(pkmn);
-			return `You unfavorited ${md.bold(p.name)}!`;
+			return `unfavorited ${md.bold(p.name)}!`;
 		});
 	}
 	static inventory(client, userID, page) {
@@ -420,17 +594,67 @@ class PokemonGame {
 		embed.title = `${client.users[userID].username}'s Favorites`;
 		return embed;
 	}
+	static inventoryItems(client, userID) {
+		let pkmn = this.get(client, userID);
+		let embed = pkmn.displayItemInventory();
+		embed.title = `${client.users[userID].username}'s Items`;
+		return embed;
+	}
 	static resetInventory(client, userID) {
 		this.modify(client, userID, (pkmn, user) => {
 			delete user.pokemon;
+			return `${md.mention(userID)}'s entire Pokémon and item collection has been **erased**.`;
 		});
-		return `${md.mention(userID)} Your entire Pokémon collection has been **erased**.`;
 	}
 	static refreshCooldown(client, userID) {
 		this.modify(client, userID, pkmn => {
-			pkmn.cooldown = 0;
+			pkmn.cooldown  = 0;
+			pkmn.scavenged = 0;
+			pkmn.trained   = 0;
+			return `Your cooldowns for catching, scavenging, and training have been skipped.`;
 		});
-		return `${md.mention(userID)} Your cooldown has been skipped.`;
+	}
+	static howMany(client, userID) {
+		let pkmn = this.get(client, userID);
+		let count = pkmn.pokemon.reduce((a,id,p) => {
+			if (!a.includes(p.spc)) a.push(p.spc);
+			return a;
+		}, []).length;
+		let lgdcount = pkmn.pokemon.reduce((a,id,p) => {
+			if (p.rarity && !a.includes(p.spc)) a.push(p.spc);
+			return a;
+		}, []).length;
+		return `${md.mention(userID)} You caught ${md.bold(count)}/${md.bold(PokemonList.length)} Pokémon, and ${md.bold(lgdcount)}/${md.bold(this.specialPokemon.length)} legendary Pokémon.`;
+	}
+	static showShopInventory(client, serverID, item) {
+		if (item) {
+			return PokeShop.displayItemInfo(item);
+		} else {
+			return PokeShop.inventory(item);
+		}
+	}
+	static buyFromShop(client, serverID, userID, item, quantity) {
+		return this.modify(client, userID, (pkmn, user) => {
+			let bank = Bank.get(client, userID);
+			return PokeShop.buy(pkmn, bank, item, quantity);
+		});
+	}
+	static sellToShop(client, serverID, userID, item, quantity) {
+		return this.modify(client, userID, (pkmn, user) => {
+			let bank = Bank.get(client, userID);
+			return PokeShop.sell(pkmn, bank, item, quantity);
+		});
+	}
+	static useRareCandy(client, userID, pokeID) {
+		return this.modify(client, userID, pkmn => {
+			pokemon = pkmn.pokemon.get(pokeID);
+			
+			let item = getItemDescriptor('rare candy');
+			pkmn.removeItem(item);
+			let lvl = pokemon.lvl + 1;
+			pokemon.lvl = lvl;
+			return `used a ${md.bold(item.name)} :candy: to level up ${md.bold(pokemon.name)} to ${md.bold('Lvl. ' + lvl)}!`;
+		});
 	}
 }
 
@@ -439,11 +663,23 @@ class PokemonGame {
 function indexOfPokemon(p) {
 	return PokemonList.findIndex(pkmn => strcmp(pkmn,p));
 }
+function indexOfItem(i) {
+	return PokemonItemList.findIndex(item => strcmp(item.name,i) || strcmp(item.id,i));
+}
 function resolvePokeID(pokeID) {
 	if (isNaN(pokeID)) {
 		pokeID = indexOfPokemon(pokeID);
 	}
 	return PokemonList[pokeID] !== undefined ? pokeID : -1;
+}
+function resolveItemID(itemID) {
+	if (isNaN(itemID)) {
+		itemID = indexOfItem(itemID);
+	}
+	return PokemonItemList[itemID] !== undefined ? itemID : -1;
+}
+function getItemDescriptor(itemID) {
+	return PokemonItemList[resolveItemID(itemID)];
 }
 
 module.exports = PokemonGame;

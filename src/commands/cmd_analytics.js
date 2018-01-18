@@ -55,7 +55,7 @@ module.exports = {
 			'merge': {
 				title: 'Analytics | Merge',
 				info: 'Merges two or more items in the analytics table, for cleaning up legacy commands. (You can use JSON to quickly merge multiple things, just do {keyToMerge: [...items to merge]})',
-				parameters: ['mainitem','[...items]'],
+				parameters: ['keepitem','[...items]'],
 				permissions: {
 					type: 'private'
 				},

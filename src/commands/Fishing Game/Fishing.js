@@ -473,14 +473,9 @@ class Fishing {
 				message += '\nBonus: ' + Bank.formatCredits(bonus);
 			}
 			
-			reward += bonus;
-			if (typeof(reward) !== 'number') {
-				throw 'OH NO! Reward value is NaN!';
-			}
-			
 			// apply reward and restriction
-			fishing.cooldown = now + Fishing.cooldown;
-			bank.credits    += reward - Fishing.cost;
+			fishing.cooldown = now + COOLDOWN;
+			bank.changeCredits(reward + bonus - COST);
 			
 			// roll for a random fishing event
 			if (random() < EVENT_CHANCE) {

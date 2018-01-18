@@ -111,19 +111,19 @@ class MapBase {
 		if (typeof(fn) !== 'function') {
 			throw new TypeError(`${arguments.callee.name} requires a function.`);
 		}
-		return this.keys.find(k => fn(key, this[key], this));
+		return this.keys.find(k => fn(k, this[k], this));
 	}
 	findIndex(fn) {
 		if (typeof(fn) !== 'function') {
 			throw new TypeError(`${arguments.callee.name} requires a function.`);
 		}
-		return this.keys.findIndex(k => fn(key, this[key], this));
+		return this.keys.findIndex(k => fn(k, this[k], this));
 	}
 	reduce(fn, x) {
 		if (typeof(fn) !== 'function') {
 			throw new TypeError(`${arguments.callee.name} requires a function.`);
 		}
-		return this.keys.reduce((a, k) => fn(a, key, this[key], this), x);
+		return this.keys.reduce((a, k) => fn(a, k, this[k], this), x);
 	}
 	matches(key, value) {
 		return this.has(key) && (this[key] == value);

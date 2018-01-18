@@ -27,6 +27,7 @@ module.exports = {
 		permissions: {
 			type: 'private'
 		},
+		suppress: true,
 		fn({client, arg}) {
 			return md.codeblock(arg);
 		}
@@ -39,6 +40,7 @@ module.exports = {
 		permissions: {
 			type: 'private'
 		},
+		suppress: true,
 		fn({client}) {
 			keys = Object.keys(client).filter(c => c != 'commands'); // eliminate circular structure: command -> subcommands -> supercommand -> command
 			let obj = {};
@@ -56,6 +58,7 @@ module.exports = {
 		permissions: {
 			type: 'private'
 		},
+		suppress: true,
 		subcommands: {
 			'channel': {
 				title: 'Debug | Channel',

@@ -16,6 +16,7 @@ const RESERVED  = [WILDCARD,DELIMITER,CATEGORY,VARIABLE,PREFIX,KEY];
 const DEFAULT_CATEGORY = 'Misc';
 const DEFAULT_TITLE    = '';
 const DEFAULT_INFO     = '';
+const DEFAULT_SUPPRESSION = false;
 
 /**
 	Subcommands class
@@ -47,6 +48,7 @@ class Subcommands extends TypeMapBase {
 				title: `Subcommands`,
 				info: '(Automatically generated subcommand for listing other subcommands)',
 				permissions: { type: 'public' },
+				suppress: true,
 				fn: supercommand.listSubcommands.bind(supercommand)
 			});
 			this.addSubcommand(help);
@@ -79,6 +81,8 @@ class Subcommands extends TypeMapBase {
 		//sub.permissions.inherit(this.supercommand.permissions);
 		sub.properties.inherit(this.supercommand.properties);
 		sub.category = this.supercommand.category;
+		sub.suppress = sub.suppress || this.supercommand.suppress;
+		//console.log('Suppressed:',sub.id,sub.suppress);
 		return this.set(sub.id, sub);
 	}
 }
@@ -99,6 +103,7 @@ class Command {
 		@arg {Array<String>} [descriptor.parameters]  - strictly-formatted parameter list for the command (see Parameters.js)
 		@arg {Object}        [descriptor.permissions] - default permission settings of the command        (see Permissions.js)
 		@arg {Object}        [descriptor.properties]  - optional properties for the command               (see Properties.js)
+		@arg {Boolean}       [descriptor.suppress]    - prevent listing this command and its subcommands
 		@arg {Object}        [descriptor.subcommands] - subcommands which are recursively processed
 		@arg {Function}      [descriptor.fn]          - the command function handler, which takes one argument, the input object
 	*/
@@ -110,6 +115,7 @@ class Command {
 		parameters  = [],
 		permissions = {},
 		properties  = {},
+		suppress    = DEFAULT_SUPPRESSION,
 		subcommands = {},
 		fn
 	}) {
@@ -155,6 +161,7 @@ class Command {
 		this.category = category;
 		this.title    = title;
 		this.info     = info;
+		this.suppress = !!suppress;
 		
 		this.parameters  = new Parameters(parameters, this);
 		this.properties  = new Properties(properties, this);
@@ -187,7 +194,19 @@ class Command {
 	listSubcommands() {
 		let text = `${this.toUsageString()}\n${this.info}\n`;
 		for (let sub of this.subcommands.list) {
-			text += this.subcommands[sub].listSubcommands();
+			sub = this.subcommands[sub];
+			if (sub.suppress) continue;
+			text += sub.listSubcommands();
+		}
+		return text;
+	}
+	/**
+		Does the same as above but also lists suppressed commands
+	*/
+	listAllSubcommands() {
+		let text = `${this.toUsageString()}\n${this.info}\n`;
+		for (let sub of this.subcommands.list) {
+			text += this.subcommands[sub].listAllSubcommands();
 		}
 		return text;
 	}
@@ -304,23 +323,28 @@ class Command {
 			fields: [
 				{
 					name: 'Usage',
-					value: client.PREFIX + this.toUsageString()
+					value: client.PREFIX + this.toUsageString(),
+					inline: true
 				},
 				{
 					name: 'Aliases',
-					value: this.aliases.length ? this.aliases.join(', ') : '(none)'
+					value: this.aliases.join(', ') || 'No other aliases.',
+					inline: true
 				},
 				{
 					name: 'Permissions',
-					value: this.permissions.toString(client, server)
+					value: this.permissions.toString(client, server),
+					inline: true
 				},
 				{
 					name: 'Properties',
-					value: this.properties.toString()
+					value: this.properties.toString(),
+					inline: true
 				},
 				{
 					name: 'Subcommands',
-					value: this.subcommands.toString() || 'No subcommands for this command.'
+					value: this.subcommands.toString() || 'No subcommands for this command.',
+					inline: true
 				}
 			]
 		};

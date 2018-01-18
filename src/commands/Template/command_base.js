@@ -67,6 +67,9 @@ module.exports = {
 			specialPropVal: 25
 		},
 		
+		// Hides the command and its subcommands from listings
+		suppress: true,
+		
 		// The function used to run the command.
 		// If left out, the default handler displays the title and info.
 		// You can use object destructuring to get several important keys:

@@ -123,6 +123,7 @@ module.exports = {
 		permissions: {
 			type: 'private'
 		},
+		suppress: true,
 		fn({client, args}) {
 			return this.listSubcommands() + '\n\n*You should configure commands in a private channel to avoid mentioning users and roles.*';
 		},

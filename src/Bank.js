@@ -122,6 +122,15 @@ class BankAccount {
 		return md.mention(this.id) + ' Your account state has been preserved.';
 	}
 	recordCreditChange(type, amt) {
+		let prev = this.credits;
+		this.changeCredits(amt);
+		return this.record({
+			action: type,
+			prev,
+			transfer: amt
+		});
+	}
+	changeCredits(amt) {
 		if (typeof(amt) !== 'number') {
 			amt = Number(amt);
 		}
@@ -132,21 +141,14 @@ class BankAccount {
 		}
 		
 		if (isNaN(next) || !isFinite(next)) {
-			throw 'Balance is NaN or Infinity.';
+			throw 'Expected balance is NaN or Infinity.';
 		}
 		
-		prev = Number(prev.toFixed(ROUNDING));
 		next = Number(next.toFixed(ROUNDING));
-		if (typeof(next) !== 'number') {
-			console.error(typeof(prev),typeof(amt),typeof(next));
-			throw `Problem with the credits becoming a non-number (this should never happen!). Prev=${prev} (${typeof(prev)}), Change=${amt} (${typeof(amt)}), New=${next} (${typeof(next)}). Go fix it, Math.`;
+		if (isNaN(next)) {
+			throw `Expected balance after truncation is NaN. Prev=${prev} (${typeof(prev)}), Change=${amt} (${typeof(amt)}), New=${next} (${typeof(next)}). This should never happen!`;
 		}
-		this.credits = next;
-		return this.record({
-			action: type,
-			prev,
-			transfer: amt
-		});
+		return this.credits = next;
 	}
 	delete() {
 		FileLogger.delete(this.filename);
