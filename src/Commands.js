@@ -145,7 +145,13 @@ class Commands extends TypeMapBase {
 			// find the command object, if possible
 			var commands = this.get(input.cmds);
 			if (commands.length > 1) {
-				input.response = 'Matches: ' + commands.map(cmd => md.code(cmd.fullID)).join(', ');
+				if (input.userID != input.client.ownerID) {
+					commands = commands.filter(cmd => !cmd.suppress);
+				}
+				input.response = 'Matches: ' + commands.map(cmd => cmd.fullID).sort().join(', ');
+				if (input.response.length > 2000) {
+					input.response = input.response.substring(0, 1997) + '...';
+				}
 			} else if (commands.length == 1) {
 				let command = commands[0];
 				input.cmd = command.fullID;

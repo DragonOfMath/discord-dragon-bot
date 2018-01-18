@@ -9,7 +9,7 @@ const HEADER     = `Pokémon:tm:`;
 const COLOR      = 0xFF0000;
 const CATCH_COOLDOWN    = 2 * 60 * 60 * 1000; // 2 hours
 const TRAIN_COOLDOWN    =     30 * 60 * 1000; // 30 minutes
-const SCAVENGE_COOLDOWN = 2 * 60 * 60 * 1000; // 2 hours
+const SCAVENGE_COOLDOWN = 1 * 60 * 60 * 1000; // 1 hour
 const TRAIN_XP = 5;
 const PAGINATION = 15; // items per page
 
@@ -30,10 +30,10 @@ class Pokemon {
 		}
 	}
 	get lvl() {
-		return 1 + Math.floor(Math.sqrt(this.xp/2));
+		return XPtoLevel(this.xp);
 	}
 	set lvl(l) {
-		this.xp = Math.round(2 * Math.pow(l-1, 2));
+		this.xp = levelToXP(l);
 	}
 	get species() {
 		return PokemonList[this.spc];
@@ -83,6 +83,8 @@ class Pokemon {
 		return Math.floor(base * mult);
 	}
 	displayInfo() {
+		let lvl = this.lvl;
+		let nextXP = levelToXP(lvl+1);
 		return {
 			color: COLOR,
 			fields: [
@@ -103,12 +105,12 @@ class Pokemon {
 				},
 				{
 					name: 'Level',
-					value: this.lvl,
+					value: lvl,
 					inline: true
 				},
 				{
 					name: 'XP',
-					value: this.xp,
+					value: `${this.xp} (${nextXP-this.xp} to next Lvl.)`,
 					inline: true
 				},
 				{
@@ -257,7 +259,7 @@ class PkmnAccount {
 		this.scavenged = now + SCAVENGE_COOLDOWN;
 		
 		let totalRarity = PokemonItemList.reduce((r,i) => r += i.rarity, 0);
-		let magicNumber = random(totalRarity);
+		let magicNumber = totalRarity * random();
 		for (var item of PokemonItemList) {
 			if (magicNumber > item.rarity) {
 				magicNumber -= item.rarity;
@@ -265,6 +267,7 @@ class PkmnAccount {
 				break;
 			}
 		}
+		//console.log('Item:',item);
 		return this.addItem(item);
 	}
 	displayPokemonInventory(page, filter) {
@@ -489,6 +492,9 @@ class PokemonGame {
 	static catchPokemon(client, userID) {
 		return this.modify(client, userID, pkmn => {
 			let pokemonCaught = pkmn.catchARandomPokemon();
+			if (typeof(pokemonCaught) !== 'object') {
+				return pokemonCaught;
+			}
 			let pokeID = pkmn.pokemon.getID(pokemonCaught.name);
 			let type = pokemonCaught.rarity;
 			let embed = {
@@ -510,6 +516,9 @@ class PokemonGame {
 	static scavengeItem(client, userID) {
 		return this.modify(client, userID, pkmn => {
 			let itemGot = pkmn.scavengeForARandomItem();
+			if (typeof(itemGot) !== 'object') {
+				return itemGot;
+			}
 			return `got a ${md.bold(itemGot.name)}!`;
 		});
 	}
@@ -549,7 +558,7 @@ class PokemonGame {
 	}
 	static renamePokemon(client, userID, pokeID, name) {
 		return this.modify(client, userID, pkmn => {
-			let p = pkmn.get(pokeID);
+			let p = pkmn.pokemon.get(pokeID);
 			let oldName = p.name;
 			p.name = name;
 			return `'s ${md.bold(oldName)} is now ${md.bold(p.name)}!`;
@@ -578,7 +587,7 @@ class PokemonGame {
 	static inventory(client, userID, page) {
 		let pkmn = this.get(client, userID);
 		let embed = pkmn.displayPokemonInventory(page);
-		embed.title = `${client.users[userID].username}'s Inventory`;
+		embed.title = `${client.users[userID].username}'s Pokedex`;
 		return embed;
 	}
 	static inventoryLegendaries(client, userID, page) {
@@ -601,13 +610,13 @@ class PokemonGame {
 		return embed;
 	}
 	static resetInventory(client, userID) {
-		this.modify(client, userID, (pkmn, user) => {
+		return this.modify(client, userID, (pkmn, user) => {
 			delete user.pokemon;
 			return `${md.mention(userID)}'s entire Pokémon and item collection has been **erased**.`;
 		});
 	}
 	static refreshCooldown(client, userID) {
-		this.modify(client, userID, pkmn => {
+		return this.modify(client, userID, pkmn => {
 			pkmn.cooldown  = 0;
 			pkmn.scavenged = 0;
 			pkmn.trained   = 0;
@@ -647,7 +656,7 @@ class PokemonGame {
 	}
 	static useRareCandy(client, userID, pokeID) {
 		return this.modify(client, userID, pkmn => {
-			pokemon = pkmn.pokemon.get(pokeID);
+			let pokemon = pkmn.pokemon.get(pokeID);
 			
 			let item = getItemDescriptor('rare candy');
 			pkmn.removeItem(item);
@@ -680,6 +689,13 @@ function resolveItemID(itemID) {
 }
 function getItemDescriptor(itemID) {
 	return PokemonItemList[resolveItemID(itemID)];
+}
+
+function levelToXP(lvl) {
+	return Math.round(2 * Math.pow(lvl - 1, 2));
+}
+function XPtoLevel(xp) {
+	return 1 + Math.floor(Math.sqrt(xp / 2));
 }
 
 module.exports = PokemonGame;

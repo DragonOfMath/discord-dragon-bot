@@ -206,7 +206,7 @@ class BankAccount {
 		if (this.dead) {
 			return 'Account is shut down.';
 		} else {
-			return md.mention(this.id) + ' You have ' + formatCredits(user.credits) + '.';
+			return md.mention(this.id) + ' You have ' + formatCredits(this.credits) + '.';
 		}
 	}
 	deposit(amt = 0) {
@@ -606,7 +606,7 @@ class Bank {
 	static leaderboard(client, server, page) {
 		try {
 			var users = getUsersOfThisServer(client, server);
-			return generateLeaderboard(client, users, page);
+			return generateLeaderboard(client, server, users, page);
 		} catch (e) {
 			console.error(e);
 		}
@@ -653,7 +653,7 @@ function generateHistoryTranscript(history = [], page = 1) {
 		};
 	});
 }
-function generateLeaderboard(client, users, page = 1) {
+function generateLeaderboard(client, server, users, page = 1) {
 	// sort users by credits
 	users = users.sort((a,b) => {
 		if (a.credits < b.credits) return 1;
@@ -662,9 +662,11 @@ function generateLeaderboard(client, users, page = 1) {
 	});
 	
 	return paginate(users, page, PAGINATION, function (u, i) {
+		var id = u[i].id;
 		return {
-			name: `#${i+1} | ${client.users[u[i].id].username}`,
-			value: formatCredits(u[i].credits)
+			name: `#${i+1} | ${server.members[id].nick || client.users[id].username}`,
+			value: formatCredits(u[i].credits),
+			inline: true
 		};
 	});
 }
