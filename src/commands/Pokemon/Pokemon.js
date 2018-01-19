@@ -12,6 +12,8 @@ const TRAIN_COOLDOWN    =     30 * 60 * 1000; // 30 minutes
 const SCAVENGE_COOLDOWN = 1 * 60 * 60 * 1000; // 1 hour
 const TRAIN_XP = 5;
 const PAGINATION = 15; // items per page
+const SHINY_CHANCE = 0.03; // % chance to catch a shiny pokemon
+const SHINY_MULT = 10;     // base value multiplier for shinies
 
 class Pokemon {
 	constructor(p) {
@@ -21,12 +23,14 @@ class Pokemon {
 			//this.lvl     = p.lvl;
 			this.xp      = p.xp;
 			this.fav     = p.fav;
+			this.shiny   = p.shiny;
 		} else {
 			this.name    = p;
 			this.species = p;
 			//this.lvl     = 1;
 			this.xp      = 0;
 			this.fav     = false;
+			this.shiny   = false;
 		}
 	}
 	get lvl() {
@@ -53,6 +57,9 @@ class Pokemon {
 	get gif() {
 		return `https://play.pokemonshowdown.com/sprites/xyani/${this.speciesWeb}.gif`;
 	}
+	get gifShiny() {
+		return `https://play.pokemonshowdown.com/sprites/xyani-shiny/${this.speciesWeb}.gif`;
+	}
 	get sprite() {
 		return `https://raw.githubusercontent.com/Wonder-Toast/Pokemon-PNG/master/nrml/${this.speciesWeb}.png`;
 	}
@@ -63,9 +70,8 @@ class Pokemon {
 		var spc = this.species;
 		return Object.keys(SpecialPokemonList).find(type => SpecialPokemonList[type].includes(spc));
 	}
-	get value() {
+	get baseValue() {
 		var base = 0;
-		var mult = 1 + Math.log10(this.lvl);
 		switch (this.rarity) {
 			case 'legendary':
 				base = 100000;
@@ -80,7 +86,14 @@ class Pokemon {
 				base = 500;
 				break;
 		}
-		return Math.floor(base * mult);
+		if (this.shiny) {
+			base *= SHINY_MULT;
+		}
+		return base;
+	}
+	get value() {
+		var mult = 1 + Math.log10(this.lvl);
+		return Math.floor(this.baseValue * mult);
 	}
 	displayInfo() {
 		let lvl = this.lvl;
@@ -95,7 +108,7 @@ class Pokemon {
 				},
 				{
 					name: 'Species',
-					value: this.species,
+					value: this.species + (this.shiny ? ' (Shiny)' : ''),
 					inline: true
 				},
 				{
@@ -120,7 +133,7 @@ class Pokemon {
 				}
 			],
 			url: this.wiki,
-			image: { url: this.gif },
+			image: { url: (this.shiny ? this.gifShiny : this.gif) },
 			thumbnail: { url: this.sprite2 }
 		};
 	}
@@ -167,6 +180,7 @@ class Pokedex extends TypeMapBase {
 	add(id,p) {
 		if (!(p instanceof Pokemon)) {
 			p = new Pokemon(p);
+			p.shiny = random() < SHINY_CHANCE;
 		}
 		p.name = p.species + '#' + id;
 		this.set(id, p);
@@ -491,24 +505,28 @@ class PokemonGame {
 	}
 	static catchPokemon(client, userID) {
 		return this.modify(client, userID, pkmn => {
-			let pokemonCaught = pkmn.catchARandomPokemon();
-			if (typeof(pokemonCaught) !== 'object') {
-				return pokemonCaught;
+			let caught = pkmn.catchARandomPokemon();
+			if (typeof(caught) !== 'object') {
+				return caught;
 			}
-			let pokeID = pkmn.pokemon.getID(pokemonCaught.name);
-			let type = pokemonCaught.rarity;
+			let pokeID = pkmn.pokemon.getID(caught.name);
+			let type = caught.rarity;
 			let embed = {
 				color: COLOR,
-				url: pokemonCaught.wiki,
-				image: { url: pokemonCaught.gif },
+				url: caught.wiki,
+				image: { url: (caught.shiny ? caught.gifShiny : caught.gif) },
 				footer: {
 					text: `Inventory ID: ${pokeID}`
 				}
 			};
+			let name = caught.species;
+			if (caught.shiny) {
+				name = 'Shiny ' + name;
+			}
 			if (type) {
-				embed.description = `${md.mention(userID)} caught the ${md.underline(type)} ${md.bold(pokemonCaught.species)}!`;
+				embed.description = `${md.mention(userID)} caught the ${md.underline(type)} ${md.bold(name)}!`;
 			} else {
-				embed.description = `${md.mention(userID)} caught a ${md.bold(pokemonCaught.species)}!`;
+				embed.description = `${md.mention(userID)} caught a ${md.bold(name)}!`;
 			}
 			return embed;
 		});
