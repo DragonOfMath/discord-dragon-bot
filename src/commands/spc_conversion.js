@@ -2,8 +2,8 @@ const MATCH_STRING = '([\\d\\.\\-]+)[\\s\\-]?°?(\\w+)(\\/\\w+)*';
 const ALL_REGEX = new RegExp(MATCH_STRING,'g');
 const ONE_REGEX = new RegExp(MATCH_STRING);
 
-const F = 1.8;
-const C = 1/F;
+const F = 9/5;
+const C = 5/9;
 const CM = 2.54; 
 const IN = 1/CM;
 const IN_PER_FT = 12;
@@ -16,11 +16,11 @@ const L = 1/GAL;
 const CONVERSION_TABLE = {
 	// Fahrenheit -> Celsius
 	'F': function (x) {
-		return (x - 32) * F;
+		return (x - 32) * C;
 	},
 	// Celsius -> Fahrenheit
 	'C': function (x) {
-		return x * C + 32;
+		return x * F + 32;
 	},
 	// Inches -> Centimeters
 	'in': function (x) {

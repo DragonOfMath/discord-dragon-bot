@@ -1,5 +1,6 @@
-const Bank    = require('../../Bank');
-const Session = require('../../Session');
+const Bank     = require('../../Bank');
+const Resource = require('../../Resource');
+const Session  = require('../../Session');
 const {Markdown:md,Format:fmt,random,strcmp,paginate,tableify} = require('../../Utils');
 const BaseFishTable = require('./fishes.json');
 
@@ -10,6 +11,13 @@ const COLOR    = 0x0080ff;
 const EVENT_CHANCE      = 0.05; // % chance of a fishing event starting on any catch
 const RARE_EVENT_CHANCE = 0.10; // % chance of a fishing event being rare
 const HIT_CHANCE        = 0.20; // % chance of shooting a bird
+
+const FISHING_TEMPLATE = {
+	inventory: {},
+	cooldown: 0,
+	chests: 0,
+	birds: 0
+};
 
 function getFishByName(table, name) {
 	return table.find(f => strcmp(f.name,name));
@@ -52,19 +60,9 @@ function calculateHitChance(ammo) {
 	return 1 - Math.pow(1 - HIT_CHANCE, ammo);
 }
 
-class FishingAccount {
+class FishingAccount extends Resource {
 	constructor(f) {
-		if (f) {
-			this.inventory = f.inventory || {};
-			this.cooldown  = f.cooldown  || 0;
-			this.chests    = f.chests || 0;
-			this.birds     = f.birds  || 0;
-		} else {
-			this.inventory = {};
-			this.cooldown  = 0;
-			this.chests = 0;
-			this.birds  = 0;
-		}
+		super(FISHING_TEMPLATE, f);
 	}
 	get total() {
 		let sum = 0;

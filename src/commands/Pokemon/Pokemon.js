@@ -1,4 +1,5 @@
 const Bank        = require('../../Bank');
+const Resource    = require('../../Resource');
 const TypeMapBase = require('../../TypeMapBase');
 const {Markdown:md,Format:fmt,paginate,tableify,random,strcmp} = require('../../Utils');
 const PokemonList        = require('./pokemon.json');
@@ -8,29 +9,40 @@ const PokemonItemList    = require('./pokemon_items.json');
 const HEADER     = `Pokémon:tm:`;
 const COLOR      = 0xFF0000;
 const CATCH_COOLDOWN    = 2 * 60 * 60 * 1000; // 2 hours
-const TRAIN_COOLDOWN    =     30 * 60 * 1000; // 30 minutes
 const SCAVENGE_COOLDOWN = 1 * 60 * 60 * 1000; // 1 hour
-const TRAIN_XP = 5;
-const PAGINATION = 15; // items per page
-const SHINY_CHANCE = 0.03; // % chance to catch a shiny pokemon
-const SHINY_MULT = 10;     // base value multiplier for shinies
+const TRAIN_COOLDOWN    =     30 * 60 * 1000; // 30 minutes
+const TRAIN_XP          = 5; // XP gained when training
 
-class Pokemon {
+const PAGINATION = 15; // items per page
+
+const SHINY_CHANCE = 0.03; // % chance to catch a shiny pokemon
+const SHINY_MULT   = 10;   // base value multiplier for shinies
+
+const PKMN_TEMPLATE = {
+	name: '',
+	spc: -1,
+	//fav: 0,
+	//shiny: 0,
+	//lvl: 0,
+	xp: 0
+};
+const USER_TEMPLATE = {
+	pokemon: (p) => new Pokedex(p),
+	items: {},
+	totalCaught: 0,
+	cooldown: 0,
+	trained: 0,
+	scavenged: 0
+};
+
+class Pokemon extends Resource {
 	constructor(p) {
+		super(PKMN_TEMPLATE);
 		if (typeof(p) === 'object') {
-			this.name    = p.name;
-			this.spc     = p.spc;
-			//this.lvl     = p.lvl;
-			this.xp      = p.xp;
-			this.fav     = p.fav;
-			this.shiny   = p.shiny;
+			this.init(p);
 		} else {
-			this.name    = p;
+			this.name = p;
 			this.species = p;
-			//this.lvl     = 1;
-			this.xp      = 0;
-			this.fav     = false;
-			this.shiny   = false;
 		}
 	}
 	get lvl() {
@@ -55,10 +67,7 @@ class Pokemon {
 		return `https://bulbapedia.bulbagarden.net/wiki/${this.species.replace(/\s+/g,'_')}_(Pok%C3%A9mon)`;
 	}
 	get gif() {
-		return `https://play.pokemonshowdown.com/sprites/xyani/${this.speciesWeb}.gif`;
-	}
-	get gifShiny() {
-		return `https://play.pokemonshowdown.com/sprites/xyani-shiny/${this.speciesWeb}.gif`;
+		return `https://play.pokemonshowdown.com/sprites/xyani${this.shiny?'-shiny':''}/${this.speciesWeb}.gif`;
 	}
 	get sprite() {
 		return `https://raw.githubusercontent.com/Wonder-Toast/Pokemon-PNG/master/nrml/${this.speciesWeb}.png`;
@@ -133,7 +142,7 @@ class Pokemon {
 				}
 			],
 			url: this.wiki,
-			image: { url: (this.shiny ? this.gifShiny : this.gif) },
+			image: { url: this.gif },
 			thumbnail: { url: this.sprite2 }
 		};
 	}
@@ -180,7 +189,7 @@ class Pokedex extends TypeMapBase {
 	add(id,p) {
 		if (!(p instanceof Pokemon)) {
 			p = new Pokemon(p);
-			p.shiny = random() < SHINY_CHANCE;
+			if (random() < SHINY_CHANCE) p.shiny = 1;
 		}
 		p.name = p.species + '#' + id;
 		this.set(id, p);
@@ -195,23 +204,9 @@ class Pokedex extends TypeMapBase {
 	}
 }
 
-class PkmnAccount {
+class PkmnAccount extends Resource {
 	constructor(user) {
-		if (typeof(user) === 'object') {
-			this.pokemon     = new Pokedex(user.pokemon);
-			this.items       = user.items       || {};
-			this.totalCaught = user.totalCaught || 0;
-			this.cooldown    = user.cooldown    || 0;
-			this.trained     = user.trained     || 0;
-			this.scavenged   = user.scavenged   || 0;
-		} else {
-			this.pokemon     = new Pokedex();
-			this.items       = {};
-			this.totalCaught = 0;
-			this.cooldown    = 0;
-			this.trained     = 0;
-			this.scavenged   = 0;
-		}
+		super(USER_TEMPLATE, user);
 	}
 	addPokemon(p) {
 		let id = this.totalCaught++;
@@ -320,12 +315,12 @@ class PkmnAccount {
 	}
 	favoritePokemon(pokeID) {
 		let p = this.pokemon.get(pokeID);
-		p.fav = true;
+		p.fav = 1;
 		return p;
 	}
 	unfavoritePokemon(pokeID) {
 		let p = this.pokemon.get(pokeID);
-		p.fav = false;
+		delete p.fav;
 		return p;
 	}
 }
@@ -514,7 +509,7 @@ class PokemonGame {
 			let embed = {
 				color: COLOR,
 				url: caught.wiki,
-				image: { url: (caught.shiny ? caught.gifShiny : caught.gif) },
+				image: { url: caught.gif },
 				footer: {
 					text: `Inventory ID: ${pokeID}`
 				}

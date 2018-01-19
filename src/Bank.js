@@ -1,4 +1,5 @@
 const FileLogger = require('./FileLogger');
+const Resource   = require('./Resource');
 const {Markdown:md,Format:fmt,paginate} = require('./Utils');
 
 const HEADER      = ':dragon::bank:Dragon Bank:tm:';
@@ -25,7 +26,16 @@ const STATE = {
 	DEAD:   'dead'
 };
 
-class BankAccount {
+const BANK_TEMPLATE = {
+	state: STATE.OPEN,
+	created: (x) => (x ? (typeof(x) === 'number' ? x : Date.parse(x)) : Date.now()),
+	credits: DEFAULT_AMOUNT,
+	authorized: false,
+	investingSince: 0,
+	dailyReceived: 0
+};
+
+class BankAccount extends Resource {
 	/*
 		created = timestamp of the creation of the account
 		credits = amount of cash in the account
@@ -38,33 +48,29 @@ class BankAccount {
 		authorized = has special privileges
 	*/
 	constructor(userID, acct) {
-		Object.defineProperty(this, 'id', {
-			value: userID,
-			enumerable: false
-		});
-		
-		if (typeof(acct) === 'object') {
-			this.init(acct);
-		} else {
-			this.create();
-		}
-	}
-	init(data) {
-		if (data.state) {
-			// new bank data
-			this.state     = data.state;
-			this.created   = data.created;
-		} else {
+		if (typeof(acct) === 'object' && !acct.state) {
 			// old bank data
-			this.state     = STATE.OPEN;
-			this.created   = Date.parse(data.created) || data.created;
-			this.open      = data.open;
-			this.dead      = data.dead;
+			acct.state = acct.dead ? STATE.DEAD : 
+			             acct.investing ? STATE.BUSY : 
+						 acct.open ? STATE.OPEN : 
+						 STATE.CLOSED;
+			delete acct.open;
+			delete acct.dead;
+			delete acct.investing;
+			acct.credits = Number(acct.credits);
 		}
-		this.credits        = Number(data.credits);
-		this.investing      = data.investingSince;
-		this.authorized     = data.authorized    || false;
-		this.dailyReceived  = data.dailyReceived || 0;
+		super(BANK_TEMPLATE, acct);
+		this.makeProp('id', userID);
+	}
+	create(amt = DEFAULT_AMOUNT) {
+		if (this.exists) {
+			throw 'Account is already created.';
+		}
+		
+		super.create();
+		
+		this.record({action: 'created'});
+		return 'Your account has been successfully created. To view your account, use ' + md.code('bank.summary');
 	}
 	get exists() {
 		return !!this.created;
@@ -98,21 +104,6 @@ class BankAccount {
 	}
 	get filename() {
 		return `${__dirname}/history/history_${this.id}.log`;
-	}
-	create(amt = DEFAULT_AMOUNT) {
-		if (this.exists) {
-			throw 'Account is already created.';
-		}
-		
-		this.created        = Date.now();
-		this.credits        = amt;
-		this.state          = STATE.OPEN;
-		this.authorized     = false;
-		this.investingSince = 0;
-		this.dailyReceived  = 0;
-		
-		this.record({action: 'created'});
-		return 'Your account has been successfully created. To view your account, use ' + md.code('bank.summary');
 	}
 	get history() {
 		return FileLogger.read(this.filename).map(i => addProperty(i,'user',this.id));
@@ -458,13 +449,13 @@ class Bank {
 		return this.get(client, userID).checkBalance();
 	}
 	static open(client, userID) {
-		return this.modify(client, userID, bank => bank.create(DEFAULT_AMOUNT));
+		return this.modify(client, userID, bank => bank.create());
 	}
 	static close(client, userID) {
 		return this.modify(client, userID, bank => bank.shutdown());
 	}
 	static reopen(client, userID) {
-		return this.modify(client, userID, bank => bank.open(DEFAULT_AMOUNT));
+		return this.modify(client, userID, bank => bank.open());
 	}
 	static delete(client, userID) {
 		var table = client.database.get('users');

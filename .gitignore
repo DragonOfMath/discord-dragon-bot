@@ -1,5 +1,6 @@
 node_modules/
 database/
+database_backup/
 debug/
 src/deprecated/
 src/static/
