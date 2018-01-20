@@ -1,3 +1,4 @@
+const {embedMessage,hasContent} = require('./DiscordUtils');
 const {Markdown:md,Format:fmt} = require('./Utils');
 
 function modlog(modID, userID, type, description) {

@@ -4,7 +4,6 @@
 */
 
 const Moderation = require('../Moderation');
-const {embedMessage,hasContent} = require('../DiscordUtils');
 const {Markdown:md,Format:fmt} = require('../Utils');
 
 module.exports = {
