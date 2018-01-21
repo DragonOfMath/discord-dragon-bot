@@ -27,6 +27,7 @@ class Resource {
 		var norm = {};
 		for (var k in this._template) {
 			if (typeof(this._template[k]) === 'function') {
+				norm[k] = null;
 				continue;
 			} else {
 				norm[k] = this._template[k];
@@ -36,13 +37,22 @@ class Resource {
 	}
 	/**
 		Initialize the resource by applying the data through the template.
+		* First, the template's properties are applied to guarantee certain
+		keys are properly initialized.
+		* Second, the data's remaining properties, which the template did
+		not have, are applied.
 	*/
 	init(data = {}) {
 		var norm = {};
-		for (var k in data) {
+		for (var k in this._template) {
 			if (typeof(this._template[k]) === 'function') {
 				norm[k] = this._template[k](data[k], data, this);
-			} else {
+			} else if (typeof(data[k]) !== 'undefined') {
+				norm[k] = data[k];
+			}
+		}
+		for (var k in data) {
+			if (typeof(norm[k]) === 'undefined') {
 				norm[k] = data[k];
 			}
 		}

@@ -68,7 +68,7 @@ module.exports = {
 					type: 'private'
 				},
 				fn({client, args, channelID}) {
-					let id = md.id(args[0]) || channelID;
+					let id = md.channelID(args[0]) || channelID;
 					let channel = client.channels[id];
 					
 					if (!channel) {
@@ -81,31 +81,38 @@ module.exports = {
 						fields: [
 							{
 								name: 'Name',
-								value: channel.name
+								value: channel.name,
+								inline: true
 							},
 							{
 								name: 'ID',
-								value: channel.id
+								value: channel.id,
+								inline: true
 							},
 							{
 								name: 'Type',
-								value: 	`${channel.type} (${channel.type == 0 ? 'Text' : 'Voice'})`
+								value: 	`${channel.type} (${channel.type == 0 ? 'Text' : 'Voice'})`,
+								inline: true
 							},
 							{
 								name: 'Topic',
-								value: channel.topic
+								value: channel.topic,
+								inline: true
 							},
 							{
 								name: 'Position',
-								value: channel.position
+								value: channel.position,
+								inline: true
 							},
 							{
 								name: 'In Server',
-								value: `${client.servers[sid].name} (ID: ${sid})`
+								value: `${client.servers[sid].name} (ID: ${sid})`,
+								inline: true
 							},
 							{
 								name: 'NSFW?',
-								value: '(Cannot determine yet)'
+								value: '(Cannot determine yet)',
+								inline: true
 							}
 						]
 					};
@@ -120,7 +127,7 @@ module.exports = {
 					type: 'private'
 				},
 				fn({client, args, serverID}) {
-					let id = md.id(args[0]) || serverID;
+					let id = args[0] || serverID;
 					let server = client.servers[id];
 					
 					if (!server) {
@@ -136,47 +143,58 @@ module.exports = {
 						fields: [
 							{
 								name: 'Name',
-								value: server.name
+								value: server.name,
+								inline: true
 							},
 							{
 								name: 'ID',
-								value: server.id
+								value: server.id,
+								inline: true
 							},
 							{
 								name: 'Region',
-								value: server.region
+								value: server.region,
+								inline: true
 							},
 							{
 								name: 'Owner',
-								value: md.mention(server.owner_id)
+								value: md.mention(server.owner_id),
+								inline: true
 							},
 							{
 								name: 'Large?',
-								value: server.large ? 'Yes' : 'No'
+								value: server.large ? 'Yes' : 'No',
+								inline: true
 							},
 							{
 								name: 'Verification Level',
-								value: server.verification_level
+								value: server.verification_level,
+								inline: true
 							},
 							{
 								name: 'Icon URL',
-								value: server.icon
+								value: server.icon,
+								inline: true
 							},
 							{
 								name: 'Members',
-								value: members.length
+								value: members.length,
+								inline: true
 							},
 							{
 								name: 'Bots',
-								value: members.filter(m => client.users[m].bot).length
+								value: members.filter(m => client.users[m].bot).length,
+								inline: true
 							},
 							{
 								name: 'Channels',
-								value: channels.length
+								value: channels.length,
+								inline: true
 							},
 							{
 								name: 'Roles',
-								value: roles.length
+								value: roles.length,
+								inline: true
 							}
 						],
 						thumbnail: {
@@ -191,54 +209,60 @@ module.exports = {
 				aliases: ['member'],
 				title: 'Debug | Member',
 				info: 'Displays information about a user.',
-				parameters: ['[userID]'],
+				parameters: ['userID'],
 				permissions: {
 					type: 'private'
 				},
 				fn({client, args, userID, server}) {
-					let id = md.id(args[0]) || userID;
+					let id = md.userID(args[0]);
 					let member = server.members[id];
 					if (!member) {
 						throw 'Invalid member ID.';
 					}
 					let user = client.users[id];
-					let servers = [];
-					
-					for (let s in client.servers) {
-						if (client.servers[s].members[member.id]) {
-							servers.push(s);
-						}
+					if (!user) {
+						throw 'Invalid user ID.';
 					}
+					
+					let dateJoined = new Date(member.joined_at).toLocaleString();
+					console.log(member, dateJoined);
 					
 					return {
 						fields: [
 							{
 								name: 'Name',
-								value: (user.name || user.username) + (member.nick ? ` (AKA ${member.nick})`: '')
+								value: (user.name || user.username) + (member.nick ? ` (AKA ${member.nick})`: ''),
+								inline: true
 							},
 							{
 								name: 'ID',
-								value: user.id
+								value: user.id,
+								inline: true
 							},
 							{
 								name: 'Discriminator',
-								value: user.discriminator
+								value: user.discriminator,
+								inline: true
 							},
 							{
 								name: 'Status',
-								value: member.status
+								value: member.status || 'Offline?',
+								inline: true
 							},
 							{
 								name: 'Is Bot?',
-								value: String(member.bot)
+								value: String(member.bot),
+								inline: true
 							},
 							{
-								name: 'In Known Server(s)',
-								value: servers.map(s => `${client.servers[s].name} (ID: ${s})`).join(', ')
+								name: 'Joined',
+								value: dateJoined,
+								inline: true
 							},
 							{
 								name: 'Roles in this Server',
-								value: member.roles.map(r => `${server.roles[r].name} (ID: ${r})`).join(', ')
+								value: member.roles.map(r => `${server.roles[r].name} (ID: ${r})`).join(', ') || 'No Roles',
+								inline: true
 							}
 						]
 					};
@@ -253,7 +277,7 @@ module.exports = {
 					type: 'private'
 				},
 				fn({client, args, server}) {
-					let id = md.id(args[0]);
+					let id = md.roleID(args[0]);
 					let role = server.roles[id];
 					if (!role) {
 						throw 'Invalid role ID.';
@@ -266,19 +290,23 @@ module.exports = {
 						fields: [
 							{
 								name: 'Name',
-								value: role.name
+								value: role.name,
+								inline: true
 							},
 							{
 								name: 'ID',
-								value: role.id
+								value: role.id,
+								inline: true
 							},
 							{
 								name: 'In Server',
-								value: `${server.name} (ID: ${server.id})`
+								value: `${server.name} (ID: ${server.id})`,
+								inline: true
 							},
 							{
 								name: 'Users with Role',
-								value: membersWithRole.map(m => `${client.users[m].username} (ID: ${m})`).join(', ')
+								value: membersWithRole.map(m => `${client.users[m].username} (ID: ${m})`).join(', ') || 'None',
+								inline: true
 							}
 						]
 					};

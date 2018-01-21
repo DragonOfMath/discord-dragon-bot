@@ -39,6 +39,9 @@ class DragonBot extends DebugClient {
 			} else {
 				input = text.substring(mentionStr.length).trim();
 			}
+			if (!input) {
+				return text;
+			}
 			let [cmd, ...args] = parseString(input);
 			let arg = args.join(' ');
 			let cmds = cmd.split('.');

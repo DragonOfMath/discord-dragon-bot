@@ -34,60 +34,66 @@ function makePayload(paramNames = [], args = []) {
 */
 function checkPayloadLength(message, embed) {
 	if (typeof(message) === 'string' && message.length > 2000) {
-		throw new Error('Message length exceeds Discord\'s limit: ' + message.length)
+		throw new Error('Message length exceeds Discord\'s limit: ' + message.length);
 	}
 	
 	if (typeof(embed) === 'object') {
-		let totalLength = 0
+		let totalLength = 0;
 		if (embed.title) {
 			if (embed.title.length > 256) {
-				throw new Error('Embed title length exceeds Discord\'s limit: ' + embed.title.length)
+				throw new Error('Embed title length exceeds Discord\'s limit: ' + embed.title.length);
 			} else {
-				totalLength += embed.title.length
+				totalLength += embed.title.length;
 			}
 		}
 		if (embed.description) {
 			if (embed.description.length > 2048) {
-				throw new Error('Embed description length exceeds Discord\'s limit: ' + embed.description.length)
+				throw new Error('Embed description length exceeds Discord\'s limit: ' + embed.description.length);
 			} else {
-				totalLength += embed.description.length
+				totalLength += embed.description.length;
 			}
 		}
 		if (embed.fields) {
 			if (embed.fields.length > 25) {
-				throw new Error('Number of embed fields exceeds Discord\'s limit: ' + embed.fields.length)
+				throw new Error('Number of embed fields exceeds Discord\'s limit: ' + embed.fields.length);
 			} else {
 				for (let f of embed.fields) {
+					if (typeof(f.name) !== 'string') {
+						f.name = String(f.name);
+					}
 					if (f.name.length > 256) {
-						throw new Error('Embed field name length exceeds Discord\'s limit: ' + f.name.length)
+						throw new Error('Embed field name length exceeds Discord\'s limit: ' + f.name.length);
 					} else {
-						totalLength += f.name.length
+						totalLength += f.name.length;
+					}
+					if (typeof(f.value) !== 'string') {
+						f.value = String(f.value);
 					}
 					if (f.value.length > 1024) {
-						throw new Error('Embed field value length exceeds Discord\'s limit: ' + f.value.length)
+						throw new Error('Embed field value length exceeds Discord\'s limit: ' + f.value.length);
 					} else {
-						totalLength += f.value.length
+						totalLength += f.value.length;
 					}
 				}
 			}
 		}
 		if (embed.footer && embed.footer.text) {
 			if (embed.footer.text.length > 2048) {
-				throw new Error('Embed footer text length exceeds Discord\'s limit: ' + embed.footer.text.length)
+				throw new Error('Embed footer text length exceeds Discord\'s limit: ' + embed.footer.text.length);
 			} else {
-				totalLength += embed.footer.text.length
+				totalLength += embed.footer.text.length;
 			}
 		}
 		if (embed.author) {
 			if (embed.author.name.length > 256) {
-				throw new Error('Embed author name length exceeds Discord\'s limit: ' + embed.author.name.length)
+				throw new Error('Embed author name length exceeds Discord\'s limit: ' + embed.author.name.length);
 			} else {
-				totalLength += embed.author.name.length
+				totalLength += embed.author.name.length;
 			}
 		}
 		
 		if (totalLength > 6000) {
-			throw new Error('Total embed text length exceeds Discord\'s limit: ' + totalLength)
+			throw new Error('Total embed text length exceeds Discord\'s limit: ' + totalLength);
 		}
 	}
 	
