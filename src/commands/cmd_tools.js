@@ -15,8 +15,10 @@ module.exports = {
 			type: 'public'
 		},
 		fn({client, userID}) {
+			// prepare permissions for inviting
+			var link = client.inviteURL + '&permissions=' + client.PERMISSIONS;
 			// DM the link
-			client.send(userID, client.inviteURL);
+			client.send(userID, link);
 		}
 	},
 	'help': {

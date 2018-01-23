@@ -8,12 +8,13 @@ const Analytics   = require('./Analytics');
 const {Markdown:md,parseString} = Utils;
 
 class DragonBot extends DebugClient {
-	constructor({token,ownerID,prefix,version,source}) {
+	constructor({token,ownerID,prefix,version,source,permissions}) {
 		super(token, false);
 		this.ownerID = ownerID;
 		this.PREFIX  = prefix;
 		this.VERSION = version;
 		this.SOURCE_CODE = source;
+		this.PERMISSIONS = permissions;
 		
 		this.utils    = Utils;
 		this.database = new Database(this);
@@ -22,12 +23,24 @@ class DragonBot extends DebugClient {
 		
 		this.on('ready',   this._connected);
 		this.on('message', this._handle);
+		
+		this.on('guildMemberAdd', this.greetUser);
+		this.on('guildMemberRemove', this.goodbyeUser);
 	}
 	
 	set presence(name) {
 		this.setPresence({game: {name}});
 	}
 	
+	stop() {
+		super.stop();
+		this.presence = 'Bye! \uD83D\uDC4B';
+		this.wait(3000).then(()=>this.disconnect());
+	}
+	
+	commandify(cmd) {
+		return '`' + this.PREFIX + cmd + '`';
+	}
 	parseInput(text) {
 		let mentionStr  = md.mention(this.id);
 		let usesPrefix  = text.startsWith(this.PREFIX);
@@ -50,15 +63,47 @@ class DragonBot extends DebugClient {
 			return text;
 		}
 	}
-	
-	commandify(cmd) {
-		return '`' + this.PREFIX + cmd + '`';
+	prepMessage(message, user, channel, server) {
+		if (user) {
+			message = message
+			.replace(/\$user/gi, md.bold(user.username))
+			.replace(/\$mention/gi, md.mention(user.id));
+		}
+		if (channel) {
+			message = message
+			.replace(/\$channelname/gi, md.bold(channel.name))
+			.replace(/\$channel/gi, md.channel(channel.id));
+		}
+		if (server) {
+			message = message
+			.replace(/\$server/gi, md.bold(server.name));
+		}
+		return message;
 	}
 	
-	stop() {
-		super.stop();
-		this.presence = 'Bye! \uD83D\uDC4B';
-		this.wait(3000).then(()=>this.disconnect());
+	greetUser(member, WSMessage) {
+		var data = WSMessage.d,
+			serverID = data.guild_id,
+			server = this.servers[serverID],
+			user = this.users[member.id];
+		var welcome = this.database.get('servers').get(serverID).welcome;
+		if (!welcome) return;
+		var {channel = '', message = ''} = welcome;
+		if (!channel || !message) return;
+		message = this.prepMessage(message, user, this.channels[channel], server);
+		this.send(channel, message);
+	}
+	goodbyeUser(member, WSMessage) {
+		var data = WSMessage.d,
+			serverID = data.guild_id,
+			server = this.servers[serverID],
+			user = this.users[member.id];
+		var welcome = this.database.get('servers').get(serverID).welcome;
+		if (!welcome) return;
+		var {channel = '', goodbye = ''} = welcome;
+		if (!channel || !message) return;
+		message = this.prepMessage(message, user, this.channels[channel], server);
+		this.send(channel, message);
 	}
 	
 	_connected() {
@@ -91,6 +136,7 @@ class DragonBot extends DebugClient {
 		
 		var client    = this;
 		var clientID  = this.id;
+		
 		var DMchannel = this.directMessages[channelID];
 		var isDM = !!DMchannel;
 		if (isDM) {
@@ -98,17 +144,22 @@ class DragonBot extends DebugClient {
 			var channel   = DMchannel;
 			var serverID  = channelID;
 			var server    = null;
+			var member    = user;
 		} else {
 			var channel   = this.channels[channelID];
 			var serverID  = channel.guild_id;
 			var server    = this.servers[serverID];
+			var member    = server.members[userID];
 		}
+		
+		var memberID  = userID;
 		var messageID = channel.last_message_id;
 		
 		// create an all-in-one data structure
 		var input = {
 			client,  clientID,
 			user,    userID,
+			member,  memberID,
 			channel, channelID,
 			server,  serverID,
 			message, messageID,
@@ -135,6 +186,9 @@ class DragonBot extends DebugClient {
 			//this.log('User:   ', input.userID,    input.user.username);
 			//this.log('Input:  ', input.message);
 			//this.log('Output: ', input.response);
+			if (typeof(input.response) === 'string') {
+				input.response = this.prepMessage(input.response, user, channel, server);
+			}
 			this.send(channelID, input.response)
 			.then(response => {
 				// self-destruct error messages
