@@ -136,14 +136,11 @@ class Permissions {
 		@arg {String} cid - Channel ID
 	*/
 	check({client, user, channel, server, isDM}) {
-		if (!user) throw 'User required';
-		if (!channel) throw 'Channel required';
-		if (!isDM && !server) throw 'Server required';
 		//this.log();
 		
 		// check bot ownership permission
 		if (this.isPrivate) {
-			if (user.id == client.ownerID) {
+			if (user && user.id == client.ownerID) {
 				return Grant.granted();
 			} else {
 				return Grant.denied(PRIVATE_STRING);
@@ -163,7 +160,7 @@ class Permissions {
 			channels = this.channels;
 		} else {
 			// check server right away
-			if (this.servers.length > 0) {
+			if (server && this.servers.length > 0) {
 				let hasServer = this.servers.includes(server.id);
 				if (this.isExclusive && hasServer) {
 					return Grant.denied(`This server is blacklisted.`);
@@ -178,7 +175,7 @@ class Permissions {
 		}
 		
 		// check users
-		if (users.length > 0) {
+		if (user && users.length > 0) {
 			let hasUser = users.includes(user.id);
 			if (this.isExclusive && hasUser) {
 				return Grant.denied(`${md.mention(user.id)} is blacklisted from using that command.`);
@@ -188,7 +185,7 @@ class Permissions {
 		}
 		
 		// check roles
-		if (roles.length > 0) {
+		if (user && roles.length > 0) {
 			let userRoles = server.members[user.id].roles;
 			let hasRole = roles.some(r => userRoles.includes(r));
 			if (this.isExclusive && hasRole) {
@@ -199,7 +196,7 @@ class Permissions {
 		}
 		
 		// check channels
-		if (channels.length > 0) {
+		if (channel && channels.length > 0) {
 			let hasChannel = channels.includes(channel.id);
 			if (this.isExclusive && hasChannel) {
 				return Grant.denied(`This ${isDM?'DM channel':'channel'} is blacklisted: ${channels.map(md.channel).join(' ')}`);

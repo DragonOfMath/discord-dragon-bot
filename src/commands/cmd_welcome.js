@@ -52,6 +52,36 @@ module.exports = {
 					}).save();
 					return 'Goodbye message set for server.';
 				}
+			},
+			'test': {
+				info: 'Test the welcome/goodbye messages.',
+				permissions: {
+					type: 'private'
+				},
+				fn({client, serverID, user, channel, server}) {
+					var welcome = new Welcome(client.database.get('servers').get(serverID).welcome);
+					if (welcome.channel) {
+						return {
+							title: 'Welcome Message Demo',
+							fields: [
+								{
+									name: 'Channel',
+									value: md.channel(welcome.channel)
+								},
+								{
+									name: 'Greeting Message',
+									value: client.prepMessage(welcome.message, user, channel, server) || '(No message set)'
+								},
+								{
+									name: 'Goodbye Message',
+									value: client.prepMessage(welcome.goodbye, user, channel, server) || '(No message set)'
+								}
+							]
+						};
+					} else {
+						return 'No welcome channel set.';
+					}
+				}
 			}
 		}
 	}

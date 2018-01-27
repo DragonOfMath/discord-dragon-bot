@@ -281,17 +281,20 @@ module.exports = {
 			},
 			'check': {
 				info: 'Retrieves the command permissions.',
-				parameters: ['command'],
+				parameters: ['...commands'],
 				permissions: {
 					type: 'private'
 				},
-				fn({client, arg, server}) {
-					let cmd = client.commands.get(arg)[0];
-					return `\`${cmd.fullID}\`: ${cmd.permissions.toString(client, server)}`;
+				fn({client, args, server}) {
+					var commands = client.commands.get(...args);
+					if (commands.length == 0) {
+						throw 'Invalid command(s).';
+					}
+					return commands.map(cmd => `\`${cmd.fullID}\`: ${cmd.permissions.toString(client, server)}`).join('\n');
 				}
 			},
 			'checkall': {
-				info: 'Retrieves ALL command permissions.',
+				info: 'Retrieves ALL permissions for a single command.',
 				parameters: ['command'],
 				permissions: {
 					type: 'private'

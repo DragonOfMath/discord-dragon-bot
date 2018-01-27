@@ -44,7 +44,7 @@ class Subcommands extends TypeMapBase {
 		}
 		if (this.length > 0 && !this.has(HELP)) {
 			const help = this.create(HELP, {
-				aliases: ['subcommands'],
+				aliases: ['help','subcommands'],
 				title: `Subcommands`,
 				info: '(Automatically generated subcommand for listing other subcommands)',
 				permissions: { type: 'public' },
@@ -173,7 +173,7 @@ class Command {
 		@return full command string identifier
 	*/
 	get fullID() {
-		return typeof(this.supercommand) !== 'undefined' ? `${this.supercommand.fullID}.${this.id}` : this.id;
+		return (typeof(this.supercommand) !== 'undefined' ? `${this.supercommand.fullID}.${this.id}` : this.id).toLowerCase();
 	}
 	/**
 		@return a boolean that indicates if this command is a subcommand
@@ -285,7 +285,10 @@ class Command {
 				}
 			}
 		} else if (this.title || this.info) {
-			input.response = md.bold(this.title) + '\n' + this.info + (this.hasSubcommands ? '\nUse `?` to list subcommands.' : '');
+			input.response = md.bold(this.title) + '\n' + this.info;
+			if (this.hasSubcommands) {
+				input.response += `\nUse ${md.bold(this.fullID + '.?')} to list subcommands.`;
+			}
 		}
 		return input;
 	}

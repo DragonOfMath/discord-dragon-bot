@@ -164,7 +164,7 @@ class Commands extends TypeMapBase {
 					input.response = input.grant;
 				}
 			} else {
-				throw 'Invalid command/category.';
+				//throw 'Invalid command/category.';
 			}
 		} catch (e) {
 			input.error    = e;

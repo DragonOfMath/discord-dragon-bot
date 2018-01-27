@@ -251,6 +251,7 @@ const DCP = Discord.Client.prototype;
 	'editChannelPermissions',
 	'deleteChannelPermission',
 	'createRole',
+	'editRole',
 	'deleteRole',
 	'addToRole',
 	'removeFromRole',

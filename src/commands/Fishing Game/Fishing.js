@@ -16,7 +16,8 @@ const FISHING_TEMPLATE = {
 	inventory: {},
 	cooldown: 0,
 	chests: 0,
-	birds: 0
+	birds: 0,
+	artifacts: 0
 };
 
 function getFishByName(table, name) {
@@ -239,7 +240,7 @@ class FishingAccount extends Resource {
 		var embed = {
 			color: COLOR,
 			description: '',
-			footer: { text: `Total: ${total} | Chests Unlocked: ${this.chests} | Birds Encountered: ${this.birds}` }
+			footer: { text: `Total: ${total} | Chests Unlocked: ${this.chests} | Birds Encountered: ${this.birds} | Artifacts Activated: ${this.artifacts}` }
 		};
 		
 		if (total == 0) {
@@ -493,6 +494,7 @@ class Fishing {
 		return this.modify(client, userID, fishing => {
 			try {
 				fishing.removeByName('Artifact');
+				fishing.artifacts++;
 				var evt = new FishingEvent(serverID, channelID, {});
 				client.sessions.start(evt);
 				return {
