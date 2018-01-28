@@ -93,7 +93,6 @@ module.exports = {
 	'b': {
 		aliases: ['bemoji', '\uD83C\uDD71'],
 		category: 'Fun',
-		title: ':b:',
 		info: 'Adds :b: emojis to your text fam.',
 		parameters: ['...text'],
 		fn({args, userID}) {

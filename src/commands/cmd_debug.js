@@ -55,18 +55,11 @@ module.exports = {
 		category: 'Admin',
 		title: 'Debug',
 		info: 'Debugging tools for Discord resources.',
-		permissions: {
-			type: 'private'
-		},
-		suppress: true,
 		subcommands: {
 			'channel': {
 				title: 'Debug | Channel',
 				info: 'Displays information about a channel.',
 				parameters: ['[channel]'],
-				permissions: {
-					type: 'private'
-				},
 				fn({client, args, channelID}) {
 					let id = md.channelID(args[0]) || channelID;
 					let channel = client.channels[id];
@@ -123,9 +116,6 @@ module.exports = {
 				title: 'Debug | Server',
 				info: 'Displays information about a server.',
 				parameters: ['[serverID]'],
-				permissions: {
-					type: 'private'
-				},
 				fn({client, args, serverID}) {
 					let id = args[0] || serverID;
 					let server = client.servers[id];
@@ -210,9 +200,6 @@ module.exports = {
 				title: 'Debug | Member',
 				info: 'Displays information about a user.',
 				parameters: ['userID'],
-				permissions: {
-					type: 'private'
-				},
 				fn({client, args, userID, server}) {
 					let id = md.userID(args[0]);
 					let member = server.members[id];
@@ -273,9 +260,6 @@ module.exports = {
 				title: 'Debug | Role',
 				info: 'Displays information about a role.',
 				parameters: ['roleID'],
-				permissions: {
-					type: 'private'
-				},
 				fn({client, args, server}) {
 					let id = md.roleID(args[0]);
 					let role = server.roles[id];

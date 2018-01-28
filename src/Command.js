@@ -13,7 +13,7 @@ const KEY       = ':';
 const HELP      = '?';
 const RESERVED  = [WILDCARD,DELIMITER,CATEGORY,VARIABLE,PREFIX,KEY];
 
-const DEFAULT_CATEGORY = 'Misc';
+const DEFAULT_CATEGORY = '';
 const DEFAULT_TITLE    = '';
 const DEFAULT_INFO     = '';
 const DEFAULT_SUPPRESSION = false;
@@ -80,7 +80,7 @@ class Subcommands extends TypeMapBase {
 		
 		//sub.permissions.inherit(this.supercommand.permissions);
 		sub.properties.inherit(this.supercommand.properties);
-		sub.category = this.supercommand.category;
+		sub.category = sub.category || this.supercommand.category;
 		sub.suppress = sub.suppress || this.supercommand.suppress;
 		//console.log('Suppressed:',sub.id,sub.suppress);
 		return this.set(sub.id, sub);
@@ -131,7 +131,7 @@ class Command {
 		if (aliases.some(a => RESERVED.some(r => a.indexOf(r) > -1))) {
 			throw new TypeError(`${this.constructor.name}.${cmd}.aliases = ${aliases.join(',')} cannot have any of these reserved characters: ${RESERVED.join('')}`);
 		}
-		if (typeof(category) !== 'string' || !category) {
+		if (typeof(category) !== 'string') {
 			throw new TypeError(`${this.constructor.name}.${cmd}.category must be a string identifier.`);
 		}
 		if (RESERVED.some(r => category.indexOf(r) > -1)) {
@@ -287,7 +287,7 @@ class Command {
 		} else if (this.title || this.info) {
 			input.response = md.bold(this.title) + '\n' + this.info;
 			if (this.hasSubcommands) {
-				input.response += `\nUse ${md.bold(this.fullID + '.?')} to list subcommands.`;
+				input.response += `\nUse ${md.code(this.fullID + '.?')} to list subcommands.`;
 			}
 		}
 		return input;

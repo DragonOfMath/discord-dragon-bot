@@ -87,25 +87,33 @@ class Moderation {
 		})
 		.then(res => `${fmt.plural(limit,'message')} archived in ${md.channel(archiveID)}.`);
 	}
-	static cleanup(client, channelID, limit, flags) {
-		limit = Math.max(1, Math.min(~~limit, 100));
+	static cleanup(client, channelID, count, flags) {
+		count = Math.max(1, ~~count);
 		//var lastMessage = client.channels[channelID].last_message_id;
-		return client.getMessages({channelID,limit})
-		.then(messages => {
-			if (flags.includes('-text') || flags.includes('-t')) {
-				messages = messages.filter(hasContent);
-			}
-			if (flags.includes('-media') || flags.includes('-m')) {
-				messages = messages.filter(m => !hasContent(m));
-			}
-			if (flags.includes('-pinned') || flags.includes('-p')) {
-				messages = messages.filter(m => !m.pinned);
-			}
-			if (messages.length) {
-				var messageIDs = messages.map(x => x.id);
-				return client.deleteMessages({channelID, messageIDs});
-			}
-		});
+		function removeBatchOfMessages() {
+			if (count == 0) return;
+			var limit = Math.min(count, 100);
+			count -= limit;
+			return client.getMessages({channelID,limit})
+			.then(messages => {
+				if (flags.includes('-text') || flags.includes('-t')) {
+					messages = messages.filter(hasContent);
+				}
+				if (flags.includes('-media') || flags.includes('-m')) {
+					messages = messages.filter(m => !hasContent(m));
+				}
+				if (flags.includes('-pinned') || flags.includes('-p')) {
+					messages = messages.filter(m => !m.pinned);
+				}
+				if (messages.length) {
+					var messageIDs = messages.map(x => x.id);
+					return client.deleteMessages({channelID, messageIDs})
+					.delay(3000) // prevent rate-limiting
+					.then(removeBatchOfMessages);
+				}
+			});
+		}
+		return removeBatchOfMessages();
 	}
 	static getModlogChannel(client, serverID) {
 		return this.get(client, serverID).modlogID;

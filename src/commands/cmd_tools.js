@@ -6,6 +6,12 @@
 const {Markdown:md,strcmp}    = require('../Utils');
 const {embedMessage} = require('../DiscordUtils');
 
+function substrcmp(str, sub) {
+	str = str.toLowerCase();
+	sub = sub.toLowerCase();
+	return str.indexOf(sub) > -1;
+}
+
 module.exports = {
 	'invite': {
 		title: 'Invite:mailbox_with_mail:',
@@ -168,7 +174,7 @@ module.exports = {
 					let matches = [];
 					for (let id in server.members) {
 						var user = client.users[id];
-						if (user.discriminator == disc || strcmp(user.username,query)) {
+						if (user.discriminator == disc || substrcmp(user.username,query)) {
 							matches.push(id);
 						}
 					}
@@ -189,7 +195,7 @@ module.exports = {
 					let matches = [];
 					for (let id in server.roles) {
 						var role = server.roles[id];
-						if (strcmp(role.name, arg)) {
+						if (substrcmp(role.name, arg)) {
 							matches.push(id);
 						}
 					}
@@ -211,7 +217,7 @@ module.exports = {
 					let matches = []
 					for (let id in server.channels) {
 						var channel = server.channels[id];
-						if (strcmp(channel.name, arg)) {
+						if (substrcmp(channel.name, arg)) {
 							matches.push(id);
 						}
 					}

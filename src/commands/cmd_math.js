@@ -68,7 +68,7 @@ function gcd(a,b) {
 module.exports = {
 	'math': {
 		aliases: ['maths'],
-		category: 'Misc',
+		category: 'Fun',
 		title: 'Math:1234:',
 		info: 'Mathemathical! Get a factorial, find a prime, calculate a sum, and more.',
 		subcommands: {

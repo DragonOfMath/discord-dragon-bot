@@ -103,7 +103,6 @@ module.exports = {
 			},
 			'slots': {
 				aliases: [],
-				category: 'Fun',
 				title: 'Casino | Slots:slot_machine:',
 				info: '',
 				parameters: ['[bet]'],
@@ -112,7 +111,6 @@ module.exports = {
 				}
 			},
 			'blackjack': {
-				category: 'Fun',
 				title: 'Casino | Blackjack',
 				info: 'Classic Blackjack card game. Have the highest hand without going over 21 to win. For a more thorough explanation, see the [Wikipedia page](https://en.wikipedia.org/wiki/Blackjack).',
 				fn({client, userID, channelID}) {

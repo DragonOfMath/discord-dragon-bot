@@ -9,18 +9,18 @@ function resolveRoles(roles, server) {
 	});
 	var invalid = roles.filter(r => !r.name);
 	if (invalid.length > 0) {
-		throw 'Invalid Roles: ' + invalid.map(ir => ir.id).join(', ');
+		throw 'Invalid Roles: ' + invalid.map(ir => md.code(ir.id)).join(', ');
 	}
 	return roles;
 }
 function findRoleID(server, roleName) {
 	return Object.keys(server.roles).find(rid => strcmp(server.roles[rid].name, roleName));
 }
-function showWarnings(warnings) {
-	if (warnings.length) {
-		return '\nWarnings:\n' + md.codeblock(warnings.map(w => `${w.role.name}: ${w.reason}`).join('\n'));
+function listRoles(roleList) {
+	if (roleList.length) {
+		return roleList.map(({role,reason}) => md.bold(role) + (reason?` (Error: ${reason})`:'')).join('\n');
 	} else {
-		return '';
+		return '(None)';
 	}
 }
 
@@ -49,10 +49,9 @@ module.exports = {
 					var member = server.members[userID];
 					var roles = resolveRoles(args, server);
 					var rolesGiven = [];
-					var warnings = [];
 					
-					function ignore(role,reason) {
-						warnings.push({role,reason});
+					function rec(role,reason) {
+						rolesGiven.push({role,reason});
 					}
 					function giveRole() {
 						var role = roles.pop();
@@ -61,24 +60,24 @@ module.exports = {
 						}
 						var roleID = role.id;
 						if (member.roles.includes(role.id)) {
-							ignore(role, 'You already have this role.');
+							rec(role.name,'You already have this role.');
 							return giveRole();
 						}
 						var r = new Role(roleTable.get(roleID));
 						if (!r.assign) {
-							ignore(role,`Role is not self-assignable.`);
+							rec(role.name,`Role is not self-assignable.`);
 							return giveRole();
 						}
 						return client.addToRole({serverID,userID,roleID})
 						.then(() => {
-							rolesGiven.push(role);
+							rec(role.name);
 						}, (e) => {
-							ignore(role, e);
+							rec(role.name,e);
 						})
 						.then(giveRole);
 					}
 					function finish() {
-						return md.mention(userID) + ' You have been given the following roles:\n' + rolesGiven.map(r => md.bold(r.name)).join('\n') + showWarnings(warnings);
+						return md.mention(userID) + ' You have been given the following roles:\n' + listRoles(rolesGiven);
 					}
 					
 					return giveRole();
@@ -94,10 +93,9 @@ module.exports = {
 					var member = server.members[userID];
 					var roles = resolveRoles(args, server);
 					var rolesTaken = [];
-					var warnings = [];
 					
-					function ignore(role,reason) {
-						warnings.push({role,reason});
+					function rec(role,reason) {
+						rolesTaken.push({role,reason});
 					}
 					function takeRole() {
 						var role = roles.pop();
@@ -106,24 +104,24 @@ module.exports = {
 						}
 						var roleID = role.id;
 						if (!member.roles.includes(role.id)) {
-							ignore(role,'You do not have this role.');
+							rec(role.name,'You do not have this role.');
 							return takeRole();
 						}
 						var r = new Role(roleTable.get(roleID));
 						if (!r.assign) {
-							ignore(role,`Role is not self-assignable.`);
+							rec(role.name,`Role is not self-assignable.`);
 							return takeRole();
 						}
 						return client.removeFromRole({serverID,userID,roleID})
 						.then(() => {
-							rolesTaken.push(role);
+							rec(role.name);
 						}, (e) => {
-							ignore(role, e);
+							rec(role.name, e);
 						})
 						.then(takeRole);
 					}
 					function finish() {
-						return md.mention(userID) + ' You have been removed from the following roles:\n' + rolesTaken.map(r => md.bold(r.name)).join('\n') + showWarnings(warnings);
+						return md.mention(userID) + ' You have been removed from the following roles:\n' + listRoles(rolesTaken);
 					}
 					
 					return takeRole();
@@ -131,6 +129,7 @@ module.exports = {
 			},
 			'Create': {
 				aliases: ['make','new'],
+				category: 'Admin',
 				title: 'Roles | Create',
 				info: 'Create new self-assignable role(s), with no special permissions. You can assign a color to a role by appending it with `:color`, e.g. `artist:#FFFF00` (for yellow).',
 				parameters: ['...roles'],
@@ -139,10 +138,9 @@ module.exports = {
 					var roleTable = client.database.get('roles');
 					var roles = args.slice();
 					var rolesCreated = [];
-					var warnings = [];
 					
-					function ignore(name,reason) {
-						warnings.push({role:{name},reason});
+					function rec(name,reason) {
+						rolesCreated.push({role,reason});
 					}
 					function makeRole() {
 						var role = roles.pop();
@@ -151,7 +149,7 @@ module.exports = {
 						}
 						var [name,color] = role.split(':');
 						if (findRoleID(server,name)) {
-							ignore(name, 'Already exists.');
+							rec(name, 'Already exists.');
 							return makeRole();
 						}
 						return client.createRole(serverID)
@@ -173,15 +171,15 @@ module.exports = {
 							});
 						})
 						.then(() => {
-							rolesCreated.push(name);
+							rec(name);
 						}, e => {
-							ignore(name, e);
+							rec(name, e);
 						})
 						.then(makeRole);
 					}
 					function finish() {
 						roleTable.save();
-						return 'The following roles have been created:\n' + rolesCreated.map(md.bold).join('\n') + showWarnings(warnings);
+						return 'The following roles have been created:\n' + listRoles(rolesCreated);
 					}
 					
 					return makeRole();
@@ -189,6 +187,7 @@ module.exports = {
 			},
 			'rename': {
 				aliases: ['name'],
+				category: 'Admin',
 				title: 'Roles | Rename',
 				info: 'Renames an existing role.',
 				parameters: ['oldname','newname'],
@@ -212,6 +211,7 @@ module.exports = {
 			},
 			'recolor': {
 				aliases: ['color'],
+				category: 'Admin',
 				title: 'Roles | Recolor',
 				info: 'Replaces color of an existing role.',
 				parameters: ['role','color'],
@@ -236,6 +236,7 @@ module.exports = {
 			},
 			'assign': {
 				aliases: ['register'],
+				category: 'Admin',
 				title: 'Roles | Assign',
 				info: 'Makes role(s) self-assignable.',
 				parameters: ['...roles'],
@@ -256,6 +257,7 @@ module.exports = {
 			},
 			'unassign': {
 				aliases: ['unregister'],
+				category: 'Admin',
 				title: 'Roles | Un-Assign',
 				info: 'Makes role(s) un-self-assignable.',
 				parameters: ['...roles'],
@@ -284,9 +286,9 @@ module.exports = {
 						return !!server.roles[id] && r.assign;
 					});
 					if (roles.length) {
-						return 'The following roles are assignable:\n' + roles.map(id => md.bold(server.roles[id].name)).join('\n');
+						return 'The following roles are self-assignable:\n' + roles.map(id => md.bold(server.roles[id].name)).join('\n');
 					} else {
-						return 'There are no assignable roles on this server.';
+						return 'There are no self-assignable roles on this server.';
 					}
 				}
 			}

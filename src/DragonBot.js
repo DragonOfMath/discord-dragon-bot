@@ -101,9 +101,9 @@ class DragonBot extends DebugClient {
 		var welcome = this.database.get('servers').get(serverID).welcome;
 		if (!welcome) return;
 		var {channel = '', goodbye = ''} = welcome;
-		if (!channel || !message) return;
-		message = this.prepMessage(message, user, this.channels[channel], server);
-		this.send(channel, message);
+		if (!channel || !goodbye) return;
+		goodbye = this.prepMessage(goodbye, user, this.channels[channel], server);
+		this.send(channel, goodbye);
 	}
 	
 	_connected() {

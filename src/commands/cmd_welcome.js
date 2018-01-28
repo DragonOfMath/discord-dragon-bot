@@ -14,7 +14,7 @@ class Welcome extends Resource {
 
 module.exports = {
 	'welcome': {
-		category: 'Misc',
+		category: 'Admin',
 		info: 'Let your users feel welcome! Set a channel and message for which this bot may greet them.',
 		subcommands: {
 			'message': {
