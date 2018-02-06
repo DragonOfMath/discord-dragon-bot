@@ -616,6 +616,12 @@ class PokemonGame {
 		embed.title = `${client.users[userID].username}'s Favorites`;
 		return embed;
 	}
+	static inventoryShinies(client, userID, page) {
+		let pkmn = this.get(client, userID);
+		let embed = pkmn.displayPokemonInventory(page, (pokemon) => !!pokemon.shiny);
+		embed.title = `${client.users[userID].username}'s Shinies`;
+		return embed;
+	}
 	static inventoryItems(client, userID) {
 		let pkmn = this.get(client, userID);
 		let embed = pkmn.displayItemInventory();

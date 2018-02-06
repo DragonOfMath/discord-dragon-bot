@@ -22,7 +22,7 @@ module.exports = {
 			'pokedex': {
 				aliases: ['pokeinventory','pinventory','pinv'],
 				title: PokemonGame.header,
-				info: 'Displays all the Pokémon you have caught.',
+				info: 'Displays your Pokémon.',
 				parameters: ['[user]','[page]'],
 				fn({client, args, userID}) {
 					userID = resolveTargetUser(args, userID);
@@ -32,7 +32,7 @@ module.exports = {
 			'legendaries': {
 				aliases: ['lgds'],
 				title: PokemonGame.header,
-				info: 'Displays all legendary Pokémon you have caught.',
+				info: 'Displays your legendary Pokémon.',
 				parameters: ['[user]','[page]'],
 				fn({client, args, userID}) {
 					userID = resolveTargetUser(args, userID);
@@ -42,17 +42,27 @@ module.exports = {
 			'favorites': {
 				aliases: ['faves'],
 				title: PokemonGame.header,
-				info: 'Displays all your faved Pokémon.',
+				info: 'Displays your faved Pokémon.',
 				parameters: ['[user]','[page]'],
 				fn({client, args, userID}) {
 					userID = resolveTargetUser(args, userID);
 					return PokemonGame.inventoryFavorites(client, userID, args[0]);
 				}
 			},
+			'shinies': {
+				aliases: ['shinys'],
+				title: PokemonGame.header,
+				info: 'Displays your shiny Pokémon.',
+				parameters: ['[user]','[page]'],
+				fn({client, args, userID}) {
+					userID = resolveTargetUser(args, userID);
+					return PokemonGame.inventoryShinies(client, userID, args[0]);
+				}
+			},
 			'inventory': {
 				aliases: ['items', 'iteminventory', 'iinventory', 'iinv'],
 				title: PokemonGame.header,
-				info: 'Displays all your inventory items.',
+				info: 'Displays your inventory items.',
 				parameters: ['[user]'],
 				fn({client, args, userID}) {
 					userID = resolveTargetUser(args, userID);
@@ -61,7 +71,7 @@ module.exports = {
 			},
 			'info': {
 				title: PokemonGame.header + ' | PokeID',
-				info: 'Displays information about a Pokémon from your inventory.',
+				info: 'Displays info about a Pokémon from your inventory.',
 				parameters: ['pokemon'],
 				fn({client, arg, userID}) {
 					return PokemonGame.displayPokemon(client, userID, arg);
@@ -77,7 +87,7 @@ module.exports = {
 			},
 			'rename': {
 				title: PokemonGame.header + ' | Rename',
-				info: 'Give a Pokémon in your inventory a new name (limit 40 characters).',
+				info: 'Give one of your Pokémon a new name (limit 40 characters).',
 				parameters: ['pokemon', 'name'],
 				fn({client, args, userID}) {
 					let [pokeID, name] = args;
@@ -96,7 +106,7 @@ module.exports = {
 			'refresh': {
 				aliases: ['f5'],
 				title: PokemonGame.header + ' | Refresh Cooldown',
-				info: 'Instantly bypass the cooldown wait. Only the bot owner may do this B)',
+				info: 'Skip cooldown for catching, scavenging, and training.',
 				parameters: ['[user]'],
 				permissions: {
 					type: 'private'
@@ -110,7 +120,7 @@ module.exports = {
 			'reset': {
 				aliases: ['clear'],
 				title: PokemonGame.header + ' | Reset',
-				info: 'Clears all Pokémon you have caught.',
+				info: 'Reset Pokémon data.',
 				parameters: ['[user]'],
 				permissions: {
 					type: 'private'
@@ -124,7 +134,7 @@ module.exports = {
 			'free': {
 				aliases: ['release'],
 				title: PokemonGame.header + ' | Release',
-				info: 'Remove a Pokémon from your inventory by its ID. If you do so, your cooldown will decrease by an hour.',
+				info: 'Remove one Pokémon from your inventory by its ID, then decrease your cooldown by up to 1 hour.',
 				parameters: ['pokemon'],
 				fn({client, arg, userID}) {
 					return PokemonGame.releasePokemon(client, userID, arg);
@@ -133,7 +143,7 @@ module.exports = {
 			'trade': {
 				aliases: ['give'],
 				title: PokemonGame.header + ' | Trade',
-				info: 'Trade Pokémon and items with a friend! (Name is reset upon trading)',
+				info: 'Trade a Pokémon with a friend! (Name is reset upon trading)',
 				parameters: ['user', 'pokemon'],
 				fn({client, args, userID}) {
 					return PokemonGame.tradePokemon(client, userID, ...args);
@@ -141,7 +151,7 @@ module.exports = {
 			},
 			'sell': {
 				title: PokemonGame.header + ' | Sell',
-				info: 'Sell a Pokémon for half its value. Pokémon you have trained and leveled up will be more valuable.',
+				info: 'Sell a Pokémon for its value. Leveled Pokémon are worth more.',
 				parameters: ['pokemon'],
 				fn({client, arg, userID}) {
 					return PokemonGame.sellPokemon(client, userID, arg);
@@ -150,7 +160,7 @@ module.exports = {
 			'fave': {
 				aliases: ['fav', 'favorite', 'favourite'],
 				title: PokemonGame.header + ' | Fave',
-				info: 'Favorite a Pokémon in your inventory.',
+				info: 'Favorite one of your Pokémon.',
 				parameters: ['pokemon'],
 				fn({client, arg, userID}) {
 					return PokemonGame.favoritePokemon(client, userID, arg);
@@ -159,7 +169,7 @@ module.exports = {
 			'unfave': {
 				aliases: ['unfav', 'unfavorite', 'unfavourite'],
 				title: PokemonGame.header + ' | Fave',
-				info: 'Un-favorite a Pokémon in your inventory.',
+				info: 'Un-favorite one of your Pokémon.',
 				parameters: ['pokemon'],
 				fn({client, arg, userID}) {
 					return PokemonGame.unfavoritePokemon(client, userID, arg);
@@ -193,7 +203,7 @@ module.exports = {
 			},
 			'candy': {
 				title: PokemonGame.header + ' | Use Rare Candy',
-				info: 'Use a Rare Candy from your inventory on a Pokémon.',
+				info: 'Use a Rare Candy from your inventory on one of your Pokémon.',
 				parameters: ['pokemon'],
 				fn({client, userID, arg}) {
 					return PokemonGame.useRareCandy(client, userID, arg);
