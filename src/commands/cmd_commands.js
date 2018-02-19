@@ -232,8 +232,10 @@ module.exports = {
 					} else {
 						src_command = src_command[0];
 					}
-					var commands = client.commands.get(...dest);
+					// pre-load permissions
+					src_command.permissions.load(client);
 					
+					var commands = client.commands.get(...dest);
 					var suppressedErrors = [];
 					for (let command of commands) {
 						try {

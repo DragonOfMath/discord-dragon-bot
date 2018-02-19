@@ -9,15 +9,21 @@ const PAGINATION  = 20;
 
 const DEFAULT_AMOUNT     = 1000;
 
-const INTEREST_RATE      = 0.02;
+const SECOND = 1000;
+const MINUTE = 60 * SECOND;
+const HOUR   = 60 * MINUTE;
+const DAY    = 24 * HOUR;
+
+const INTEREST_RATE      = 0.05;
 const INTEREST_COMPOUND  = 1;
 
 const INVESTMENT_COST    = 250;
 const INVESTMENT_MINIMUM = 1000;
-const INVESTMENT_WAIT    = 60 * 60 * 1000;
+const INVESTMENT_WAIT    = 1 * HOUR;
+const INVESTMENT_TIME_SCALE = 1 * DAY;
 
 const DAILY_PAYROLL      = 500;
-const DAILY_WAIT         = 24 * 60 * 60 * 1000;
+const DAILY_WAIT         = 1 * DAY;
 
 const STATE = {
 	OPEN:   'open',
@@ -286,7 +292,7 @@ class BankAccount extends Resource {
 				return 'Account may not be reopened for another ' + formatTime(timeRemaining) + '.';
 			}
 			
-			var interestEarned = compoundInterest(this.credits, INTEREST_RATE, INTEREST_COMPOUND, timeElapsed/INVESTMENT_WAIT);
+			var interestEarned = interest(this.credits, timeElapsed/INVESTMENT_TIME_SCALE);
 			interestEarned = Number(interestEarned.toFixed(ROUNDING));
 			
 			this.open = true;
@@ -333,7 +339,7 @@ class BankAccount extends Resource {
 					},
 					{
 						name: 'Interest Earned',
-						value: formatCredits(interestEarned) + ' at ' + fmt.percent(INTEREST_RATE) + ' (hourly)',
+						value: formatCredits(interestEarned) + ' at ' + fmt.percent(INTEREST_RATE) + ' (daily)',
 						inline: true
 					},
 					{
@@ -397,6 +403,9 @@ class Bank {
 	}
 	static get investmentWait() {
 		return INVESTMENT_WAIT;
+	}
+	static get investmentTimeScale() {
+		return INVESTMENT_TIME_SCALE;
 	}
 	static get historyPagination() {
 		return PAGINATION;
@@ -491,7 +500,7 @@ class Bank {
 						return 'Account is not investing.';
 					}
 					var timeElapsed    = Date.now() - bank.investingSince;
-					var interestEarned = compoundInterest(bank.credits, INTEREST_RATE, INTEREST_COMPOUND, timeElapsed/INVESTMENT_WAIT);
+					var interestEarned = interest(bank.credits, timeElapsed/INVESTMENT_TIME_SCALE);
 					return bank.generateInvestmentTranscript('Investment Progress', timeElapsed, interestEarned);
 				case 'start':
 					return bank.startInvesting();
@@ -500,7 +509,7 @@ class Bank {
 				default:
 					return {
 						title: `Help`,
-						description: `For all intended purposes, the current interest rate is ${md.bold(fmt.percent(INTEREST_RATE))}, compounded ${md.bold(INTEREST_COMPOUND + ' time(s) per hour')}, and the cost to start investing is ${formatCredits(INVESTMENT_COST)} while your balance is at least ${formatCredits(INVESTMENT_MINIMUM)}.`,
+						description: `For all intended purposes, the current interest rate is ${md.bold(fmt.percent(INTEREST_RATE))}, compounded ${md.bold(INTEREST_COMPOUND + ' time(s) per day')}, and the cost to start investing is ${formatCredits(INVESTMENT_COST)} while your balance is at least ${formatCredits(INVESTMENT_MINIMUM)}.`,
 						fields: [
 							{
 								name: 'Starting an Investment',
@@ -623,6 +632,13 @@ function formatCredits(c) {
 }
 function formatTime(t) {
 	return md.bold(fmt.time(t));
+}
+function interest(principle, time) {
+	var formula = 0 ? linearInterest : compoundInterest;
+	return formula(principle, INTEREST_RATE, INTEREST_COMPOUND, time);
+}
+function linearInterest(principle, rate, compounds, time) {
+	return principle * (rate * compounds * time - 1);
 }
 function compoundInterest(principle, rate, compounds, time) {
 	return principle * (Math.pow((1 + rate / compounds), compounds * time) - 1);
