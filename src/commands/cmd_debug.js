@@ -18,6 +18,14 @@ function snapshot(data) {
 	});
 }
 
+const CHANNEL_TYPE = [
+	'Text',
+	'DM',
+	'Voice',
+	'Group DM',
+	'Category'
+];
+
 module.exports = {
 	'echo': {
 		aliases: ['test'],
@@ -84,7 +92,7 @@ module.exports = {
 							},
 							{
 								name: 'Type',
-								value: 	`${channel.type} (${channel.type == 0 ? 'Text' : 'Voice'})`,
+								value: 	CHANNEL_TYPE[channel.type],
 								inline: true
 							},
 							{
@@ -104,7 +112,7 @@ module.exports = {
 							},
 							{
 								name: 'NSFW?',
-								value: '(Cannot determine yet)',
+								value: channel.nsfw ? 'Yes' : 'No',
 								inline: true
 							}
 						]
