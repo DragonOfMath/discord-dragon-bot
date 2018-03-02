@@ -179,8 +179,9 @@ class Session {
 				}
 			}
 		}
-		
-		input.response = this.insertTitle(input.response);
+		if (input.response) {
+			input.response = this.insertTitle(input.response);
+		}
 		return input;
 	}
 	/**

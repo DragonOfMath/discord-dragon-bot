@@ -1,3 +1,5 @@
+const {Markdown:md} = require('../Utils');
+
 /*
 	Zalgorithm from https://github.com/Marak/zalgo.js/blob/master/zalgo.js
 */
@@ -229,6 +231,31 @@ module.exports = {
 		parameters: ['...text'],
 		fn({client, arg}) {
 			return owoify(arg);
+		}
+	},
+	'emoji': {
+		aliases: ['emojis'],
+		category: 'Fun',
+		info: 'Use a custom emoji found on any server this bot is in.',
+		parameters: ['...emojiNames'],
+		fn({client, args}) {
+			var emojis = [];
+			nextArg: for (var a of args) {
+				a = a.toLowerCase();
+				for (var sid in client.servers) {
+					var serverEmojis = client.servers[sid].emojis;
+					for (var eid in serverEmojis) {
+						var ename = serverEmojis[eid].name
+						if (a == ename.toLowerCase() || a == eid) {
+							emojis.push(md.emoji(ename,eid));
+							continue nextArg;
+						}
+					}
+				}
+				// custom emoji not found. possible default emoji?
+				emojis.push(md.emoji(a));
+			}
+			return emojis.join(' ');
 		}
 	}
 };

@@ -18,14 +18,35 @@ class Pack {
 	get total() {
 		return this.black + this.white;
 	}
+	get all() {
+		return this.b.concat(this.w);
+	}
 	get cardCount() {
 		return `${this.total} (${this.black}/${this.white})`;
+	}
+	getType(type) {
+		switch (type) {
+			case 'b':
+			case 'black':
+				return this.b;
+			case 'w':
+			case 'white':
+				return this.w;
+			default:
+				return this.all;
+		}
 	}
 	combine(pack) {
 		return new Pack({
 			b: this.b.concat(pack.b),
 			w: this.w.concat(pack.w)
 		});
+	}
+	hasBlack(card) {
+		return this.b.includes(card);
+	}
+	hasWhite(card) {
+		return this.w.includes(card);
 	}
 }
 
@@ -237,27 +258,15 @@ module.exports = {
 					} else {
 						args.splice(0,1);
 					}
-					var type = args[0].toLowerCase();
-					switch (type) {
-						case 'w':
-						case 'white':
-							type = 'w';
-							break;
-						case 'b':
-						case 'black':
-							type = 'b';
-							break;
-					}
+					var type = args[0] ? args[0].toLowerCase() : 'all';
 					var server = client.database.get('servers').get(serverID);
 					server.cah = new CardsAgainstHumanity(server.cah);
-					var cards = [];
-					if (type != 'w') cards = cards.concat(server.cah.b);
-					if (type != 'b') cards = cards.concat(server.cah.w);
+					var pack = new Pack(server.cah.custom);
+					var cards = pack.getType(type);
 					return paginate(cards, page, 20, function(a,i) {
-						var card = a[i];
 						return {
-							name: (server.cah.b.includes(card) ? 'Black Card' : 'White Card'),
-							value: card
+							name: (pack.hasBlack(cards[i]) ? 'Black Card' : 'White Card'),
+							value: a[i]
 						};
 					});
 				}

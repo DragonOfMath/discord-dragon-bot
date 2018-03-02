@@ -46,6 +46,23 @@ const THINKING =
 ⠀⠀⠛⢿⣿⣿⣿⣿⣿⣿⡿⠟
 ⠀⠀⠀⠀⠀⠉⠉⠉`;
 
+const LOSS = 
+`⠀⠀⠀⣴⣴⡤
+⠀⣠⠀⢿⠇⡇⠀⠀⠀⠀⠀⠀⠀⢰⢷⡗
+⠀⢶⢽⠿⣗⠀⠀⠀⠀⠀⠀⠀⠀⣼⡧⠂⠀⠀⣼⣷⡆
+⠀⠀⣾⢶⠐⣱⠀⠀⠀⠀⠀⣤⣜⣻⣧⣲⣦⠤⣧⣿⠶
+⠀⢀⣿⣿⣇⠀⠀⠀⠀⠀⠀⠛⠿⣿⣿⣷⣤⣄⡹⣿⣷
+⠀⢸⣿⢸⣿⠀⠀⠀⠀⠀⠀⠀⠀⠈⠙⢿⣿⣿⣿⣿⣿
+⠀⠿⠃⠈⠿⠆⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠹⠿⠿⠿
+
+⠀⢀⢀⡀⠀⢀⣤⠀⠀⠀⠀⠀⠀⠀⡀⡀
+⠀⣿⡟⡇⠀⠭⡋⠅⠀⠀⠀⠀⠀⢰⣟⢿
+⠀⣹⡌⠀⠀⣨⣾⣷⣄⠀⠀⠀⠀⢈⠔⠌
+⠰⣷⣿⡀⢐⢿⣿⣿⢻⠀⠀⠀⢠⣿⡿⡤⣴⠄⢀⣀⡀
+⠘⣿⣿⠂⠈⢸⣿⣿⣸⠀⠀⠀⢘⣿⣿⣀⡠⣠⣺⣿⣷
+⠀⣿⣿⡆⠀⢸⣿⣿⣾⡇⠀⣿⣿⣿⣿⣿⣗⣻⡻⠿⠁
+⠀⣿⣿⡇⠀⢸⣿⣿⡇⠀⠀⠉⠉⠉⠉⠉⠉⠁`;
+
 const LENNYFACE = `( ͡° ͜ʖ ͡°)`;
 
 module.exports = {
@@ -56,13 +73,14 @@ module.exports = {
 	},
 	resolver({message}) {
 		if (/doot|calcium|strong bones/i.test(message)) return 'doot';
-		else if (/me(.{1,4}|<.*>)?irl/i.test(message)) return 'me_irl';
+		else if (/\bme(.{1,4}|<.*>)?irl/i.test(message)) return 'me_irl';
 		else if (/thicc/i.test(message)) return 'thicc';
 		else if (/^(oof|ouch|ow|owie)$/i.test(message)) return 'oof';
 		else if (/you know (i|he|she|they) had to do it to (th)?em/i.test(message)) return 'ykihtditt';
 		else if (/really makes you think/i.test(message)) return 'thinking';
 		else if (/lenny ?face/i.test(message)) return 'lennyface';
 		else if (/omae wa mou shindeiru/i.test(message)) return 'nani';
+		else if (/is this loss/i.test(message)) return 'loss';
 		return false;
 	},
 	events: {
@@ -123,6 +141,9 @@ module.exports = {
 		},
 		thinking() {
 			return '```\n' + THINKING + '\n```';
+		},
+		loss() {
+			return '```\n' + LOSS + '\n```';
 		},
 		lennyface() {
 			return LENNYFACE;

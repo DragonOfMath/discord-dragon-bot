@@ -21,7 +21,7 @@ function modlog(modID, userID, type, description) {
 				inline: true
 			},
 			{
-				name: ':notepad: Notes',
+				name: ':notepad_spiral: Notes',
 				value: description || 'None',
 				inline: false
 			}
