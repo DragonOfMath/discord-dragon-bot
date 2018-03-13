@@ -235,6 +235,9 @@ class PkmnAccount extends Resource {
 			return `Wait ${md.bold(fmt.time(timeLeft))} before training your Pokémon!`;
 		}
 		
+		if (!id) {
+			id = random(this.pokemon.ids);
+		}
 		let p = this.pokemon.get(id);
 		p.xp += TRAIN_XP;
 		

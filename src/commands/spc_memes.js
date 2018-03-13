@@ -73,7 +73,7 @@ module.exports = {
 	},
 	resolver({message}) {
 		if (/doot|calcium|strong bones/i.test(message)) return 'doot';
-		else if (/\bme(.{1,4}|<.*>)?irl/i.test(message)) return 'me_irl';
+		else if (/^me(.{1,4}|<.*>)?irl$/i.test(message)) return 'me_irl';
 		else if (/thicc/i.test(message)) return 'thicc';
 		else if (/^(oof|ouch|ow|owie)$/i.test(message)) return 'oof';
 		else if (/you know (i|he|she|they) had to do it to (th)?em/i.test(message)) return 'ykihtditt';
@@ -81,7 +81,7 @@ module.exports = {
 		else if (/lenny ?face/i.test(message)) return 'lennyface';
 		else if (/omae wa mou shindeiru/i.test(message)) return 'nani';
 		else if (/is this loss/i.test(message)) return 'loss';
-		return false;
+		else if (/delet this/i.test(message)) return 'delet_this';
 	},
 	events: {
 		doot() {
@@ -150,6 +150,9 @@ module.exports = {
 		},
 		nani() {
 			return '*NANI?!*';
+		},
+		delet_this({client, userID, channelID, messageID}) {
+			return client.send(channelID, 'ok').then(() => client.wait(3000)).then(() => client.deleteMessage({channelID, messageID}));
 		}
 	}
 };

@@ -211,8 +211,8 @@ module.exports = {
 			},
 			'train': {
 				title: PokemonGame.header + ' | Train',
-				info: `Give **5 XP** to one Pokémon of your choice. Cooldown: ${PokemonGame.trainingCooldownTime}`,
-				parameters: ['pokemon'],
+				info: `Give **5 XP** to one Pokémon of your choice, or one at random. Cooldown: ${PokemonGame.trainingCooldownTime}`,
+				parameters: ['[pokemon]'],
 				fn({client, arg, userID}) {
 					return PokemonGame.trainPokemon(client, userID, arg);
 				}

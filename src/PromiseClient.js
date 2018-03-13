@@ -145,6 +145,7 @@ class PromiseClient extends Discord.Client {
 	
 	/* Shorthand methods */
 	send(to, message, embed) {
+		if (!message && !embed) return; // don't bother sending empty messages
 		//console.log(arguments);
 		if (typeof (message) === 'object') {
 			if (message.constructor.name == 'Promise') {

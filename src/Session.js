@@ -101,6 +101,10 @@ class Session {
 				this.manager.end(this.id);
 			}
 		}, events);
+		
+		if ('init' in this.events) {
+			this.fire('init');
+		}
 	}
 	get elapsed() {
 		return Date.now() - this.started;
@@ -126,7 +130,7 @@ class Session {
 	}
 	fire(event, ...args) {
 		var eventFn = typeof(event) === 'function' ? event : this.events[event];
-		return eventFn.apply(this, args);
+		return eventFn && eventFn.apply(this, args);
 	}
 	close(input, reason) {
 		if (input && reason && !this.settings.silent) {

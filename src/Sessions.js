@@ -92,6 +92,8 @@ class Sessions extends Logger(TypeMapBase) {
 					this.client.send(s.last_channel_id, s.fire('goodbye'));
 				}
 				this.end(s.id);
+			} else if ('tick' in s.events) {
+				s.fire('tick', this.client);
 			}
 		}
 	}
