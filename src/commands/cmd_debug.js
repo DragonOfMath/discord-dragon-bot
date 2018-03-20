@@ -136,6 +136,7 @@ module.exports = {
 					let channels = Object.keys(server.channels);
 					let roles    = Object.keys(server.roles);
 					let emojis   = Object.keys(server.emojis);
+					let icon = `https://cdn.discordapp.com/icons/${server.id}/${server.icon}.png`;
 					
 					return {
 						fields: [
@@ -170,11 +171,6 @@ module.exports = {
 								inline: true
 							},
 							{
-								name: 'Icon URL',
-								value: server.icon,
-								inline: true
-							},
-							{
 								name: 'Members',
 								value: members.length,
 								inline: true
@@ -196,7 +192,7 @@ module.exports = {
 							}
 						],
 						thumbnail: {
-							url: server.icon,
+							url: icon,
 							width: 60,
 							height: 60
 						}

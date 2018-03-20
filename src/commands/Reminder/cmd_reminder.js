@@ -12,7 +12,7 @@ const YEAR   = 12 * MONTH;
 module.exports = {
 	'reminder': {
 		title: 'Set Reminder',
-		category: 'Tools',
+		category: 'Misc',
 		info: 'Set a reminder to be sent to your DMs after a specified time. After setting, you will be given the ID of the reminder in case you want to cancel it.',
 		aliases: ['remindme', 'setreminder', 'note'],
 		parameters: ['...time', '...text'],

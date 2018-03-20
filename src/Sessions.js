@@ -93,7 +93,7 @@ class Sessions extends Logger(TypeMapBase) {
 				}
 				this.end(s.id);
 			} else if ('tick' in s.events) {
-				s.fire('tick', this.client);
+				s.events.tick(this.client);
 			}
 		}
 	}

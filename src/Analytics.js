@@ -45,12 +45,14 @@ class Analytics extends MapBase {
 		});
 		
 		var fields = [];
+		var total = 0;
 		for (var c = 0, i = 0, col, r, x, a; c < akeys.length; c += rows) {
 			col = [];
 			for (r = 0; r < rows && i < akeys.length; r++, i++) {
 				x = akeys[i];
 				a = `${x}: ${this[x]}`;
 				col.push(a);
+				total += this[x];
 			}
 			fields.push({
 				name: `${c+1}-${c+Math.min(rows,r)}`,
@@ -58,8 +60,9 @@ class Analytics extends MapBase {
 				inline: true
 			});
 		}
+		var footer = { text: `Total: ${total}` };
 		
-		return {fields};
+		return { fields, footer };
 	}
 	sort(method = 'key') {
 		var keys = this.keys;

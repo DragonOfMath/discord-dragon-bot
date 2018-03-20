@@ -13,11 +13,11 @@ module.exports = class Parameters extends TypeMapBase {
 		this.setProperty('command', command);
 	}
 	toString() {
-		return this.items.join(' ');
+		return this.items.map(p => p.toString()).join(' ');
 	}
 	check(args) {
 		if (args.length < this.requiredArgs) {
-			return Grant.denied(`Missing arguments: \`${this.getMissingParams(args).join(' ')}\``);
+			return Grant.denied(`Missing arguments: \`${this.getMissingParams(args).map(p => p.toString()).join(' ')}\``);
 		} else if (args.length > this.maximumArgs) {
 			return Grant.denied(`Exceeded the maximum arguments allowed: ${this.maximumArgs}`);
 		} else {
