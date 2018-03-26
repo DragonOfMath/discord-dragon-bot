@@ -81,7 +81,7 @@ module.exports = {
 		else if (/lenny ?face/i.test(message)) return 'lennyface';
 		else if (/omae wa mou shindeiru/i.test(message)) return 'nani';
 		else if (/is this loss/i.test(message)) return 'loss';
-		else if (/delet this/i.test(message)) return 'delet_this';
+		else if (/delete? this/i.test(message)) return 'delet_this';
 	},
 	events: {
 		doot() {
@@ -151,8 +151,8 @@ module.exports = {
 		nani() {
 			return '*NANI?!*';
 		},
-		delet_this({client, userID, channelID, messageID}) {
-			return client.send(channelID, 'ok').then(() => client.wait(3000)).then(() => client.deleteMessage({channelID, messageID}));
+		delet_this({client, channelID}) {
+			return client.undo(channelID).then(() => 'ok');
 		}
 	}
 };

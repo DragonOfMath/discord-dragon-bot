@@ -97,15 +97,7 @@ module.exports = {
 			type: 'public'
 		},
 		fn({client, channelID, messageID}) {
-			client.getAll(channelID, 15)
-			.then(messages => messages.find(m => m.author.id == client.id))
-			.then(message => {
-				if (message) {
-					return client.delete(channelID, message.id);
-				} else {
-					throw 'No bot message found.';
-				}
-			});
+			client.undo(channelID);
 		}
 	},
 	'search': {

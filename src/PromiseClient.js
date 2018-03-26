@@ -1,6 +1,8 @@
 const Discord = require('discord.io');
 const Promise = require('bluebird');
 
+const {DiscordEmbed} = require('./Utils');
+
 const MY_NAME = new RegExp(__dirname.split('\\').slice(1,3).join('\\\\'), 'gi');
 
 /**
@@ -28,77 +30,6 @@ function makePayload(paramNames = [], args = []) {
 	}
 	return payload;
 }
-/**
-	Ensures message + embed are within Discord's size limits
-	https://discordapp.com/developers/docs/resources/channel#embed-limits
-*/
-function checkPayloadLength(message, embed) {
-	if (typeof(message) === 'string' && message.length > 2000) {
-		throw new Error('Message length exceeds Discord\'s limit: ' + message.length);
-	}
-	
-	if (typeof(embed) === 'object') {
-		let totalLength = 0;
-		if (embed.title) {
-			if (embed.title.length > 256) {
-				throw new Error('Embed title length exceeds Discord\'s limit: ' + embed.title.length);
-			} else {
-				totalLength += embed.title.length;
-			}
-		}
-		if (embed.description) {
-			if (embed.description.length > 2048) {
-				throw new Error('Embed description length exceeds Discord\'s limit: ' + embed.description.length);
-			} else {
-				totalLength += embed.description.length;
-			}
-		}
-		if (embed.fields) {
-			if (embed.fields.length > 25) {
-				throw new Error('Number of embed fields exceeds Discord\'s limit: ' + embed.fields.length);
-			} else {
-				for (let f of embed.fields) {
-					if (typeof(f.name) !== 'string') {
-						f.name = String(f.name);
-					}
-					if (f.name.length > 256) {
-						throw new Error('Embed field name length exceeds Discord\'s limit: ' + f.name.length);
-					} else {
-						totalLength += f.name.length;
-					}
-					if (typeof(f.value) !== 'string') {
-						f.value = String(f.value);
-					}
-					if (f.value.length > 1024) {
-						throw new Error('Embed field value length exceeds Discord\'s limit: ' + f.value.length);
-					} else {
-						totalLength += f.value.length;
-					}
-				}
-			}
-		}
-		if (embed.footer && embed.footer.text) {
-			if (embed.footer.text.length > 2048) {
-				throw new Error('Embed footer text length exceeds Discord\'s limit: ' + embed.footer.text.length);
-			} else {
-				totalLength += embed.footer.text.length;
-			}
-		}
-		if (embed.author) {
-			if (embed.author.name.length > 256) {
-				throw new Error('Embed author name length exceeds Discord\'s limit: ' + embed.author.name.length);
-			} else {
-				totalLength += embed.author.name.length;
-			}
-		}
-		
-		if (totalLength > 6000) {
-			throw new Error('Total embed text length exceeds Discord\'s limit: ' + totalLength);
-		}
-	}
-	
-	return true
-}
 
 /**
 	Client wrapper for Discord.Client that supports using Promises instead of callbacks.
@@ -107,6 +38,7 @@ function checkPayloadLength(message, embed) {
 class PromiseClient extends Discord.Client {
 	constructor(token, autorun = false) {
 		super(makePayload(['token','autorun'], arguments));
+		this.ENABLE_EMBEDS = true;
 	}
 	
 	/* Utility methods */
@@ -155,14 +87,22 @@ class PromiseClient extends Discord.Client {
 				([message, embed] = [embed, message]);
 			}
 		}
-		if (typeof(embed) == 'object' && (typeof (embed.message) === 'string' || typeof (embed.embed) === 'object')) {
-			({message, embed} = embed);
+		
+		var discordEmbedObject = new DiscordEmbed(message, embed);
+		// remove my name if it EVER shows up
+		discordEmbedObject.message = discordEmbedObject.message.replace(MY_NAME, '(Me)');
+		
+		if (!this.ENABLE_EMBEDS) {
+			discordEmbedObject.message = discordEmbedObject.toString();
+			delete discordEmbedObject.embed;
 		}
-		if (typeof(message) === 'string') {
-			message = message.replace(MY_NAME, '(Me)'); // remove my name if it EVER shows up
-		}
-		checkPayloadLength(message, embed);
-		return this.sendMessage({to,message,embed});
+		
+		// check that the data is of acceptable size
+		discordEmbedObject.checkPayloadLength();
+		
+		// send the package
+		discordEmbedObject.to = to;
+		return this.sendMessage(discordEmbedObject);
 	}
 	get(channelID, messageID) {
 		//console.log(arguments);

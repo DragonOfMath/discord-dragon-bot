@@ -14,11 +14,22 @@ function embed(post) {
 		title: `[/r/${post.subreddit}] ${truncate(post.title, 180)} - by ${post.author}`,
 		color: 0xd25a32,
 		url: post.url,
-		description: `${post.score<0?':arrow_down:':':arrow_up:'} ${post.score} | <:redditgold:303781934813675520> ${post.gilded} | :speech_balloon: ${post.num_comments} | [Permalink](https://reddit.com${post.permalink})`,
+		description: `${post.score<0?':arrow_down:':':arrow_up:'} ${post.score}`,
 		footer: {
 			text: new Date(post.created * 1000).toLocaleString()
 		}
 	};
+	if (post.gilded) {
+		e.description += ' | <:redditgold:303781934813675520> ' + post.gilded;
+	}
+	if (post.num_comments) {
+		e.description += ' | :speech_balloon: ' + post.num_comments;
+	}
+	
+	post.permalink = `https://www.reddit.com${post.permalink}`;
+	if (post.url != post.permalink) {
+		e.description += ` | [Permalink](${post.permalink})`;
+	}
 	if (post.spoiler) {
 		e.description += '\n\n' + '**Spoiler alert!** This post contains spoilers, so please click the permalink.';
 	} else {

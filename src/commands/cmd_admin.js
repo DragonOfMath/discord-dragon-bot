@@ -93,5 +93,18 @@ module.exports = {
 			}
 			return result.join('\n');
 		}
+	},
+	'embeds': {
+		category: 'Admin',
+		info: 'Toggles the use of embeds in messages.',
+		parameters: ['[boolean]'],
+		permissions: {
+			type: 'private'
+		},
+		suppress: true,
+		fn({client, args}) {
+			client.ENABLE_EMBEDS = args[0] ? Boolean(args[0]) : !client.ENABLE_EMBEDS;
+			return 'Embedding is now ' + (client.ENABLE_EMBEDS ? 'enabled' : 'disabled');
+		}
 	}
 };

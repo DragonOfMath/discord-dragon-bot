@@ -302,7 +302,7 @@ class Command {
 				if (typeof(x.message) === 'string') {
 					x.message = md.bold(this.title) + ' | ' + x.message;
 				} else {
-					x.title = md.bold(this.title) + (x.title ? ' | ' + x.title : '');
+					x.title = this.title + (x.title ? ' | ' + x.title : '');
 				}
 			} else if (typeof(x) === 'string') {
 				x = md.bold(this.title) + ' | ' + x;

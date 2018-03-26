@@ -38,6 +38,14 @@ class DragonBot extends DebugClient {
 		this.wait(3000).then(()=>this.disconnect());
 	}
 	
+	undo(channelID) {
+		return this.getAll(channelID, 15)
+		.then(messages => messages.find(m => m.author.id == this.id))
+		.then(message => {
+			if (message) return this.delete(channelID, message.id);
+		});
+	}
+	
 	commandify(cmd) {
 		return '`' + this.PREFIX + cmd + '`';
 	}
