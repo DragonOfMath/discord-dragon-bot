@@ -1,9 +1,17 @@
 const {random,fetch} = require('../../Utils');
 const Subreddits = require('./reddit.json');
 
+function truncate(x, maxlen) {
+	if (x.length < maxlen) {
+		return x;
+	} else {
+		return x.substring(0, maxlen - 3) + '...';
+	}
+}
+
 function embed(post) {
 	var e = {
-		title: `[/r/${post.subreddit}] ${post.title.length < 180 ? post.title : (post.title.substring(0,178)+'...')} - by ${post.author}`,
+		title: `[/r/${post.subreddit}] ${truncate(post.title, 180)} - by ${post.author}`,
 		color: 0xd25a32,
 		url: post.url,
 		description: `${post.score<0?':arrow_down:':':arrow_up:'} ${post.score} | <:redditgold:303781934813675520> ${post.gilded} | :speech_balloon: ${post.num_comments} | [Permalink](https://reddit.com${post.permalink})`,
@@ -15,7 +23,7 @@ function embed(post) {
 		e.description += '\n\n' + '**Spoiler alert!** This post contains spoilers, so please click the permalink.';
 	} else {
 		if (post.is_self) {
-			e.description += '\n\n' + (post.selftext.length < 2000 ? post.selftext : (post.selftext.substring(0,1998) + '...'));
+			e.description += '\n\n' + truncate(post.selftext, 1800);
 		} else if (post.domain == 'v.redd.it' || post.domain == 'gfycat.com' || post.url.endsWith('.gifv') || post.domain == 'youtube.com' || post.domain == 'youtu.be') {
 			e.description += '\n\n' + '**Cannot embed video.** :confused:';
 			e.video = {

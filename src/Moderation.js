@@ -75,11 +75,12 @@ class Moderation {
 			throw 'No archive channel set.';
 		}
 		limit = Math.max(1, Math.min(~~limit, 100));
+		console.log(`Archiving ${limit} messages in ${channelID}...`);
 		var lastMessage = client.channels[channelID].last_message_id;
 		return client.getMessages({channelID,limit,before:lastMessage})
 		.then(messages => {
 			function next() {
-				if (messages.length == 0) return;
+				if (messages.length == 0) return console.log('Archiving done.');
 				let message = messages.pop();
 				return client.send(archiveID,`From ${md.channel(channelID)}:`,embedMessage(message)).then(() => client.delete(channelID, message.id)).then(next);
 			}
@@ -91,8 +92,9 @@ class Moderation {
 		count = Math.max(1, ~~count);
 		//var lastMessage = client.channels[channelID].last_message_id;
 		function removeBatchOfMessages() {
-			if (count == 0) return;
+			if (count == 0) return console.log('Cleanup done.');
 			var limit = Math.min(count, 100);
+			console.log(`Deleting ${limit} messages in ${channelID}...`);
 			count -= limit;
 			return client.getMessages({channelID,limit})
 			.then(messages => {

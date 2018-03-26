@@ -4,7 +4,7 @@ const Session  = require('../../Session');
 const {Markdown:md,Format:fmt,random,strcmp,paginate,tableify} = require('../../Utils');
 const BaseFishTable = require('./fishes.json');
 
-const COOLDOWN = 20000; // TODO: reduce to 15000?
+var   COOLDOWN = 20000; // TODO: reduce to 15000?
 const COST     = 5;
 const HEADER   = ':fishing_pole_and_fish:Fishing Game:tropical_fish:';
 const COLOR    = 0x0080ff;
@@ -656,6 +656,10 @@ class Fishing {
 		var evt = new FishingEvent(serverID, channelID, descriptor);
 		client.sessions.start(evt);
 		return evt.toEmbed();
+	}
+	static setCooldown(wait) {
+		COOLDOWN = wait;
+		return `Fishing now allowed every ${wait/1000} seconds.`;
 	}
 }
 

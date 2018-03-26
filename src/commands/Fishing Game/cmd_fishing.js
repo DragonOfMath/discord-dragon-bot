@@ -87,6 +87,18 @@ module.exports = {
 					let id = resolveTargetUser(args, userID);
 					return Fishing.hitProbabilityTable(client, id, args[0]);
 				}
+			},
+			'wait': {
+				title: Fishing.header + ' | Set Cooldown',
+				info: 'Temporarily set the cooldown for `fish` usage.',
+				parameters: ['[time]'],
+				permissions: {
+					type: 'private'
+				},
+				fn({client, args}) {
+					var wait = Number(args[0]) || 0;
+					return Fishing.setCooldown(wait);
+				}
 			}
 		}
 	}

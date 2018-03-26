@@ -28,13 +28,13 @@ class DragonBot extends DebugClient {
 		this.on('guildMemberRemove', this.goodbyeUser);
 	}
 	
-	set presence(name) {
-		this.setPresence({game: {name}});
+	set presenceText(name) {
+		this.presence = {game: {name}};
 	}
 	
 	stop() {
 		super.stop();
-		this.presence = 'Bye! \uD83D\uDC4B';
+		this.presenceText = 'Bye! \uD83D\uDC4B';
 		this.wait(3000).then(()=>this.disconnect());
 	}
 	
@@ -108,7 +108,7 @@ class DragonBot extends DebugClient {
 	
 	_connected() {
 		super._connected();
-		this.presence = `\uD83D\uDC32 | ${this.PREFIX}help`;
+		this.presenceText = `\uD83D\uDC32 | ${this.PREFIX}help`;
 		this.sessions.startSessionTimer();
 		/*
 		for (let sid in this.servers) {
