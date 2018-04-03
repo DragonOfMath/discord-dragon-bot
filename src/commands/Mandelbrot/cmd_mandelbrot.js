@@ -1,7 +1,6 @@
 const Jimp = require('jimp');
-const {Color,ColorGradient} = require('./color');
 const Mandelbrot = require('./Mandelbrot');
-const {random} = require('../../Utils');
+const {Color,ColorGradient} = require('../../Utils');
 
 const mandelbrot = new Mandelbrot();
 const style      = new ColorGradient();
@@ -37,6 +36,10 @@ function render() {
 	return { image, time };
 }
 
+function random(a,b) {
+	return a + (b - a) * Math.random();
+}
+
 module.exports = {
 	'mset': {
 		aliases: ['mandelbrot','fractal'],
@@ -58,6 +61,15 @@ module.exports = {
 			});
 		},
 		subcommands: {
+			'reset': {
+				aliases: ['init', 'initial', 'default'],
+				title: 'Mandelbrot | Reset',
+				info: 'Resets all rendering options.',
+				fn() {
+					mandelbrot.reset();
+					return 'Options restored to initial values.';
+				}
+			},
 			'aa': {
 				aliases: ['antialiasing', 'smoothing'],
 				title: 'Mandelbrot | Anti-Aliasing',
@@ -68,15 +80,6 @@ module.exports = {
 						mandelbrot.antiAliasing = Boolean(args[0]);
 					}
 					return `Anti-aliasing set to **${mandelbrot.antiAliasing}**.`;
-				}
-			},
-			'reset': {
-				aliases: ['init', 'initial', 'default'],
-				title: 'Mandelbrot | Reset',
-				info: 'Resets all rendering options.',
-				fn() {
-					mandelbrot.reset();
-					return 'Options restored to initial values.';
 				}
 			},
 			'center': {
@@ -139,7 +142,7 @@ module.exports = {
 			'k': {
 				aliases: ['start'],
 				title: 'Mandelbrot | K-Value',
-				info: 'Gets or sets the K-value (starting point) of the render. Use `~` to leave values unchanged.',
+				info: 'Gets or sets the K-value (starting point) of the render. Use `~` to leave a value unchanged.',
 				parameters: ['[real]', '[imaginary]'],
 				fn({args}) {
 					if (typeof(args[0]) !== 'undefined' && args[0] != '~') {
@@ -187,9 +190,9 @@ module.exports = {
 					'reset': {
 						aliases: ['init', 'initial', 'default'],
 						title: 'Mandelbrot | Reset Zoom',
-						info: 'Resets magnification to x300.',
+						info: 'Resets magnification to x150.',
 						fn() {
-							mandelbrot.zoom = 300;
+							mandelbrot.zoom = 150;
 							return `Magnification reset to **x${mandelbrot.zoom}**.`;
 						}
 					},
@@ -328,7 +331,7 @@ module.exports = {
 			},
 			'swap': {
 				title: 'Mandelbrot Shader | Swap Colors',
-				info: 'Exchange the place to two colors by their indices.',
+				info: 'Exchange the place of two colors by their indices.',
 				parameters: ['index1', 'index2'],
 				fn({args}) {
 					var [i1,i2] = args.map(Number);
@@ -347,6 +350,27 @@ module.exports = {
 					var c = style.colors[i];
 					style.colors.splice(i, 1);
 					return `Color removed: **${c.toString()}**.`;
+				}
+			},
+			'preview': {
+				title: 'Mandelbrot Shader | Preview Gradient',
+				info: 'Displays a gradient of the current color palette.',
+				fn({client, channelID}) {
+					var image = new Jimp(1000, 50, 0xFFFFFFFF), c0, c1, x, y;
+					var dx = 1000 / style.colors.length;
+					for (x=0;x<image.bitmap.width;++x) {
+						c0 = style.colors[Math.floor(x/dx)];
+						c1 = style.get(x/dx);
+						for (y=0;y<25;++y) image.setPixelColor(c0.rgba, x, y);
+						for (;y<50;++y)    image.setPixelColor(c1.rgba, x, y);
+					}
+					image.getBuffer(Jimp.MIME_PNG, (err, buffer) => {
+						client.uploadFile({
+							to: channelID,
+							file: buffer,
+							filename: 'gradient.png'
+						});
+					});
 				}
 			}
 		}

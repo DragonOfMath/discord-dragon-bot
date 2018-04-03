@@ -54,19 +54,19 @@ const LoggerMixin = (Base) => class LoggerBase extends Base {
 		console.log('');
 	}
 	log(...x) {
-		console.log(FOREGROUND.White, this.constructor.name, PIPE, this._indent, ...x);
+		console.log(FOREGROUND.White + this.constructor.name, PIPE + this._indent, ...x);
 		return x[0];
 	}
 	info(...x) {
-		console.log(FOREGROUND.Green, this.constructor.name, PIPE, CODE.Info, PIPE, this._indent, ...x, FONT.Reset);
+		console.log(FOREGROUND.Green + this.constructor.name, PIPE, CODE.Info, PIPE + this._indent, ...x, FONT.Reset);
 		return x[0];
 	}
 	warn(...x) {
-		console.warn(FOREGROUND.Yellow, this.constructor.name, PIPE, CODE.Warn, PIPE, this._indent, ...x, FONT.Reset);
+		console.warn(FOREGROUND.Yellow + this.constructor.name, PIPE, CODE.Warn, PIPE + this._indent, ...x, FONT.Reset);
 		return x[0];
 	}
 	error(...x) {
-		console.error(FOREGROUND.Red, this.constructor.name, PIPE, CODE.Error, PIPE, this._indent, ...x, FONT.Reset);
+		console.error(FOREGROUND.Red + this.constructor.name, PIPE, CODE.Error, PIPE + this._indent, ...x, FONT.Reset);
 		return x[0];
 	}
 }

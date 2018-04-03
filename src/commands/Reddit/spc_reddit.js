@@ -9,7 +9,7 @@ module.exports = {
 		type: 'public'
 	},
 	resolver({message}) {
-		this.data.m = message.match(/(?![\w\d])\/[ru]\/[\w\d_]{3,25}/gm);
+		this.data.m = message.match(/\b(?![\w\d])\/[ru]\/[\w\d_]{3,25}\b/gm);
 		if (this.data.m && this.data.m.length) {
 			return 'r';
 		}

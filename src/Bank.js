@@ -54,6 +54,7 @@ class BankAccount extends Resource {
 		authorized = has special privileges
 	*/
 	constructor(userID, acct) {
+		if (!userID) throw 'Invalid userID.';
 		if (typeof(acct) === 'object' && !acct.state) {
 			// old bank data
 			acct.state = acct.dead ? STATE.DEAD : 
@@ -73,7 +74,7 @@ class BankAccount extends Resource {
 			throw 'Account is already created.';
 		}
 		
-		super.create();
+		super.instanceFromTemplate();
 		
 		this.record({action: 'created'});
 		return 'Your account has been successfully created. To view your account, use ' + md.code('bank.summary');

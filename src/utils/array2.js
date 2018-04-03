@@ -63,4 +63,4 @@ class Array2D extends Array {
 	}
 }
 
-module.exports = Array2D;
+module.exports = {Array2D};

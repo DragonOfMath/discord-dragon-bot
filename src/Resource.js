@@ -9,7 +9,7 @@
 class Resource {
 	constructor(template = {}, data = {}) {
 		this.makeProp('_template', template);
-		this.create();
+		this.instanceFromTemplate();
 		this.init(data);
 	}
 	/**
@@ -23,7 +23,7 @@ class Resource {
 		Ignore functions as those will be used for generating attributes
 		from data.
 	*/
-	create() {
+	instanceFromTemplate() {
 		var norm = {};
 		for (var k in this._template) {
 			if (typeof(this._template[k]) === 'function') {

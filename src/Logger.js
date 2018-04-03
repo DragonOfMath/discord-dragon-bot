@@ -54,19 +54,19 @@ class Logger {
 		console.log('');
 	}
 	log(...x) {
-		console.log(FOREGROUND.White, this.name, PIPE, this._indent, ...x);
+		console.log(FOREGROUND.White + this.name, PIPE + this._indent, ...x);
 		return x[0];
 	}
 	info(...x) {
-		console.log(FOREGROUND.Green, this.name, PIPE, CODE.Info, PIPE, this._indent, ...x, FONT.Reset);
+		console.log(FOREGROUND.Green + this.name, PIPE, CODE.Info, PIPE + this._indent, ...x, FONT.Reset);
 		return x[0];
 	}
 	warn(...x) {
-		console.warn(FOREGROUND.Yellow, this.name, PIPE, CODE.Warn, PIPE, this._indent, ...x, FONT.Reset);
+		console.warn(FOREGROUND.Yellow + this.name, PIPE, CODE.Warn, PIPE + this._indent, ...x, FONT.Reset);
 		return x[0];
 	}
 	error(...x) {
-		console.error(FOREGROUND.Red, this.name, PIPE, CODE.Error, PIPE, this._indent, ...x, FONT.Reset);
+		console.error(FOREGROUND.Red + this.name, PIPE, CODE.Error, PIPE + this._indent, ...x, FONT.Reset);
 		return x[0];
 	}
 }

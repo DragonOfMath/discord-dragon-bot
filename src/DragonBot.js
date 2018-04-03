@@ -29,7 +29,7 @@ class DragonBot extends DebugClient {
 	}
 	
 	set presenceText(name) {
-		this.presence = {game: {name}};
+		this.setPresence({game:{name}, type: 1});
 	}
 	
 	stop() {

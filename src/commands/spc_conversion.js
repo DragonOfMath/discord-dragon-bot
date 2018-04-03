@@ -1,4 +1,4 @@
-const MATCH_STRING = '([\\d\\.\\-]+)[\\s\\-]?°?(\\w+)(\\/\\w+)*';
+const MATCH_STRING = '\\b([\\d\\.\\-]+)[\\s\\-]?°?(\\w+)(\\/\\w+)*\\b';
 const ALL_REGEX = new RegExp(MATCH_STRING,'g');
 const ONE_REGEX = new RegExp(MATCH_STRING);
 
@@ -95,7 +95,7 @@ module.exports = {
 				case 'celsius':
 					this.data.conversions.push({from:'C',to:'F',value,rate});
 					break;
-				case 'in':
+				case 'in.':
 				case 'inch':
 				case 'inches':
 					this.data.conversions.push({from:'in',to:'cm',value,rate});

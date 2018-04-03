@@ -22,11 +22,17 @@ module.exports = {
 			'pokedex': {
 				aliases: ['pokeinventory','pinventory','pinv'],
 				title: PokemonGame.header,
-				info: 'Displays your Pokémon.',
-				parameters: ['[user]','[page]'],
+				info: 'Displays your Pokémon. Optionally include a search term to filter Pokémon.',
+				parameters: ['[user]','[page]','[search]'],
 				fn({client, args, userID}) {
 					userID = resolveTargetUser(args, userID);
-					return PokemonGame.inventory(client, userID, args[0]);
+					if (args[1]) {
+						var query = args[1].toLowerCase();
+						return PokemonGame.searchPokemon(client, userID, args[0],
+							p => p.name.toLowerCase().includes(query) || p.species.toLowerCase().includes(query));
+					} else {
+						return PokemonGame.inventory(client, userID, args[0]);
+					}
 				}
 			},
 			'legendaries': {

@@ -19,8 +19,8 @@ const SHINY_CHANCE = 0.03; // % chance to catch a shiny pokemon
 const SHINY_MULT   = 10;   // base value multiplier for shinies
 
 const PKMN_TEMPLATE = {
-	name: '',
-	spc: -1,
+	n: '',
+	s: -1,
 	//fav: 0,
 	//shiny: 0,
 	//lvl: 0,
@@ -45,6 +45,12 @@ class Pokemon extends Resource {
 			this.species = p;
 		}
 	}
+	get name() {
+		return this.n;
+	}
+	set name(x) {
+		this.n = x;
+	}
 	get lvl() {
 		return XPtoLevel(this.xp);
 	}
@@ -52,10 +58,10 @@ class Pokemon extends Resource {
 		this.xp = levelToXP(l);
 	}
 	get species() {
-		return PokemonList[this.spc];
+		return PokemonList[this.s];
 	}
 	set species(x) {
-		this.spc = PokemonList.indexOf(x);
+		this.s = PokemonList.indexOf(x);
 	}
 	get speciesWeb() {
 		return this.species.replace(/[^\w\d]/g,'').toLowerCase();
@@ -76,8 +82,8 @@ class Pokemon extends Resource {
 		return `https://cdn.rawgit.com/msikma/pokesprite/master/icons/pokemon/regular/${this.speciesWeb}.png`;
 	}
 	get rarity() {
-		var spc = this.species;
-		return Object.keys(SpecialPokemonList).find(type => SpecialPokemonList[type].includes(spc));
+		var s = this.species;
+		return Object.keys(SpecialPokemonList).find(type => SpecialPokemonList[type].includes(s));
 	}
 	get baseValue() {
 		var base = 0;
@@ -600,6 +606,12 @@ class PokemonGame {
 			return `unfavorited ${md.bold(p.name)}!`;
 		});
 	}
+	static searchPokemon(client, userID, page, filter) {
+		let pkmn = this.get(client, userID);
+		let embed = pkmn.displayPokemonInventory(page, filter);
+		embed.title = `Search Results for ${client.users[userID].username}'s Pokedex`;
+		return embed;
+	}
 	static inventory(client, userID, page) {
 		let pkmn = this.get(client, userID);
 		let embed = pkmn.displayPokemonInventory(page);
@@ -608,20 +620,17 @@ class PokemonGame {
 	}
 	static inventoryLegendaries(client, userID, page) {
 		const legendaries = this.specialPokemon;
-		let pkmn = this.get(client, userID);
-		let embed = pkmn.displayPokemonInventory(page, (pokemon) => legendaries.includes(pokemon.species));
+		let embed = this.searchPokemon(client, userID, page, (pokemon) => legendaries.includes(pokemon.species))
 		embed.title = `${client.users[userID].username}'s Legendaries`;
 		return embed;
 	}
 	static inventoryFavorites(client, userID, page) {
-		let pkmn = this.get(client, userID);
-		let embed = pkmn.displayPokemonInventory(page, (pokemon) => !!pokemon.fav);
+		let embed = this.searchPokemon(client, userID, page, (pokemon) => !!pokemon.fav);
 		embed.title = `${client.users[userID].username}'s Favorites`;
 		return embed;
 	}
 	static inventoryShinies(client, userID, page) {
-		let pkmn = this.get(client, userID);
-		let embed = pkmn.displayPokemonInventory(page, (pokemon) => !!pokemon.shiny);
+		let embed = this.searchPokemon(client, userID, page, (pokemon) => !!pokemon.shiny);
 		embed.title = `${client.users[userID].username}'s Shinies`;
 		return embed;
 	}
@@ -648,11 +657,11 @@ class PokemonGame {
 	static howMany(client, userID) {
 		let pkmn = this.get(client, userID);
 		let count = pkmn.pokemon.reduce((a,id,p) => {
-			if (!a.includes(p.spc)) a.push(p.spc);
+			if (!a.includes(p.s)) a.push(p.s);
 			return a;
 		}, []).length;
 		let lgdcount = pkmn.pokemon.reduce((a,id,p) => {
-			if (p.rarity && !a.includes(p.spc)) a.push(p.spc);
+			if (p.rarity && !a.includes(p.s)) a.push(p.s);
 			return a;
 		}, []).length;
 		return `${md.mention(userID)} You caught ${md.bold(count)}/${md.bold(PokemonList.length)} Pokémon, and ${md.bold(lgdcount)}/${md.bold(this.specialPokemon.length)} legendary Pokémon.`;

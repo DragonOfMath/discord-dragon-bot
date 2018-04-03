@@ -1,5 +1,5 @@
 const {Point,Partition} = require('./2d');
-const Array2D = require('./array2');
+const {Array2D} = require('../../Utils');
 
 const LOG2 = Math.log(2);
 
@@ -8,14 +8,14 @@ class Mandelbrot {
 		this.center = args.center || new Point(-0.5,0);
 		this.kx     = args.kx     || 0;
 		this.ky     = args.ky     || 0;
-		this.zoom   = args.zoom   || 300;
+		this.zoom   = args.zoom   || 150;
 		this.depth  = args.depth  || 48;
 		
 		this.partitionDepth = args.partitionDepth || 5;
 		this.antiAliasing   = !!args.antiAliasing;
 		
-		this.width  = args.width  || 1024;
-		this.height = args.height || 1024;
+		this.width  = args.width  || 600;
+		this.height = args.height || 600;
 		
 		this.data  = new Array2D(this.height, this.width);
 	}
@@ -25,7 +25,7 @@ class Mandelbrot {
 		this.center.y = 0;
 		this.kx = 0;
 		this.ky = 0;
-		this.zoom = 300;
+		this.zoom = 150;
 		this.depth = 48;
 	}
 	

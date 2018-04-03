@@ -47,6 +47,9 @@ class Color {
 	set blue(x) {
 		this.b = Color.truncate(x);
 	}
+	get rgba() {
+		return (this.val << 8) | 0xFF;
+	}
 	get val() {
 		return (this.r * 0x10000) + (this.g * 0x100) + this.b;
 	}
@@ -121,6 +124,7 @@ class ColorPalette {
 			throw 'Limit of 20 colors.';
 		}
 		var color = new Color(...arguments);
+		if (arguments.length == 0) color.random();
 		this.colors.push(color);
 		return color;
 	}
