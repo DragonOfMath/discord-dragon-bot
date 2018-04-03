@@ -1,4 +1,4 @@
-const MATCH_STRING = '\\b([\\d\\.\\-]+)[\\s\\-]?°?(\\w+)(\\/\\w+)*\\b';
+const MATCH_STRING = '([\\d\\.\\-]+)[\\s\\-]?°?(\\w+)(\\/\\w+)*';
 const ALL_REGEX = new RegExp(MATCH_STRING,'g');
 const ONE_REGEX = new RegExp(MATCH_STRING);
 
@@ -73,6 +73,7 @@ module.exports = {
 		type: 'public'
 	},
 	resolver({client, message, userID, channelID}) {
+		if (/http/.test(message)) return;
 		this.data.conversions = [];
 		var matches = message.match(ALL_REGEX);
 		if (!matches) {
