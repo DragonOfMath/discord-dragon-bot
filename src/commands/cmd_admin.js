@@ -48,8 +48,9 @@ module.exports = {
 				target = channelID;
 			}
 			message = message.join(' ');
-			client.sendMessage({to: target, message, typing: true})
-			.then(console.log)
+			client.simulateTyping(target)
+			.then(() => client.wait(5000))
+			.then(() => client.send(target, message))
 			.catch(console.error);
 		}
 	},
@@ -62,7 +63,7 @@ module.exports = {
 		},
 		suppress: true,
 		fn({client, args, channelID}) {
-			client._ignoreUsers = !!args[0];
+			client._ignoreUsers = Boolean(args[0]);
 			if (client._ignoreUsers) {
 				return 'Set to ignore users.';
 			} else {

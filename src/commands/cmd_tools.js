@@ -36,12 +36,12 @@ module.exports = {
 		permissions: {
 			type: 'public'
 		},
-		fn({client, arg, server}) {
+		fn({client, arg, userID, server}) {
 			if (arg && client.commands.has(arg)) {
 				let cmd = client.commands.get(arg)[0];
 				return cmd.toHelpEmbed(client, server);
 			} else {
-				return client.commands.toHelpEmbed(client);
+				return client.commands.toHelpEmbed(client, userID == client.ownerID);
 			}
 		}
 	},

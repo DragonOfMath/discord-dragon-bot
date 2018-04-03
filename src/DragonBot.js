@@ -121,7 +121,7 @@ class DragonBot extends DebugClient {
 		/*
 		for (let sid in this.servers) {
 			var server = this.servers[sid];
-			if (server.members[this.ownerID]) {
+			if (!server.members[this.ownerID]) {
 				this.send(sid, ':angry: Please do not add this bot to servers that do not include ' + md.mention(this.ownerID))
 				.then(() => this.wait(5000))
 				.then(() => this.leaveServer(sid));

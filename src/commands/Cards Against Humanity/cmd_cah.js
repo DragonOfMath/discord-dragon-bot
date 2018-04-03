@@ -100,6 +100,7 @@ class CardsAgainstHumanity extends Resource {
 			throw 'No white cards. Add some packs or create custom white cards!';
 		}
 		var picked = [];
+		count = Math.min(count, 10); // avoid crashing the bot
 		while (count-- > 0) {
 			var c = random(cards.length);
 			picked.push(cards[c]);
