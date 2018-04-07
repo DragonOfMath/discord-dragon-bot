@@ -44,11 +44,11 @@ class PromiseClient extends Discord.Client {
 	/* Utility methods */
 	wait(time, event, ...args) {
 		let client = this;
-		return Promise.delay(time).then(() => {
+		return Promise.delay(time).then((value) => {
 			if (typeof(event) === 'function') {
 				event.apply(client, args);
 			}
-			return true;
+			return value;
 		});
 	}
 	interval(time, event, ...args) {

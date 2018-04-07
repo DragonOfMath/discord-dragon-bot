@@ -2,21 +2,8 @@ const Parameters   = require('./Parameters');
 const CPermissions = require('./ConfigurablePermissions');
 const Properties   = require('./Properties');
 const TypeMapBase  = require('./TypeMapBase');
+const Constants    = require('./Constants');
 const {Markdown:md,random,strcmp} = require('./Utils');
-
-const WILDCARD  = '*';
-const DELIMITER = '.';
-const CATEGORY  = '&';
-const VARIABLE  = '$';
-const PREFIX    = '!';
-const KEY       = ':';
-const HELP      = '?';
-const RESERVED  = [WILDCARD,DELIMITER,CATEGORY,VARIABLE,PREFIX,KEY];
-
-const DEFAULT_CATEGORY = '';
-const DEFAULT_TITLE    = '';
-const DEFAULT_INFO     = '';
-const DEFAULT_SUPPRESSION = false;
 
 /**
 	Subcommands class
@@ -42,8 +29,8 @@ class Subcommands extends TypeMapBase {
 			sub = this.create(sub, subcommands[sub]);
 			this.addSubcommand(sub);
 		}
-		if (this.length > 0 && !this.has(HELP)) {
-			const help = this.create(HELP, {
+		if (this.length > 0 && !this.has(Constants.Symbols.HELP)) {
+			const help = this.create(Constants.Symbols.HELP, {
 				aliases: ['help','subcommands'],
 				title: `Subcommands`,
 				info: '(Automatically generated subcommand for listing other subcommands)',
@@ -105,37 +92,37 @@ class Command {
 		@arg {Object}        [descriptor.properties]  - optional properties for the command               (see Properties.js)
 		@arg {Boolean}       [descriptor.suppress]    - prevent listing this command and its subcommands
 		@arg {Object}        [descriptor.subcommands] - subcommands which are recursively processed
-		@arg {Function}      [descriptor.fn]          - the command function handler, which takes one argument, the input object
+		@arg {Function}      descriptor.fn            - the command function handler, which takes one argument, the input object
 	*/
 	constructor(cmd, {
 		aliases  = [],
-		category = DEFAULT_CATEGORY,
-		title    = DEFAULT_TITLE,
-		info     = DEFAULT_INFO,
+		category = Constants.Command.DEFAULT_CATEGORY,
+		title    = Constants.Command.DEFAULT_TITLE,
+		info     = Constants.Command.DEFAULT_INFO,
 		parameters  = [],
 		permissions = {},
 		properties  = {},
-		suppress    = DEFAULT_SUPPRESSION,
+		suppress    = Constants.Command.DEFAULT_SUPPRESSION,
 		subcommands = {},
 		fn
 	}) {
 		if (typeof(cmd) !== 'string' || !cmd) {
 			throw new TypeError(`${this.constructor.name}.id must be a string identifier.`);
 		}
-		if (RESERVED.some(r => cmd.indexOf(r) > -1)) {
-			throw new TypeError(`${this.constructor.name}.${cmd}.id cannot have any of these reserved characters: ${RESERVED.join('')}`);
+		if (Constants.Symbols.RESERVED.some(r => cmd.indexOf(r) > -1)) {
+			throw new TypeError(`${this.constructor.name}.${cmd}.id cannot have any of these reserved characters: ${Constants.Symbols.RESERVED.join('')}`);
 		}
 		if (!(aliases instanceof Array)) {
 			throw new TypeError(`${this.constructor.name}.${cmd}.aliases must be an Array.`);
 		}
-		if (aliases.some(a => RESERVED.some(r => a.indexOf(r) > -1))) {
-			throw new TypeError(`${this.constructor.name}.${cmd}.aliases = ${aliases.join(',')} cannot have any of these reserved characters: ${RESERVED.join('')}`);
+		if (aliases.some(a => Constants.Symbols.RESERVED.some(r => a.indexOf(r) > -1))) {
+			throw new TypeError(`${this.constructor.name}.${cmd}.aliases = ${aliases.join(',')} cannot have any of these reserved characters: ${Constants.Symbols.RESERVED.join('')}`);
 		}
 		if (typeof(category) !== 'string') {
 			throw new TypeError(`${this.constructor.name}.${cmd}.category must be a string identifier.`);
 		}
-		if (RESERVED.some(r => category.indexOf(r) > -1)) {
-			throw new TypeError(`${this.constructor.name}.${cmd}.category cannot have any of these reserved characters: ${RESERVED.join('')}`);
+		if (Constants.Symbols.RESERVED.some(r => category.indexOf(r) > -1)) {
+			throw new TypeError(`${this.constructor.name}.${cmd}.category cannot have any of these reserved characters: ${Constants.Symbols.RESERVED.join('')}`);
 		}
 		if (typeof(title) !== 'string') {
 			throw new TypeError(`${this.constructor.name}.${cmd}.title must be a string.`);
@@ -173,7 +160,7 @@ class Command {
 		@return full command string identifier
 	*/
 	get fullID() {
-		return (typeof(this.supercommand) !== 'undefined' ? `${this.supercommand.fullID}.${this.id}` : this.id).toLowerCase();
+		return (typeof(this.supercommand) !== 'undefined' ? (this.supercommand.fullID + Constants.Symbols.DELIMITER + this.id) : this.id).toLowerCase();
 	}
 	/**
 		@return a boolean that indicates if this command is a subcommand
@@ -228,13 +215,13 @@ class Command {
 		Add Alias (if it is in dot notation, use the last part, then pass the rest to the supercommand)
 	*/
 	addAlias(a) {
-		var parts = a.split(DELIMITER);
+		var parts = a.split(Constants.Symbols.DELIMITER);
 		var last = parts.pop();
 		if (!this.hasAlias(last)) {
 			this.aliases.push(last);
 		}
 		if (parts.length > 0 && this.supercommand) {
-			this.supercommand.addAlias(parts.join(DELIMITER));
+			this.supercommand.addAlias(parts.join(Constants.Symbols.DELIMITER));
 		}
 		return last;
 	}
@@ -251,10 +238,9 @@ class Command {
 		return this.parameters.check(params);
 	}
 	/**
-		Resolve the command by validating the arguments against its permissions, then return the result
-		(does not run command)
+		Validating the arguments with the command's permissions, then return the result
 	*/
-	resolve(input) {
+	validate(input) {
 		let grant = this.checkPermissions(input);
 		if (grant.granted) {
 			grant = this.checkParameters(input.args);
@@ -269,19 +255,21 @@ class Command {
 		// command functions can either generate responses internally or return one
 		if (this.fn instanceof Function) {
 			try {
-				input.response = this.fn(input);
+				input.response = this.fn.call(this,input);
 			} catch (e) {
-				input.error = e;
-				input.response = ':warning: **Error**: ' + (e.message||e);
-			}
-			if (input.response) {
-				if (typeof(input.response) === 'object' && input.response.constructor.name == 'Promise') {
-					input.response = input.response.then(x => this.insertTitle(x));
-				} else {
-					if (input.response instanceof Array) {
-						input.response = random(input.response);
+				input.error    = e;
+				input.response = ':warning: **Error**: ' + e;
+				input.temp     = true; // delete this error message after a few seconds
+			} finally {
+				if (input.response) {
+					if (input.response instanceof Promise) {
+						input.response = input.response.then(x => this.insertTitle(x));
+					} else {
+						if (input.response instanceof Array) {
+							input.response = random(input.response);
+						}
+						input.response = this.insertTitle(input.response);
 					}
-					input.response = this.insertTitle(input.response);
 				}
 			}
 		} else if (this.title || this.info) {
@@ -326,12 +314,12 @@ class Command {
 			fields: [
 				{
 					name: 'Usage',
-					value: client.PREFIX + this.toUsageString(),
+					value: Constants.Symbols.PREFIX + this.toUsageString(),
 					inline: true
 				},
 				{
 					name: 'Aliases',
-					value: this.aliases.join(', ') || 'No other aliases.',
+					value: this.aliases.map(a => a.toLowerCase()).join(', ') || 'No other aliases.',
 					inline: true
 				},
 				{
@@ -358,13 +346,8 @@ class Command {
 		Can be a string for a quick check, or an array of command levels
 		Special Selectors:
 		* is a wildcard selector. It always matches.
-			Ex: commands.allow *   // allows all top-level commands
-			Ex: commands.allow *.* // allows all 2nd-level commands
-			Ex: commands.allow bank.* // allows all bank subcommands
 		& is a category selector. It matches commands of that category.
-			Ex: !commands.allow &admin // allow all admin commands
-			Ex: !commands.allow &admin.x // allow the x subcommand of all admin commands
-			
+		
 		@return jagged Array of matched commands
 	*/
 	resolveAlias(cmd, level = 0) {
@@ -376,7 +359,7 @@ class Command {
 		}
 		
 		let selector = cmd[level];
-		if (strcmp(selector,WILDCARD) || strcmp(selector,CATEGORY+this.category)) {
+		if (strcmp(selector,Constants.Symbols.WILDCARD) || strcmp(selector,Constants.Symbols.CATEGORY+this.category)) {
 			return [this, ...this.subcommands.items.map(s => s.resolveAlias(cmd,level))];
 		} else if (this.hasAlias(selector)) {
 			if (level < cmd.length-1) {

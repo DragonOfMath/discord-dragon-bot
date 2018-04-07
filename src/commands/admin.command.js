@@ -1,3 +1,5 @@
+const Constants = require('../Constants');
+
 /**
 	cmd_admin.js
 	Command file for private (owner-only) bot commands.
@@ -80,7 +82,7 @@ module.exports = {
 		},
 		suppress: true,
 		fn({client, args}) {
-			var pairs = args.map(a => a.split(client.commands.KEY));
+			var pairs = args.map(a => a.split(Constants.Symbols.KEY));
 			var result = [];
 			for (var [cmd,alias] of pairs) {
 				var cmds = client.commands.get(cmd);

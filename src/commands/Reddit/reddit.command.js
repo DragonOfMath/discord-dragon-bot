@@ -89,7 +89,6 @@ function Reddit(sr, filter = '', t = '', limit = 100) {
 
 module.exports = {
 	'reddit': {
-		aliases: ['rdt','/r/'],
 		category: 'Fun',
 		title: 'Reddit',
 		info: 'Retrieve a random reddit post from a sub of your choice or one at random.',

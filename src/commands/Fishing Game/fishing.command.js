@@ -34,8 +34,8 @@ module.exports = {
 				title: Fishing.header,
 				info: 'Displays information about a fish by its type, name, or emoji. If no argument is passed, displays the types of fish to catch.',
 				parameters: ['[fishtype|fishname|:fish:]'],
-				fn({client, arg, userID, serverID}) {
-					let fish = arg.toLowerCase();
+				fn({client, args, userID, serverID}) {
+					let fish = args[0].toLowerCase();
 					if (fish) {
 						return Fishing.showFishInfo(client, serverID, fish);
 					} else {
@@ -63,8 +63,8 @@ module.exports = {
 				title: Fishing.header,
 				info: 'Displays the current catch rates of all fish types. Can sort by name, value, chance, or type.',
 				parameters: ['[sortby]'],
-				fn({client, arg, serverID}) {
-					return Fishing.showFishTable(client, serverID, arg);
+				fn({client, args, serverID}) {
+					return Fishing.showFishTable(client, serverID, args[0]);
 				}
 			},
 			'newevent': {

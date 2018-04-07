@@ -35,7 +35,7 @@ class FileCollector extends TypeMapBase {
 	_register(files) {
 		for (var filename in files) {
 			if (this._filter.test(filename)) {
-				var moduleName = filename.match(/^(.+)\.(.+)$/)[1];
+				var moduleName = filename.match(/^([^\.]+)\./)[1];
 				this.set(moduleName, filename, files[filename]);
 			} else {
 				this._register(files[filename]);

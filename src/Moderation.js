@@ -82,7 +82,7 @@ class Moderation {
 			function next() {
 				if (messages.length == 0) return console.log('Archiving done.');
 				let message = messages.pop();
-				return client.send(archiveID,`From ${md.channel(channelID)}:`,embedMessage(message)).then(() => client.delete(channelID, message.id)).then(next);
+				return client.send(archiveID,`From ${md.channel(channelID)}:`,embedMessage(message)).then(() => client.delete(channelID, message.id)).delay(1000).then(next);
 			}
 			return next();
 		})
@@ -109,9 +109,13 @@ class Moderation {
 				}
 				if (messages.length) {
 					var messageIDs = messages.map(x => x.id);
-					return client.deleteMessages({channelID, messageIDs})
-					.delay(3000) // prevent rate-limiting
-					.then(removeBatchOfMessages);
+					if (messages.length > 1) {
+						return client.deleteMessages({channelID, messageIDs})
+						.delay(3000) // prevent rate-limiting
+						.then(removeBatchOfMessages);
+					} else {
+						return client.deleteMessage({channelID, messageID: messageIDs[0]});
+					}
 				}
 			});
 		}

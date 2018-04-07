@@ -2,9 +2,9 @@ const TypeMapBase = require('./TypeMapBase');
 const Parameter   = require('./Parameter');
 const Grant       = require('./Grant');
 
-const MAX_ARGS = 100;
+const MAX_ARGS = 1000;
 
-module.exports = class Parameters extends TypeMapBase {
+class Parameters extends TypeMapBase {
 	constructor(params = [], command) {
 		super(Parameter);
 		for (let p = 0; p < params.length; p++) {
@@ -17,17 +17,28 @@ module.exports = class Parameters extends TypeMapBase {
 	}
 	check(args) {
 		if (args.length < this.requiredArgs) {
-			return Grant.denied(`Missing arguments: \`${this.getMissingParams(args).map(p => p.toString()).join(' ')}\``);
+			return Grant.denied(`Missing arguments: \`${this.getMissingParams(args).map(String).join(' ')}\``);
 		} else if (args.length > this.maximumArgs) {
-			return Grant.denied(`Exceeded the maximum arguments allowed: ${this.maximumArgs}`);
+			//return Grant.denied(`Max number of arguments: ${this.maximumArgs}`);
 		} else {
 			var a = 0;
-			// find first unsatisfied parameter
+			// find first unsatisfied parameter (if it exists)
 			for (var p in this) {
 				if (args[a]) {
 					if (this[p].isChoice) {
 						if (this[p].choices.includes(args[a].toLowerCase())) a++;
-						else Grant.denied(`"${args[a]}" is not a valid choice: ${this[p].choices.join(', ')}`);
+						else return Grant.denied(`"${args[a]}" is not a valid choice: ${this[p].choices.join(', ')}`);
+					} else if (this[p].isBlock) {
+						if (this[p].isMulti) {
+							while (args[a] && args[a].cmd) ++a;
+						}
+						if (args[a] && !args[a].cmd) {
+							return Grant.denied(`"${args[a]}" is not runnable.`);
+						} else if (a < args.length) {
+							a++;
+						} else {
+							break;
+						}
 					} else {
 						a++;
 					}
@@ -81,3 +92,5 @@ module.exports = class Parameters extends TypeMapBase {
 		return [];
 	}
 }
+
+module.exports = Parameters;

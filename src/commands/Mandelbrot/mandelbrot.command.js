@@ -1,6 +1,10 @@
-const Jimp = require('jimp');
+const Jimp       = require('jimp');
+const Promise    = require('bluebird');
 const Mandelbrot = require('./Mandelbrot');
-const {Color,ColorGradient} = require('../../Utils');
+const {Color,ColorGradient,paginate} = require('../../Utils');
+
+// https://github.com/oliver-moran/jimp/issues/90
+Jimp.prototype.getBufferAsync = Promise.promisify(Jimp.prototype.getBuffer);
 
 const mandelbrot = new Mandelbrot();
 const style      = new ColorGradient();
@@ -40,24 +44,35 @@ function random(a,b) {
 	return a + (b - a) * Math.random();
 }
 
+function toID(x) {
+	return x.toLowerCase().replace(/\s+/g, '_');
+}
+
 module.exports = {
 	'mset': {
 		aliases: ['mandelbrot','fractal'],
 		category: 'Fun',
 		title: 'Mandelbrot Viewer',
-		info: 'Renders the current view of the Mandelbrot Set.',
-		fn({client, channelID}) {
-			client.simulateTyping(channelID)
+		info: 'Renders the current view of the Mandelbrot Set. Optionally, you may specify the width and height of the render (max 2000x2000).',
+		parameters: ['[width]','[height]'],
+		fn({client, args, channelID}) {
+			var [width,height] = args.map(Number);
+			mandelbrot.width  = width  ? Math.max(100, Math.min(width,  2000)) : 600;
+			mandelbrot.height = height ? Math.max(100, Math.min(height, 2000)) : 600;
+			var message;
+			return client.simulateTyping(channelID)
 			.then(render)
-			.then(data => {
-				data.image.getBuffer(Jimp.MIME_PNG, (err, buffer) => {
-					client.uploadFile({
-						to: channelID,
-						file: buffer,
-						filename: 'mandelbrot.png',
-						message: `Rendered in **${data.time}ms**`
-					});
-				});
+			.then(({image,time}) => {
+				message = this.insertTitle(`Rendered in **${time}ms**`);
+				return image.getBufferAsync(Jimp.MIME_PNG);
+			})
+			.then(buffer =>  {
+				return client.uploadFile({
+					to: channelID,
+					file: buffer,
+					filename: `mandelbrot_${Date.now()}.png`,
+					message
+				}).then(() => ''); // this is to prevent an empty embed from sending
 			});
 		},
 		subcommands: {
@@ -263,6 +278,85 @@ module.exports = {
 						}
 					}
 				}
+			},
+			'presets': {
+				title: 'Mandelbrot | Presets',
+				info: 'Lists stored render presets.',
+				parameters: ['[page]'],
+				fn({client, args}) {
+					var DATA = client.database.get('client').get(client.id);
+					return paginate(DATA.mSetPresets || [], args[0], 20, function (presets,idx) {
+						return {
+							name: `#${idx+1}`,
+							value: JSON.stringify(presets[idx]),
+							inline: true
+						};
+					});
+				},
+				subcommands: {
+					'save': {
+						title: 'Mandelbrot | Save Preset',
+						info: 'Save current render settings as a preset.',
+						parameters: ['[index]'],
+						fn({client, args}) {
+							var id = Number(args[0]) - 1;
+							client.database.get('client').modify(client.id, DATA => {
+								DATA.mSetPresets = DATA.mSetPresets || [];
+								id = DATA.mSetPresets[id] ? id : DATA.mSetPresets.length;
+								DATA.mSetPresets[id] = {
+									x:     mandelbrot.center.x,
+									y:     mandelbrot.center.y,
+									kx:    mandelbrot.kx,
+									ky:    mandelbrot.ky,
+									zoom:  mandelbrot.zoom,
+									depth: mandelbrot.depth
+								};
+								return DATA;
+							}).save();
+							return `Render settings saved to **#${id+1}**.`;
+						}
+					},
+					'load': {
+						title: 'Mandelbrot | Load Preset',
+						info: 'Load an existing render preset.',
+						parameters: ['index'],
+						fn({client, args}) {
+							var id = Number(args[0]) - 1;
+							
+							var DATA = client.database.get('client').get(client.id);
+							DATA.mSetPresets = DATA.mSetPresets || [];
+							var renderData = DATA.mSetPresets[id];
+							
+							if (typeof(renderData) === 'undefined') {
+								return `No render preset **#${id+1}** exists.`;
+							}
+							
+							mandelbrot.center.x = renderData.x;
+							mandelbrot.center.y = renderData.y;
+							mandelbrot.kx       = renderData.kx;
+							mandelbrot.ky       = renderData.ky;
+							mandelbrot.zoom     = renderData.zoom;
+							mandelbrot.depth    = renderData.depth;
+							
+							return `Loaded render preset **#${id+1}**.`;
+						}
+					},
+					'erase': {
+						aliases: ['delete', 'remove'],
+						title: 'Mandelbrot | Erase Preset',
+						info: 'Delete a render preset.',
+						parameters: ['index'],
+						fn({client, args}) {
+							var id = Number(args[0]) - 1;
+							client.database.get('client').modify(client.id, DATA => {
+								DATA.mSetPresets = DATA.mSetPresets || [];
+								DATA.mSetPresets.splice(id, 1);
+								return DATA;
+							}).save();
+							return `Render preset **#${id+1}** deleted.`;
+						}
+					}
+				}
 			}
 		}
 	},
@@ -352,6 +446,14 @@ module.exports = {
 					return `Color removed: **${c.toString()}**.`;
 				}
 			},
+			'clear': {
+				title: 'Mandelbrot Shader | Remove All Colors',
+				info: 'Remove all colors at once to start from a blank palette.',
+				fn() {
+					style.clear();
+					return 'Shader color palette cleared.';
+				}
+			},
 			'preview': {
 				title: 'Mandelbrot Shader | Preview Gradient',
 				info: 'Displays a gradient of the current color palette.',
@@ -371,6 +473,92 @@ module.exports = {
 							filename: 'gradient.png'
 						});
 					});
+				}
+			},
+			'presets': {
+				title: 'Mandelbrot Shader | Presets',
+				info: 'Lists stored shader presets.',
+				parameters: ['[page]'],
+				fn({client, args}) {
+					var DATA = client.database.get('client').get(client.id);
+					DATA.mShaderPresets = DATA.mShaderPresets || {};
+					var embed = paginate(Object.keys(DATA.mShaderPresets), args[0], 20, function (presets,idx) {
+						var presetName = presets[idx];
+						var preset = DATA.mShaderPresets[presetName];
+						return {
+							name: `#${idx+1} - ${presetName} - Scale: ${preset.scale}`,
+							value: preset.colors.map(c => new Color(c).toString()).join('\n'),
+							inline: true
+						};
+					});
+					return embed;
+				},
+				subcommands: {
+					'save': {
+						title: 'Mandelbrot Shader | Save Preset',
+						info: 'Save current shader settings as a preset. ID can be the name or index.',
+						parameters: ['id'],
+						fn({client, args}) {
+							var id = toID(args[0]);
+							client.database.get('client').modify(client.id, DATA => {
+								DATA.mShaderPresets = DATA.mShaderPresets || {};
+								var presets = Object.keys(DATA.mShaderPresets);
+								if (typeof(presets[id-1]) !== 'undefined') {
+									id = presets[id-1];
+								}
+								DATA.mShaderPresets[id] = {
+									scale:  style.scale,
+									colors: style.colors
+								};
+								return DATA;
+							}).save();
+							return `Shader data saved to **${id}**.`;
+						}
+					},
+					'load': {
+						title: 'Mandelbrot Shader | Load Preset',
+						info: 'Load an existing shader preset. ID can be the name or index.',
+						parameters: ['id'],
+						fn({client, args}) {
+							var id = toID(args[0]);
+							
+							var DATA = client.database.get('client').get(client.id);
+							DATA.mShaderPresets = DATA.mShaderPresets || {};
+							
+							var presets = Object.keys(DATA.mShaderPresets);
+							if (typeof(presets[id-1]) !== 'undefined') {
+								id = presets[id-1];
+							}
+							var shaderData = DATA.mShaderPresets[id];
+							
+							if (typeof(shaderData) === 'undefined') {
+								return `No shader preset **${id}** exists.`;
+							}
+							style.scale = shaderData.scale;
+							style.colors = shaderData.colors.map(c => new Color(c));
+							
+							return `Loaded shader preset **${id}**.`;
+						}
+					},
+					'erase': {
+						aliases: ['delete', 'remove'],
+						title: 'Mandelbrot Shader | Erase Preset',
+						info: 'Delete a shader preset. ID can be the name or index.',
+						parameters: ['id'],
+						fn({client, args}) {
+							var id = toID(args[0]);
+							client.database.get('client').modify(client.id, DATA => {
+								DATA.mShaderPresets = DATA.mShaderPresets || {};
+								var presets = Object.keys(DATA.mShaderPresets);
+								if (typeof(presets[id-1]) !== 'undefined') {
+									id = presets[id-1];
+								}
+								delete DATA.mShaderPresets[id];
+								return DATA;
+							}).save();
+							return `Shader preset **${id}** deleted.`;
+						}
+					}
 				}
 			}
 		}

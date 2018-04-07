@@ -153,6 +153,7 @@ class ColorPalette {
 	toEmbedObject(page) {
 		return {
 			title: 'Color Palette',
+			description: `Scale: ${this.scale}`,
 			fields: this.colors.map((c,i) => {
 				return {
 					name: String(i+1),

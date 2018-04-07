@@ -2,9 +2,7 @@ const FileCollector = require('./FileCollector');
 const TypeMapBase   = require('./TypeMapBase');
 const Session       = require('./Session');
 const Logger        = require('./LoggerMixin');
-
-const FILE_REGEX = /^spc_.+\.js$/; // "special" files
-const POLL_TIME = 1000;
+const Constants     = require('./Constants');
 
 class Sessions extends Logger(TypeMapBase) {
 	constructor(client) {
@@ -29,7 +27,7 @@ class Sessions extends Logger(TypeMapBase) {
 		
 		this.info('Loading sessions...');
 		this.indent();
-		fc.load(dir,recursive,FILE_REGEX);
+		fc.load(dir,recursive,Constants.Sessions.FILE_REGEX);
 		fc.forEach((filename, file) => {
 			sessions.start(file);
 		});
@@ -40,7 +38,7 @@ class Sessions extends Logger(TypeMapBase) {
 		this.start(file);
 	}
 	startSessionTimer() {
-		this.interval = setInterval(this.checkExpirations.bind(this), POLL_TIME);
+		this.interval = setInterval(this.checkExpirations.bind(this), Constants.Sessions.POLL_TIME);
 	}
 	stopSessionTimer() {
 		removeInterval(this.interval);
@@ -83,7 +81,7 @@ class Sessions extends Logger(TypeMapBase) {
 				// ignore errors
 			}
 		}
-		return input;
+		return Promise.resolve(input);
 	}
 	checkExpirations() {
 		for (var s of this.sessions) {

@@ -33,8 +33,6 @@ class Mandelbrot {
 		if (this.data.rows == this.height && this.data.cols == this.width) {
 			this.data.fill(0);
 		} else {
-			//this.width  = screen.width;
-			//this.height = screen.height - 120;
 			this.data.resize(this.height, this.width).fill(0);
 		}
 		var p = new Partition(new Point(0,0), new Point(this.width-1, this.height-1));

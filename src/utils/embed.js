@@ -124,7 +124,7 @@ class DiscordEmbed {
 					totalLength += this.embed.footer.text.length;
 				}
 			}
-			if (this.embed.author) {
+			if (this.embed.author && this.embed.author.name) {
 				if (this.embed.author.name.length > 256) {
 					throw new Error('Embed author name length exceeds Discord\'s limit: ' + this.embed.author.name.length);
 				} else {

@@ -2,14 +2,8 @@ const FileCollector = require('./FileCollector');
 const TypeMapBase   = require('./TypeMapBase');
 const Command       = require('./Command');
 const Logger        = require('./Logger');
-const {Markdown:md,strcmp} = require('./Utils');
-
-const WILDCARD   = '*';
-const SUBCOMMAND = '.';
-const CATEGORY   = '&';
-const VARIABLE   = '$';
-const KEY        = ':';
-const FILE_REGEX = /^cmd_.+\.js$/;
+const Constants     = require('./Constants');
+const {Markdown:md,strcmp,truncate} = require('./Utils');
 
 /*
 	Recursively flatten arrays within arrays
@@ -37,20 +31,14 @@ class Commands extends TypeMapBase {
 		const logger = new Logger('Commands');
 		this.setProperties({
 			client,
-			logger,
-			PREFIX: client.PREFIX,
-			SUBCOMMAND,
-			WILDCARD,
-			CATEGORY,
-			FILE_REGEX,
-			KEY
+			logger
 		});
 	}
 	
 	/**
 		Load command files from a directory, then load command descriptors from each file.
 	*/
-	load(dir = __dirname, recursive = true, filter = FILE_REGEX) {
+	load(dir = __dirname, recursive = true, filter = Constants.Commands.FILE_REGEX) {
 		var commands = this;
 		var fc = new FileCollector();
 		
@@ -90,12 +78,7 @@ class Commands extends TypeMapBase {
 		}, []);
 	}
 	resolveCategory(cat) {
-		for (let c of this.categories) {
-			if (strcmp(c,cat)) {
-				return c;
-			}
-		}
-		return '';
+		return this.categories.find(cat => strcmp(c,cat)) || '';
 	}
 	
 	/**
@@ -105,7 +88,7 @@ class Commands extends TypeMapBase {
 	*/
 	get(...cmds) {
 		if (!cmds.length) {
-			cmds.push(WILDCARD);
+			cmds.push(Constants.Symbols.WILDCARD);
 		}
 		var matches = [];
 		for (let cmd of cmds) {
@@ -140,39 +123,37 @@ class Commands extends TypeMapBase {
 			Produces a listing of matched commands
 		@return the input object
 	*/
-	resolve(input) {
-		try {
-			// find the command object, if possible
-			var commands = this.get(input.cmds);
-			if (commands.length > 1) {
-				if (input.userID != input.client.ownerID) {
-					commands = commands.filter(cmd => !cmd.suppress);
-				}
-				input.response = 'Matches: ' + commands.map(cmd => cmd.fullID).sort().join(', ');
-				if (input.response.length > 2000) {
-					input.response = input.response.substring(0, 1997) + '...';
-				}
-			} else if (commands.length == 1) {
-				let command = commands[0];
-				input.cmd = command.fullID;
-				command.resolve(input);
-				
-				if (input.grant == 'granted') {
-					this.logger.info('Command:', input.cmd);
-					command.run(input);
-				} else {
-					input.response = input.grant;
-				}
-			} else {
-				//throw 'Invalid command/category.';
-			}
-		} catch (e) {
-			input.error    = e;
-			input.response = ':warning: **Error**: ' + (e.message||e);
-			input.grant = '';
-		} finally {
-			return input;
+	resolve(data) {
+		// find the command object, if possible
+		var commands = this.get(data.cmds);
+		
+		if (commands.length == 0) {
+			return Promise.reject(`Not a recognized command: ${data.cmd}`);
 		}
+		
+		if (commands.length > 1) {
+			if (data.userID != data.client.ownerID) {
+				commands = commands.filter(cmd => !cmd.suppress);
+			}
+			data.response = commands.map(cmd => cmd.fullID).sort().join(', ');
+			data.response = truncate(data.response, 1985);
+			data.response = 'Matches:\n' + md.codeblock(data.response);
+			return Promise.resolve(data);
+		}
+		
+		var command = commands[0];
+		data.cmd = command.fullID;
+		command.validate(data);
+		
+		if (data.grant == 'granted') {
+			this.logger.info(data.text);
+			command.run(data);
+		} else {
+			this.logger.warn(data.grant);
+			data.response = ':no_entry_sign: **Denied**: ' + data.grant;
+		}
+		
+		return Promise.resolve(data);
 	}
 	toHelpEmbed(client, showSuppressedCommands) {
 		var cmds = this.keys;
@@ -185,15 +166,19 @@ class Commands extends TypeMapBase {
 			fields: [
 				{
 					name: 'Using Commands',
-					value: `To invoke a command, add \`${client.PREFIX}\` at the start of your message. In case other bots on the server use the same prefix, you can @mention me ${md.mention(client.id)} in place of the prefix.`
+					value: `To invoke a command, add \`${Constants.Symbols.PREFIX}\` at the start of your message. In case other bots on the server use the same prefix, you can @mention me ${md.mention(client.id)} before your command (prior to 1.6.0, the prefix was not required, now it is). As of 1.6.0, you can close a command statement with \`${Constants.Symbols.STOP}\` which stops from parsing the rest of the text as arguments. If you are using specially reserved characters, you should escape them with \`\\\` before each character or quote them.`
 				},
 				{
 					name: 'Subcommands',
-					value: 'Some commands have further divisions in their functionality called **subcommands**. You can use these subcommands with dot notation -- `command.sub`, `command.sub.subsub` and so on. You can use the built-in subcommand `command.?` to list them.'
+					value: 'Some commands have further divisions in their functionality called **subcommands**. You can use these subcommands with dot notation -- `command.sub`, `command.sub.subsub` and so on. You can use the built-in subcommand `?` to list them. (Ex: `bank.?`)'
+				},
+				{
+					name: 'Metacommands',
+					value: `Introduced in 1.6.0, metacommands allows even more control of commands. They follow a similar syntax to commands, but with one big difference: argument blocks. Argument blocks are denoted by \`${Constants.Symbols.BLOCK_START}\` and \`${Constants.Symbols.BLOCK_END}\`, which treats the text inside as a lambda. Most commands do not accept these, however metacommands will likely use them. For instance, you can run a bunch of commands in a single message using the \`batch\` command!`
 				},
 				{
 					name: 'Categories',
-					value: `Commands are divided these groups: ${this.categories.join(', ')}. You can see what commands are in the group by using \`&\` character followed by the category's name.`
+					value: `Commands are divided these groups: ${this.categories.join(', ')}. You can see what commands are in a group by using \`${Constants.Symbols.CATEGORY}\` followed by the category's name.`
 				}
 			]
 		};
