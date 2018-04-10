@@ -54,5 +54,10 @@ module.exports = {
 	Sessions: {
 		FILE_REGEX: /^[^\.]+\.special\.js$/,
 		POLL_TIME: 1000
+	},
+	DragonBot: {
+		TEMP_MSG_LIFETIME: 5000,
+		RATE_LIMIT_DELAY: 1200,
+		DISCONNECT_DELAY: 3000
 	}
 };

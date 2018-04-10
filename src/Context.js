@@ -3,10 +3,10 @@ class Context {
 		if (typeof(client) !== 'object') {
 			throw new TypeError(`${this.constructor.name}.client must be a Discord.Client object.`);
 		}
-		if (typeof(client.users[userID]) === 'undefined') {
+		if (typeof(userID) === 'undefined') {
 			throw new TypeError(`${this.constructor.name}.userID is invalid: ${userID} (${typeof userID})`);
 		}
-		if (typeof(channelID) !== 'string') {
+		if (typeof(channelID) === 'undefined') {
 			throw new TypeError(`${this.constructor.name}.channelID is invalid: ${userID} (${typeof userID})`);
 		}
 		

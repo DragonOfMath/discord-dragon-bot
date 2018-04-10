@@ -24,7 +24,7 @@ class Parameters extends TypeMapBase {
 			var a = 0;
 			// find first unsatisfied parameter (if it exists)
 			for (var p in this) {
-				if (args[a]) {
+				if (typeof(args[a]) !== 'undefined') {
 					if (this[p].isChoice) {
 						if (this[p].choices.includes(args[a].toLowerCase())) a++;
 						else return Grant.denied(`"${args[a]}" is not a valid choice: ${this[p].choices.join(', ')}`);
@@ -43,7 +43,7 @@ class Parameters extends TypeMapBase {
 						a++;
 					}
 				} else if (!this[p].optional) {
-					return Grant.denied(`Missing argument: \`${this[p]}\``);
+					return Grant.denied(`Missing argument: \`${this[p].toString()}\``);
 				}
 			}
 		}

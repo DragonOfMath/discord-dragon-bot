@@ -18,8 +18,8 @@ class Block {
 				this.cmd  = tokens.shift().substring(1);
 				this.cmds = this.cmd.split(Constants.Symbols.DELIMITER);
 				
-				read: for (var i = 0, j, scope = 0, temp = []; i < tokens.length; ++i) {
-					switch (tokens[i]) {
+				read: for (var i = 0, j, t, scope = 0, temp = []; i < tokens.length; ++i) {
+					switch (t= tokens[i]) {
 						case Constants.Symbols.BLOCK_START:
 							temp.push(i);
 							scope++;
@@ -47,10 +47,11 @@ class Block {
 							break;
 						default:
 							if (scope != 0) break;
-							if (/^(\/\/.*|\/\*.*\*\/)$/.test(tokens[i])) {
-								this.comments.push(tokens[i]);
+							if (/^(\/\/.*|\/\*.*\*\/)$/.test(t)) {
+								this.comments.push(t);
 							} else {
-								this.args.push(tokens[i]);
+								if (t == Number(t)) t = Number(t);
+								this.args.push(t);
 							}
 							break;
 					}
@@ -61,9 +62,9 @@ class Block {
 				this.text = Constants.Symbols.PREFIX + this.cmd;
 				if (this.arg) {
 					this.text += ' ' + this.args.map(a => {
-						if (a == Number(a)) return a;
-						else if (typeof(a) === 'string') return a.includes(' ') ? quote(a) : a;
-						else return '{' + a.toString() + '}';
+						if  (typeof(a) === 'string') return a.includes(' ') ? quote(a) : a;
+						else if (a instanceof Block) return '{' + a.toString() + '}';
+						else return a;
 					}).join(' ');
 				}
 			} catch (e) {
@@ -102,18 +103,17 @@ class CommandParser {
 			return text.substring(i,i+sub.length) == sub;
 		}
 		function lookahead(i,sub) {
-			var j = i;
-			while (text[j] && !match(j,sub)) ++j;
-			return j;
+			while (text[i] && !match(i,sub)) ++i;
+			return i;
 		}
 		function lookaheadWithScope(i,scopeIn,scopeOut) {
-			var j = i;
 			var _scope = scope++;
-			while (text[++j] && scope > _scope) {
-				if      (match(j,scopeIn))  scope++;
-				else if (match(j,scopeOut)) scope--;
-			}
-			return j;
+			do  {
+				i++;
+				if      (match(i,scopeIn))  scope++;
+				else if (match(i,scopeOut)) scope--;
+			} while (text[i] && scope > _scope);
+			return i;
 		}
 		
 		for (var i = 0, j; i < text.length; ++i) {
@@ -165,13 +165,14 @@ class CommandParser {
 					tokens.push(letter);
 					continue;
 					
-				// expression (read and evaluated at parse time)
+				// expression
 				} else if (letter == Constants.Symbols.EXPRESSION && next == Constants.Symbols.EXP_START) {
+					push();
 					j = i;
 					i = lookaheadWithScope(i+1, Constants.Symbols.EXP_START, Constants.Symbols.EXP_END);
-					var expression = text.substring(j+1,i+1);
-					token = eval(expression) || '';
-					push();
+					var expression = text.substring(j,i+1);
+					// do NOT evaluate yet!
+					tokens.push(expression);
 					continue;
 				}
 			}

@@ -128,7 +128,8 @@ class Commands extends TypeMapBase {
 		var commands = this.get(data.cmds);
 		
 		if (commands.length == 0) {
-			return Promise.reject(`Not a recognized command: ${data.cmd}`);
+			data.error = `Not a recognized command: ${data.cmd}`;
+			return Promise.resolve(data);
 		}
 		
 		if (commands.length > 1) {

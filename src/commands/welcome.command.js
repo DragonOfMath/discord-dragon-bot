@@ -58,7 +58,7 @@ module.exports = {
 				permissions: {
 					type: 'private'
 				},
-				fn({client, serverID, user, channel, server}) {
+				fn({client, serverID, context}) {
 					var welcome = new Welcome(client.database.get('servers').get(serverID).welcome);
 					if (welcome.channel) {
 						return {
@@ -70,11 +70,11 @@ module.exports = {
 								},
 								{
 									name: 'Greeting Message',
-									value: client.prepMessage(welcome.message, user, channel, server) || '(No message set)'
+									value: client.normalize(welcome.message, context) || '(No message set)'
 								},
 								{
 									name: 'Goodbye Message',
-									value: client.prepMessage(welcome.goodbye, user, channel, server) || '(No message set)'
+									value: client.normalize(welcome.goodbye, context) || '(No message set)'
 								}
 							]
 						};

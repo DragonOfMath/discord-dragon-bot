@@ -1,3 +1,8 @@
+function propagate(data,_data) {
+	data.error = _data.error;
+	return data;
+}
+
 module.exports = {
 	'noop': {
 		aliases: ['nop', 'nope', 'nothing'],
@@ -17,12 +22,35 @@ module.exports = {
 		},
 		fn(data) {
 			const {client, args, context} = data;
-			if (args[0]) {
-				return client.run(context, args[1]);
-			} else if (args[2]) {
-				return client.run(context, args[2]);
-			} else {
-				return 'false';
+			var [condition, ifTrue, ifFalse] = args;
+			if (condition) {
+				return client.run(context, ifTrue)
+				.then(_data => {propagate(data,_data)});
+			} else if (ifFalse) {
+				return client.run(context, ifFalse)
+				.then(_data => {propagate(data,_data)});
+			}
+		}
+	},
+	'while': {
+		category: 'Meta',
+		info: 'Repeats a command while `condition` evaluates to *true*.',
+		parameters: ['condition', '{command}'],
+		permissions: {
+			type: 'public'
+		},
+		fn(data) {
+			// note: input contains the original, unevaluated arguments
+			const {client, args, context, input} = data;
+			var [condition, command] = args;
+			if (condition) {
+				return client.run(context, command)
+				.then(_data => {
+					if (_data.error) {
+						propagate(data, _data);
+						return 'While loop canceled.';
+					} else return client.run(context, input);
+				});
 			}
 		}
 	},
@@ -41,13 +69,12 @@ module.exports = {
 					return client.run(context, args[ptr])
 					.then(_data => {
 						if (_data.error) {
-							// propagate the error
-							data.error = _data.error;
+							propagate(data, _data);
 							return 'Batch run canceled. (command: `' + args[ptr] + '`)';
 						} else return loop(ptr+1);
 					});
 				} else {
-					return 'Batch finished.';
+					//return 'Batch finished.';
 				}
 			}
 			return loop(0);
@@ -68,13 +95,12 @@ module.exports = {
 					return client.run(context, args[1])
 					.then(_data => {
 						if (_data.error) {
-							// propagate the error
-							data.error = _data.error;
+							propagate(data, _data);
 							return 'Loop run canceled. (counter: `' + counter + '`)';
 						} else return loop(counter-1);
 					});
 				} else {
-					return 'Loop finished.';
+					//return 'Loop finished.';
 				}
 			}
 			return loop(args[0]);
@@ -91,7 +117,40 @@ module.exports = {
 		fn(data) {
 			const {client, args, context} = data;
 			return client.wait(args[0])
-			.then(() => args[1] && client.run(context, args[1]));
+			.then(() => {
+				if (args[1]) {
+					return client.run(context, args[1])
+					.then(_data => {propagate(data,_data)});
+				}
+			});
+		}
+	},
+	'cancel': {
+		aliases: ['throw','error'],
+		category: 'Meta',
+		info: 'Intentionally throw an error, useful for stopping execution of metacommands.',
+		parameters: ['[message]'],
+		permissions: {
+			type: 'public'
+		},
+		fn({client, args}) {
+			throw args[0] || 'Cancellation thrown.';
+		}
+	},
+	'try': {
+		aliases: ['catch'],
+		category: 'Meta',
+		info: 'Runs a command, and if it throws an error, continues rather than propagate the error.',
+		parameters: ['{command}'],
+		permissions: {
+			type: 'public'
+		},
+		fn(data) {
+			const {client, args, context} = data;
+			return client.run(context, args[0])
+			.then(_data => {
+				if (_data.error) return `(Error caught: ${_data.error})`;
+			});
 		}
 	}
 };

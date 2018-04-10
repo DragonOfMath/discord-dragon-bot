@@ -3,6 +3,7 @@ const Utils         = require('./Utils');
 const Database      = require('./Database');
 const Commands      = require('./Commands');
 const Sessions      = require('./Sessions');
+const VariableStore = require('./Variables');
 const Constants     = require('./Constants');
 const Analytics     = require('./Analytics');
 const Context       = require('./Context');
@@ -22,16 +23,18 @@ class DragonBot extends DebugClient {
 	*/
 	constructor({token,ownerID,version,source,permissions}) {
 		super(token, false);
-		this.ownerID = ownerID;
-		this.PREFIX  = Constants.Symbols.PREFIX;
-		this.VERSION = version;
+		this.ownerID     = ownerID;
+		this.VERSION     = version;
 		this.SOURCE_CODE = source;
 		this.PERMISSIONS = permissions;
+		this.PREFIX      = Constants.Symbols.PREFIX;
 		
-		this.utils    = Utils;
-		this.database = new Database(this);
-		this.commands = new Commands(this);
-		this.sessions = new Sessions(this);
+		this.utils  = Utils;
+		this.parser = CommandParser;
+		this.db     = this.database  = new Database(this);
+		this.cmds   = this.commands  = new Commands(this);
+		this.spcs   = this.sessions  = new Sessions(this);
+		this.vars   = this.variables = new VariableStore(this);
 		
 		this.on('ready',   this._connected);
 		this.on('message', this._handle);
@@ -39,7 +42,6 @@ class DragonBot extends DebugClient {
 		this.on('guildMemberAdd', this.greetUser);
 		this.on('guildMemberRemove', this.goodbyeUser);
 	}
-	
 	/**
 		Sets the text appearing under the bot's name in the list of users.
 		@arg {String} name - string that follows "Playing"
@@ -53,7 +55,7 @@ class DragonBot extends DebugClient {
 	stop() {
 		super.stop();
 		this.presenceText = 'Bye! \uD83D\uDC4B';
-		this.wait(3000).then(()=>this.disconnect());
+		this.wait(Constants.DragonBot.DISCONNECT_DELAY).then(()=>this.disconnect());
 	}
 	/**
 		Deletes the bot's most recent message in the channel,
@@ -68,29 +70,42 @@ class DragonBot extends DebugClient {
 		});
 	}
 	/**
-		Replaces special text symbols with certain values such as the server name.
-		Useful for dynamic greeting messages.
+		Replaces variable symbols with their values, and if possible, evaluates the expression.
 		@arg {String} text - the string to normalize
-		@arg {Context} context - the Context object that normalizes the string
+		@arg {Context} context - the Context object
 	*/
-	normalize(text, context) {
-		if (context.user) {
-			text = text
-			.replace(/\$user/gi, md.bold(context.user.username))
-			.replace(/\$mention/gi, md.mention(context.user.id));
+	normalize(text = '', context) {
+		if (!context) throw 'Context not defined';
+		if (typeof(text) !== 'string') return text;
+		
+		// define certain symbols and retrieve server vars
+		var vars = Object.assign({
+			user:        md.bold(context.user ? context.user.username : '?'),
+			mention:     md.mention(context.user ? context.user.id : '@?'),
+			channelname: md.bold(context.channel ? context.channel.name : '?'),
+			channel:     md.channel(context.channel ? context.channel.id : '#?'),
+			server:      md.bold(context.server ? context.server.name : '?')
+		}, this.variables.get(context.serverID));
+		
+		var matches = text.match(/\$[\w\d_]+/gi), value;
+		if (matches) {
+			//console.log(vars,matches);
+			// insert variable values
+			for (var v of matches) {
+				value = vars[v.substring(1)];
+				if (typeof(value) !== 'undefined') text = text.replace(v, value);
+			}
 		}
-		if (!context.isDM && context.channel) {
-			text = text
-			.replace(/\$channelname/gi, md.bold(context.channel.name))
-			.replace(/\$channel/gi, md.channel(context.channel.id));
+		
+		// evaluate the %(...) expression
+		if (text[0] == Constants.Symbols.EXPRESSION && text[1] == Constants.Symbols.EXP_START && text.endsWith(Constants.Symbols.EXP_END)) {
+			value = eval(text.substring(1));
+			this.info('Evaluating expression:',text,'->',value);
+			text = value;
 		}
-		if (context.server) {
-			text = text
-			.replace(/\$server/gi, md.bold(context.server.name));
-		}
+		
 		return text;
 	}
-
 	/**
 		Handles a user joining a server.
 	*/
@@ -150,15 +165,14 @@ class DragonBot extends DebugClient {
 			return;
 		}
 		// a mention at the start of the message will help prevent other bots from using the same message
-		var mention = Utils.Markdown.mention(this.id);
+		var mention = md.mention(this.id);
 		if (message.startsWith(mention)) {
 			message = message.substring(mention.length).trim();
 		}
 		
 		this.run(new Context(this, userID, channelID, message), CommandParser.parse(message))
 		.catch(e => this.warn(e));
-	}
-	
+	}	
 	/**
 		Run input with the given Context
 		@arg {Context} context - see src/Context.js
@@ -176,6 +190,26 @@ class DragonBot extends DebugClient {
 			grant: null,
 			temp: false
 		}, context, input);
+		
+		var client = this;
+		function _selfDestruct(m) {
+			// self-destruct temporary messages
+			if (data.temp) {
+				return client.wait(Constants.DragonBot.TEMP_MSG_LIFETIME)
+				.then(() => client.delete(data.channelID, m.id));
+			}
+		}
+		function _error(e) {
+			client.error(e);
+			return client.send(data.channelID, '<:fuck:351198367835095040> Oopsie woopsie! UwU we made a fucky wucky! A wittle fucko boingo!\n' + md.codeblock(e.toString()));
+		}
+		
+		try {
+			// create a copy of the array with normalized values
+			data.args = input.args.map(a => this.normalize(a,context));
+		} catch (e) {
+			return _error(e);
+		}
 		
 		// resolve command or special text
 		return (data.cmd ? this.commands : this.sessions).resolve(data)
@@ -195,20 +229,10 @@ class DragonBot extends DebugClient {
 			}
 			
 			return this.send(data.channelID, data.response)
-			.then(m => {
-				// self-destruct temporary messages
-				if (data.temp) {
-					return this.wait(5000).then(() => this.delete(data.channelID, m.id));
-				}
-			})
-			.catch(e => {
-				// this is for when a network error *might* occur.
-				//data.error = e;
-				this.error(e);
-				this.send(data.channelID, '<:fuck:351198367835095040> Oopsie woopsie! UwU we made a fucky wucky! A little fucko boingo!\n' + md.codeblock(e.toString()));
-			});
+			.then(_selfDestruct)
+			.catch(_error);
 		})
-		.then(() => this.wait(1000))
+		.then(() => this.wait(Constants.DragonBot.RATE_LIMIT_DELAY))
 		.then(() => data);
 	}
 }
