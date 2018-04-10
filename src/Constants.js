@@ -57,7 +57,7 @@ module.exports = {
 	},
 	DragonBot: {
 		TEMP_MSG_LIFETIME: 5000,
-		RATE_LIMIT_DELAY: 1200,
+		RATE_LIMIT_DELAY: 1000,
 		DISCONNECT_DELAY: 3000
 	}
 };

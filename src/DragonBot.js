@@ -151,6 +151,12 @@ class DragonBot extends DebugClient {
 		super._connected();
 		this.presenceText = `\uD83D\uDC32 | ${this.PREFIX}help`;
 		this.sessions.startSessionTimer();
+		
+		// Perform cleanup on the database
+		//this.database.get('servers').gc(this.servers);
+		//this.database.get('channels').gc(this.channels);
+		//this.database.get('roles').gc(this.roles);
+		//this.database.get('users').gc(this.users);
 	}
 	/**
 		Handles receiving a message, creates Context and parses command(s)
@@ -170,7 +176,7 @@ class DragonBot extends DebugClient {
 			message = message.substring(mention.length).trim();
 		}
 		
-		this.run(new Context(this, userID, channelID, message), CommandParser.parse(message))
+		this.run(new Context(this, userID, channelID, message, WSMessage), CommandParser.parse(message))
 		.catch(e => this.warn(e));
 	}	
 	/**
@@ -192,7 +198,11 @@ class DragonBot extends DebugClient {
 		}, context, input);
 		
 		var client = this;
-		function _selfDestruct(m) {
+		function _send() {
+			return client.send(data.channelID, data.response).then(_response).catch(_error);
+		}
+		function _response(m) {
+			if (typeof(m) !== 'object') return;
 			// self-destruct temporary messages
 			if (data.temp) {
 				return client.wait(Constants.DragonBot.TEMP_MSG_LIFETIME)
@@ -200,8 +210,20 @@ class DragonBot extends DebugClient {
 			}
 		}
 		function _error(e) {
-			client.error(e);
-			return client.send(data.channelID, '<:fuck:351198367835095040> Oopsie woopsie! UwU we made a fucky wucky! A wittle fucko boingo!\n' + md.codeblock(e.toString()));
+			if (e.name && e.name == 'ResponseError') {
+				client.warn(e.response.message);
+				if (e.statusCode == 429) {
+					// handle rate-limiting
+					client.warn('Retrying after',e.response.retry_after,'ms');
+					return client.wait(e.response.retry_after).then(_send);
+				} else {
+					client.warn('Resending...');
+					return _send();
+				}
+			} else {
+				client.error(e);
+				return client.send(data.channelID, '<:fuck:351198367835095040> Oopsie woopsie! UwU we made a fucky wucky! A wittle fucko boingo!\n' + md.codeblock(e.toString()));
+			}
 		}
 		
 		try {
@@ -221,16 +243,15 @@ class DragonBot extends DebugClient {
 				Analytics.push(this, data.serverID, data.cmd);
 			}
 			
-			if (!data.response) return Promise.resolve(data);
-			
-			// a response should be immediately handled
-			if (typeof(data.response) === 'string') {
-				data.response = this.normalize(data.response, data.context);
+			if (typeof(data.response) !== 'undefined') {
+				// a response should be immediately handled
+				if (typeof(data.response) === 'string') {
+					data.response = this.normalize(data.response, data.context);
+				}
+				return _send();
+			} else {
+				return Promise.resolve(data);
 			}
-			
-			return this.send(data.channelID, data.response)
-			.then(_selfDestruct)
-			.catch(_error);
 		})
 		.then(() => this.wait(Constants.DragonBot.RATE_LIMIT_DELAY))
 		.then(() => data);

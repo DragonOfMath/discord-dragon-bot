@@ -1,5 +1,5 @@
 class Context {
-	constructor(client, userID, channelID, message) {
+	constructor(client, userID, channelID, message, WSMessage) {
 		if (typeof(client) !== 'object') {
 			throw new TypeError(`${this.constructor.name}.client must be a Discord.Client object.`);
 		}
@@ -29,7 +29,8 @@ class Context {
 		this.memberID  = userID;
 		this.member    = this.isDM ? this.user : this.server.members[userID];
 		
-		this.messageID = this.channel.last_message_id;
+		// if the WebSocket message is passed, it contains the correct message ID
+		this.messageID = WSMessage ? WSMessage.d.id : this.channel.last_message_id;
 		this.message   = message;
 	}
 }

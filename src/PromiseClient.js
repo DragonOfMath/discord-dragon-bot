@@ -69,15 +69,16 @@ class PromiseClient extends Discord.Client {
 		var client = this;
 		return new Promise((resolve, reject) => {
 			super[method](payload, cb.bind(client, resolve, reject));
-		}).catch(e => {
-			console.error(e); // log the error since Discord.io usually doesn't
-			throw e;          // then toss it again
 		});
+//		.catch(e => {
+//			console.error(e); // log the error since Discord.io usually doesn't
+//			throw e;          // then toss it again
+//		});
 	}
 	
 	/* Shorthand methods */
 	send(to, message, embed) {
-		if (!message && !embed) return; // don't bother sending empty messages
+		if (!message && !embed) return Promise.resolve('Nothing to send.'); // don't bother sending empty messages
 		//console.log(arguments);
 		if (typeof (message) === 'object') {
 			if (message.constructor.name == 'Promise') {

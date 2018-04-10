@@ -45,7 +45,7 @@ function random(a,b) {
 }
 
 function toID(x) {
-	return x.toLowerCase().replace(/\s+/g, '_');
+	return typeof(x) === 'string' ? x.toLowerCase().replace(/\s+/g, '_') : x;
 }
 
 module.exports = {
@@ -125,8 +125,8 @@ module.exports = {
 					'move': {
 						aliases: ['change'],
 						title: 'Mandelbrot | Move Center',
-						info: 'Moves the center viewing position of render by the offset specified. Use `~` to leave a value unchanged. Use `-p` to move by pixels.',
-						parameters: ['real','imaginary', '[pixelflag]'],
+						info: 'Moves the center viewing position of render by the offset specified. Use `~` to leave a value unchanged. Use the mode `pixels` to move by pixels, and `%` or `percent` to move by percentage of view width.',
+						parameters: ['real','imaginary', '[mode]'],
 						fn({client, args}) {
 							if (typeof(args[2]) !== 'undefined' && args[2] == '-p') {
 								mandelbrot.center.x += Number(args[0]) / mandelbrot.zoom;

@@ -82,6 +82,9 @@ module.exports = {
 		else if (/omae wa mou shindeiru/i.test(message)) return 'nani';
 		else if (/is this loss/i.test(message)) return 'loss';
 		else if (/delete? this/i.test(message)) return 'delet_this';
+		else if (/we live in a society/i.test(message)) return 'deep';
+		else if (/ay{2,} ?lmao/i.test(message)) return 'ayylmao';
+		else if (/^what[\.\?]*$/i.test(message)) return 'what';
 	},
 	events: {
 		doot() {
@@ -98,6 +101,8 @@ module.exports = {
 				'beep beep lettuce',
 				'chungus',
 				'zoop',
+				'Nice.',
+				'nice',
 				':ok_hand::eyes::ok_hand:',
 				'holy whiskers you go sisters',
 				':point_right::sunglasses::point_right: zoop',
@@ -117,6 +122,8 @@ module.exports = {
 			return [
 				'***THICC***',
 				'***T H I C C***',
+				'***EXTRA THICC***',
+				'***E X T R A T H I C C***',
 				'\u4E47\u4E42\u3112\u5C3A\u5342 \u3112\u5344\u4E28\u531A\u531A',
 				'\uD835\uDCEE\uD835\uDD01\uD835\uDCFD\uD835\uDCFB\uD835\uDCEA \uD835\uDCFD\uD835\uDCF1\uD835\uDCF2\uD835\uDCEC\uD835\uDCEC'
 			];
@@ -153,6 +160,23 @@ module.exports = {
 		},
 		delet_this({client, channelID}) {
 			return client.undo(channelID).then(() => 'ok');
+		},
+		deep() {
+			return [
+				'Really makes you think. :thinking:',
+				'Deep. :pensive:',
+				'omg deep af :eyes:',
+				'STAY W:eye:KE',
+				'this is so sad\ncan we hit 50 likes',
+				'this is so sad\ncan we hit ~~50 likes~~ babies',
+				'Real shit? <:wokeThink:341907071953797130>'
+			]
+		},
+		ayylmao({client, channelID, messageID}) {
+			client.addReaction({channelID, messageID, reaction: '👽'}).catch(e => client.error(e));
+		},
+		what({client, channelID, messageID}) {
+			return client.getMessages({channelID,limit:1,before:messageID}).then(res => (res[0] ? `*${res[0].content}*` : ''));
 		}
 	}
 };

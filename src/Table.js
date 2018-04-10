@@ -244,6 +244,22 @@ class Table extends TypeMapBase {
 			return this;
 		}
 	}
+	/**
+		Cleans up IDs that no longer exist
+	*/
+	gc(reference) {
+		var removed = [];
+		for (var id of this.records) {
+			if (!reference[id]) {
+				this.delete(id);
+				this.removed.push(id);
+			}
+		}
+		if (removed.length) {
+			console.log('Removed',removed.length,'records from',this.dir);
+			this.save();
+		}
+	}
 }
 
 module.exports = Table;

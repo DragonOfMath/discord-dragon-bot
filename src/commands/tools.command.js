@@ -22,9 +22,9 @@ module.exports = {
 		},
 		fn({client, userID}) {
 			// prepare permissions for inviting
-			var link = client.inviteURL + '&permissions=' + client.PERMISSIONS;
+			var link = 'Here is the link to add me to your servers:\n' + client.inviteURL + '&permissions=' + client.PERMISSIONS;
 			// DM the link
-			client.send(userID, link);
+			client.sendMessage({to: userID, message: link});
 		}
 	},
 	'help': {

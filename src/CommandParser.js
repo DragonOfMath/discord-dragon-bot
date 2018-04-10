@@ -140,7 +140,7 @@ class CommandParser {
 					j = i;
 					i = lookahead(i+2,'\n');
 					var comment = text.substring(j,i);
-					tokens.push(comment);
+					//tokens.push(comment);
 					continue;
 					
 				// block comment
@@ -149,7 +149,7 @@ class CommandParser {
 					j = i;
 					i = lookahead(i+2,'*/') + 1;
 					var comment = text.substring(j,i+1);
-					tokens.push(comment);
+					//tokens.push(comment);
 					continue;
 					
 				// whitespace
