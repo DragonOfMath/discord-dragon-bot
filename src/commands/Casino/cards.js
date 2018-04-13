@@ -13,22 +13,21 @@ const CardValues = {
 	'Q':  10,
 	'K':  10
 };
-
-const CardSuits = {
-	heart: ':hearts:',
-	diamond: ':diamonds:',
-	club: ':clubs:',
-	spade: ':spades:'
-};
+const CardSuits = [
+	':hearts:',
+	':diamonds:',
+	':clubs:',
+	':spades:'
+];
 
 class Card {
 	constructor(value, suit, hidden = true) {
-		this.value  = value;
-		this.suit   = suit;
+		this.value  = value; // String
+		this.suit   = suit;  // String
 		this.hidden = hidden;
 	}
 	get name() {
-		return this.hidden ? '??' : (this.name + CardSuits[this.suit]);
+		return this.hidden ? '??' : (this.value + this.suit);
 	}
 	equals(card) {
 		return this == card || (this.value == card.value && this.suit == card.suit);
@@ -52,7 +51,7 @@ class Pile {
 		return this.cards.some(c => !c.hidden && (c.suit == suit || c.suit == CardSuits[suit]));
 	}
 	hasValue(value) {
-		return this.cards.some(c => !c.hidden && (c.value = value || c.value == CardValues[value]));
+		return this.cards.some(c => !c.hidden && (c.value == value || c.value == CardValues[value]));
 	}
 	
 	add(card) {
@@ -92,8 +91,8 @@ class Deck extends Pile {
 	constructor(mult = 1) {
 		super();
 		while (mult-- > 0) {
-			for (let value in CardValues) {
-				for (let suit in CardSuits) {
+			for (var value in CardValues) {
+				for (var suit of CardSuits) {
 					this.add(new Card(value, suit, true));
 				}
 			}
@@ -102,9 +101,8 @@ class Deck extends Pile {
 	shuffle(iterations = 1) {
 		this.hide();
 		while (iterations-- > 0) {
-			for (let a = 0, b, temp; a < this.length; a++) {
+			for (var a = 0, b, temp; a < this.length; a++) {
 				b = Math.floor(this.length * Math.random());
-				
 				temp = this.cards[a];
 				this.cards[a] = this.cards[b];
 				this.cards[b] = temp;
@@ -122,9 +120,8 @@ class Deck extends Pile {
 }
 
 class Hand extends Pile {
-	constructor(bet = 0) {
+	constructor() {
 		super();
-		this.bet = Number(bet);
 	}
 	drawFromDeck(deck, count = 1, hiddenCount = 0) {
 		if (!(deck instanceof Deck)) {

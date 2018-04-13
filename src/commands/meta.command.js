@@ -152,5 +152,18 @@ module.exports = {
 				if (_data.error) return `(Error caught: ${_data.error})`;
 			});
 		}
+	},
+	'async': {
+		category: 'Meta',
+		info: 'Run a command asynchronously.',
+		parameters: ['{command}'],
+		permissions: {
+			type: 'public'
+		},
+		fn(data) {
+			const {client, args, context} = data;
+			client.run(context, args[0])
+			.then(_data => propagate(data,_data));
+		}
 	}
 };

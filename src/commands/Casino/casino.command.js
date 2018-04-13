@@ -2,18 +2,19 @@ const Bank = require('../../Bank');
 const {Markdown:md,Format:fmt,random} = require('../../Utils');
 //const RollDice    = require('./RollDice');
 //const CoinToss    = require('./CoinToss');
-//const SlotMachine = require('./Slots');
-//const Blackjack   = require('./Blackjack');
+const SlotMachine = require('./Slots');
+const Blackjack   = require('./Blackjack');
 
 class Gamble {
 	constructor(bet = 0, credits = 0, min = 0) {
+		if (credits < min) throw `You don't have enough credits to bet the minimum of ${Bank.formatCredits(min)}.`;
 		if (bet < min) throw `You need to bet at least ${Bank.formatCredits(min)}.`;
 		this.bet = Math.max(min,Math.min(Number(bet),credits));
 	}
 	resolve(fn, ...args) {
 		return fn.call(this, this.bet, ...args, (reward, message) => this.result(reward, message));
 	}
-	result(reward, message) {
+	result(reward, message = '') {
 		if (reward > 0) {
 			message += '\nYou won ' + Bank.formatCredits(reward);
 		} else if (reward < 0) {
@@ -68,7 +69,7 @@ module.exports = {
 		aliases: ['gambling','gamble'],
 		category: 'Fun',
 		title: 'Casino Minigames',
-		info:'Assortment of fun and risky minigames. Place your bets and win big!',
+		info: 'Assortment of fun and risky minigames. Place your bets and win big!',
 		subcommands: {
 			'dice': {
 				title: 'Casino | Dice Roll:game_die:',
@@ -77,7 +78,7 @@ module.exports = {
 				fn({client, args, userID}) {
 					return Bank.modify(client, userID, user => {
 						if (user.investing) {
-							throw 'You can\'t play games when your account is investing.';
+							throw 'You can\'t gamble when your account is investing.';
 						}
 						var gamble = new Gamble(args[0], user.credits);
 						var {reward,message} = gamble.resolve(RollDice);
@@ -94,7 +95,7 @@ module.exports = {
 				fn({client, args, userID}) {
 					return Bank.modify(client, userID, user => {
 						if (user.investing) {
-							throw 'You can\'t play games when your account is investing.';
+							throw 'You can\'t gamble when your account is investing.';
 						}
 						var gamble = new Gamble(args[0], user.credits);
 						var {reward,message} = gamble.resolve(CoinToss, args[1]);
@@ -102,35 +103,95 @@ module.exports = {
 						return message;
 					});
 				}
-			},
-			'slots': {
-				aliases: [],
-				title: 'Casino | Slots:slot_machine:',
-				info: 'Slot machine game. Three columns with a variety of objects, get certain combinations to win!',
-				parameters: ['[bet]'],
-				fn({client, args}) {
-					return 'Not ready yet, sorry!';
-				}
-			},
-			'videoslots': {
-				aliases: ['vslots'],
-				title: 'Casino | Video Slots:tv::slot_machine:',
-				info: 'Video slots, a more advanced version of slots, with 5 columns instead of 3 and multiple ways of winning on a single screen!',
-				parameters: ['[bet]'],
-				fn({client, args}) {
-					return 'Not ready yet, sorry!';
-				}
-			},
-			'blackjack': {
-				title: 'Casino | Blackjack',
-				info: 'Classic Blackjack card game. Have the highest hand without going over 21 to win. For a more thorough explanation, see the Wikipedia page https://en.wikipedia.org/wiki/Blackjack',
-				parameters: ['[bet]'],
-				fn({client, userID, channelID, args}) {
-					return 'Not ready yet, sorry!';
-					//client.sessions.start(new Blackjack(client, userID, channelID));
-					//return 'A new Blackjack session has started. Players may join and make their bets before the host begins the round.';
+			}
+		}
+	},
+	'slots': {
+		aliases: [],
+		category: 'Fun',
+		title: 'Slots:slot_machine:',
+		info: '3-column slot machine game!',
+		parameters: ['[bet]'],
+		fn({client, userID, channelID, args}) {
+			var user = Bank.get(client, userID);
+			if (user.investing) {
+				throw 'You can\'t gamble when your account is investing.';
+			}
+			var gamble = new Gamble(args[0], user.credits);
+			var slots  = new SlotMachine(gamble.bet);
+			
+			var messageID, spinIdx = 0;
+			function spin() {
+				if (spinIdx < 3) {
+					return client.wait(1500)
+					.then(() => {
+						slots.spin(spinIdx);
+						slots.columns[spinIdx++].hidden = false;
+						return client.editMessage({
+							channelID,
+							messageID,
+							embed: slots.toEmbed()
+						});
+					}).then(spin);
+				} else {
+					var multiplier = slots.calculateMultiplier();
+					var reward = slots.bet * (multiplier - 1);
+					if (reward) {
+						Bank.modify(client, userID, user => {
+							user.changeCredits(reward);
+						});
+					}
+					if (reward > 0) {
+						return md.mention(userID) + ' Reward: `Bet * ' + (multiplier - 1) + '` = ' + Bank.formatCredits(reward);
+					} else if (reward < 0) {
+						return md.mention(userID) + ' Loss: ' + Bank.formatCredits(reward);
+					} else {
+						return md.mention(userID) + ' No payout.';
+					}
 				}
 			}
+			return client.send(channelID, slots.toEmbed())
+			.then(message => {messageID = message.id}).then(spin);
+		}
+	},
+	'videoslots': {
+		aliases: ['vslots'],
+		category: 'Fun',
+		title: 'Video Slots:tv::slot_machine:',
+		info: 'Video slots, a more advanced version of slots, with 5 columns instead of 3 and multiple ways of winning on a single screen!',
+		parameters: ['[bet]'],
+		fn({client, context, args}) {
+			return 'Not ready yet, sorry!';
+			/*
+			var user = Bank.get(client, context.userID);
+			if (user.investing) {
+				throw 'You can\'t gamble when your account is investing.';
+			}
+			var gamble = new Gamble(args[0], user.credits);
+			*/
+		}
+	},
+	'blackjack': {
+		category: 'Fun',
+		title: 'Blackjack:hearts::diamonds::clubs::spades:',
+		info: 'Classic Blackjack card game. Have the highest hand without going over 21 to win. For a more thorough explanation, see the Wikipedia page https://en.wikipedia.org/wiki/Blackjack',
+		parameters: ['[bet]'],
+		fn({client, context, args}) {
+			var user = Bank.get(client, context.userID);
+			if (user.investing) {
+				throw 'You can\'t gamble when your account is investing.';
+			}
+			var gamble = new Gamble(args[0], user.credits);
+			client.sessions.start(new Blackjack(client, context, gamble.bet, function (reward) {
+				var message = md.mention(context.userID);
+				if (reward) {
+					Bank.modify(client, context.userID, user => {
+						user.changeCredits(reward);
+					});
+					message += ' ' + (reward > 0 ? 'Reward: ' : 'Loss: ') + Bank.formatCredits(reward);
+				}
+				return message;
+			}));
 		}
 	}
 };

@@ -78,7 +78,7 @@ class Commands extends TypeMapBase {
 		}, []);
 	}
 	resolveCategory(cat) {
-		return this.categories.find(cat => strcmp(c,cat)) || '';
+		return this.categories.find(c => strcmp(c,cat)) || '';
 	}
 	
 	/**
