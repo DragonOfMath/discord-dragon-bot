@@ -1,15 +1,15 @@
 /**
-	cmd_debug.js
 	Command file for debugging tools.
 */
 
-const {Markdown:md} = require('../Utils');
+const {Markdown:md,decircularize} = require('../Utils');
 const fs = require('fs');
 
 function snapshot(data) {
-	let time = new Date().toLocaleString().replace(/[:\\\/]/g,'-').replace(/\s+/g,'_');
-	let filename = `discord-dragon-bot/debug/snapshot_${time}.json`;
-	fs.writeFile(filename, JSON.stringify(data), err => {
+	var time = new Date().toLocaleString().replace(/[:\\\/]/g,'-').replace(/\s+/g,'_');
+	var filename = `discord-dragon-bot/debug/snapshot_${time}.json`;
+	// pretty-print the stringified object to the file
+	fs.writeFile(filename, JSON.stringify(data, null, 4), err => {
 		if (err) {
 			console.error(err);
 		} else {
@@ -27,22 +27,87 @@ const CHANNEL_TYPE = [
 ];
 
 module.exports = {
+	'console': {
+		category: 'Debug',
+		title: 'Console',
+		info: 'Interface for printing information to the console window.',
+		permissions: {
+			type: 'private'
+		},
+		suppress: true,
+		subcommands: {
+			'log': {
+				title: 'Console | Log',
+				info: 'General logging of information.',
+				parameters: ['...data'],
+				permissions: {
+					type: 'private'
+				},
+				fn({client,args}) {
+					client.log(...args);
+				}
+			},
+			'info': {
+				title: 'Console | Info',
+				info: 'Information-level logging of information.',
+				parameter: ['...data'],
+				permissions: {
+					type: 'private'
+				},
+				fn({client,args}) {
+					client.info(...args);
+				}
+			},
+			'warn': {
+				title: 'Console | Warn',
+				info: 'Warning-level logging of information.',
+				parameters: ['...data'],
+				permissions: {
+					type: 'private'
+				},
+				fn({client,args}) {
+					client.warn(...args);
+				}
+			},
+			'error': {
+				title: 'Console | Error',
+				info: 'Error-level logging of information.',
+				parameters: ['...data'],
+				permissions: {
+					type: 'private'
+				},
+				fn({client,args}) {
+					client.error(...args);
+				}
+			},
+			'clear': {
+				title: 'Console | Clear',
+				info: 'Clears the console.',
+				permissions: {
+					type: 'private'
+				},
+				fn({client}) {
+					console.clear();
+				}
+			}
+		}
+	},
 	'echo': {
-		aliases: ['test'],
-		category: 'Admin',
-		info: 'Repeat back the raw arguments. For debugging purposes.',
+		aliases: ['print','test','display'],
+		category: 'Debug',
+		info: 'Display the arguments. Useful for expressions.',
 		parameters: ['...arguments'],
 		permissions: {
 			type: 'private'
 		},
 		suppress: true,
-		fn({client, arg}) {
-			return md.codeblock(arg);
+		fn({client, args}) {
+			return md.codeblock(arg.map(String).join(' '));
 		}
 	},
 	'memdump': {
 		aliases: ['snapshot'],
-		category: 'Admin',
+		category: 'Debug',
 		title: 'Memory Snapshot',
 		info: 'Takes a snapshot of the internal client data',
 		permissions: {
@@ -50,12 +115,7 @@ module.exports = {
 		},
 		suppress: true,
 		fn({client}) {
-			keys = Object.keys(client).filter(c => c != 'commands'); // eliminate circular structure: command -> subcommands -> supercommand -> command
-			let obj = {};
-			for (let k of keys) {
-				obj[k] = client[k];
-			}
-			snapshot(obj);
+			snapshot(decircularize(client));
 			return 'Snapshot of memory saved.';
 		}
 	},

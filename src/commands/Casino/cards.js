@@ -46,13 +46,13 @@ class Pile {
 		if (!(card instanceof Card)) {
 			throw 'Invalid card.';
 		}
-		return this.cards.some(c => c.name == card.name);
+		return this.cards.some(c => !c.hidden && c.name == card.name);
 	}
 	hasSuit(suit) {
-		return this.cards.some(c => (c.suit == suit || c.suit == CardSuits[suit]));
+		return this.cards.some(c => !c.hidden && (c.suit == suit || c.suit == CardSuits[suit]));
 	}
 	hasValue(value) {
-		return this.cards.some(c => (c.value = value || c.value == CardValues[value]));
+		return this.cards.some(c => !c.hidden && (c.value = value || c.value == CardValues[value]));
 	}
 	
 	add(card) {
@@ -154,21 +154,6 @@ class Hand extends Pile {
 			deck.add(this.cards.shift());
 		}
 		return this;
-	}
-	get blackjackValue() {
-		let value = [0], aces = 0;
-		for (let card of this.cards) {
-			if (card.hidden) continue;
-			value[0] += CardValues[card.value];
-			if (card.value == 'A') {
-				aces++;
-			}
-		}
-		// aces allow the hand to have multiple values (e.g. [1,11], [2,12,22], and so on)
-		while (aces-- > 0 && value[value.length-1] < 12) {
-			value.push(value[value.length-1]+10);
-		}
-		return value;
 	}
 }
 

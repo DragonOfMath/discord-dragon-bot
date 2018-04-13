@@ -3,7 +3,7 @@
 	Command file for various fun activities.
 */
 
-const {random} = require('../Utils');
+const {Markdown:md,random} = require('../Utils');
 
 function randomDistribution(o,i) {
 	o = Number(o) || 2;
@@ -45,16 +45,16 @@ module.exports = {
 				decisions = args;
 			}
 			*/
-			return `<@${userID}> ` + random(
-				'I\'d go with ',
-				'I choose ',
-				'Maybe ',
-				'Probably ',
-				'Definitely ',
-				'Ooh, tough choice. How about ',
-				'Hmmm, I pick ',
-				''
-			) + `**${random(decisions)}**`;
+			return md.mention(userID) + random([
+				' I\'d go with ',
+				' I choose ',
+				' Maybe ',
+				' Probably ',
+				' Definitely ',
+				' Ooh, tough choice. How about ',
+				' Hmmm, I pick ',
+				' '
+			]) + md.bold(random(decisions));
 		}
 	},
 	'eightball':{
@@ -80,12 +80,21 @@ module.exports = {
 		aliases: ['pickcard','pickacard','cardpick'],
 		category: 'Fun',
 		title: ':black_joker:',
-		info: 'Pick a card from a standard 52-card deck',
-		parameters: [],
-		fn({userID}) {
-			let suit  = random(":spades:",":hearts:",":diamonds:",":clovers:");
-			let value = random('A',2,3,4,5,6,7,8,9,10,'J','Q','K');
-			return `<@${userID}> drew **${value}${suit}**`;
+		info: 'Pick a card (or number of cards, limit of 5) from a standard 52-card deck',
+		parameters: ['[number]'],
+		fn({userID,args}) {
+			var cards = [];
+			var i = Math.min(args[0],5);
+			while (i > 0) {
+				var suit  = random(":spades:",":hearts:",":diamonds:",":clubs:");
+				var value = random('A',2,3,4,5,6,7,8,9,10,'J','Q','K');
+				var card = `${value}${suit}`;
+				if (!cards.includes(card)) {
+					cards.push(card);
+					i--;
+				}
+			}
+			return md.mention(userID) + ' drew ' + cards.map(md.bold).join(', ');
 		}
 	},
 	'coin': {
@@ -140,9 +149,9 @@ module.exports = {
 		category: 'Fun',
 		title: ':game_die:',
 		info: 'Generic dice-roll command, specify number of sides and number of roles. Alternatively, use the XdXX format to roll a XX-sided die X times.',
-		parameters: ['XdXX|sides','[rolls]'],
+		parameters: ['XdXX | sides','[rolls]'],
 		fn({args, userID}) {
-			var rolls, sides;
+			var rolls, sides, s;
 			try {
 				;[,rolls,sides] = args[0].match(/^(\d+)d(\d+)$/);
 			} catch (e) {

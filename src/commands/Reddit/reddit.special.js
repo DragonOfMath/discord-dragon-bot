@@ -9,8 +9,9 @@ module.exports = {
 		type: 'public'
 	},
 	resolver({message}) {
-		this.data.m = message.match(/\b\/?[ru]\/[\w\d_]{3,25}\b/gm);
-		if (this.data.m && this.data.m.length) {
+		var matches = message.match(/\B\/?[ru]\/[\w\d_]+/g);
+		if (matches) {
+			this.data.m = matches;
 			return 'r';
 		}
 	},

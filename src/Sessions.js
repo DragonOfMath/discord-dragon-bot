@@ -59,6 +59,9 @@ class Sessions extends Logger(TypeMapBase) {
 		//this.info(data instanceof Session);
 		var session = this.create(data);
 		session.manager = this;
+		if ('start' in session.events) {
+			session.fire('start');
+		}
 		return this.set(id, session);
 	}
 	end(id) {
@@ -73,7 +76,7 @@ class Sessions extends Logger(TypeMapBase) {
 			try {
 				s.resolve(input);
 				if (input.response) {
-					this.info('Session:', s.id);
+					this.info(s.id);
 					break;
 				}
 			} catch (e) {

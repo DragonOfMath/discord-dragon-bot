@@ -84,7 +84,9 @@ class DragonBot extends DebugClient {
 			mention:     md.mention(context.user ? context.user.id : '@?'),
 			channelname: md.bold(context.channel ? context.channel.name : '?'),
 			channel:     md.channel(context.channel ? context.channel.id : '#?'),
-			server:      md.bold(context.server ? context.server.name : '?')
+			server:      md.bold(context.server ? context.server.name : '?'),
+			random:      String(Math.random()),
+			me:          md.mention(this.id)
 		}, this.variables.get(context.serverID));
 		
 		var matches = text.match(/\$[\w\d_]+/gi), value;
@@ -212,13 +214,26 @@ class DragonBot extends DebugClient {
 		function _error(e) {
 			if (e.name && e.name == 'ResponseError') {
 				client.warn(e.response.message);
-				if (e.statusCode == 429) {
-					// handle rate-limiting
-					client.warn('Retrying after',e.response.retry_after,'ms');
-					return client.wait(e.response.retry_after).then(_send);
-				} else {
-					client.warn('Resending...');
-					return _send();
+				// https://discordapp.com/developers/docs/topics/opcodes-and-status-codes
+				switch (e.statusCode) {
+					case 400: // BAD REQUEST
+					case 401: // UNAUTHORIZED
+					case 403: // FORBIDDEN
+					case 404: // NOT FOUND
+					case 405: // METHOD NOT ALLOWED
+						client.warn(e);
+						break;
+					case 429: // TOO MANY REQUESTS
+						// handle rate-limiting
+						client.warn('Retrying after',e.response.retry_after,'ms');
+						return client.wait(e.response.retry_after).then(_send);
+					case 502: // GATEWAY UNAVAILABLE
+						client.warn(e);
+						break;
+					default:
+						client.error(e);
+						//client.warn('Resending...');
+						//return _send();
 				}
 			} else {
 				client.error(e);

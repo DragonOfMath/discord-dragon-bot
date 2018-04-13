@@ -1,11 +1,17 @@
-const {Deck,Hand,CardSuits} = require('./cards');
 const Bank = require('../../Bank');
+const Session = require('../../Session');
+const {Markdown:md,Format:fmt,random} = require('../../Utils');
+const {Deck,Hand,CardSuits} = require('./Cards');
 
-const HEADER = 'Blackjack' + Object.keys(CardSuits).map(x => CardSuits[x]).join('');
+const BLACKJACK_HEADER = 'Blackjack' + Object.keys(CardSuits).map(x => CardSuits[x]).join('');
 const BLACKJACK_BET_MINIMUM = 100;
-const STAGE = {
-	WAITING: 0,
-	READY: 1
+
+const choiceIndex = {
+	'hit':       ['hit', 'hitme', 'hit me'],
+	'stand':     ['stand', 'done', 'finish'],
+	'double':    ['double', 'doubledown', 'double down', 'i\'m feeling lucky'],
+	'insurance': ['insurance', 'insure me'],
+	'surrender': ['surrender', 'i surrender']
 };
 
 class BlackjackPlayer extends Hand {
@@ -23,6 +29,21 @@ class BlackjackPlayer extends Hand {
 		} else {
 			this.drawFromDeck(deck, 2);
 		}
+	}
+	get blackjackValue() {
+		let value = [0], aces = 0;
+		for (let card of this.cards) {
+			if (card.hidden) continue;
+			value[0] += CardValues[card.value];
+			if (card.value == 'A') {
+				aces++;
+			}
+		}
+		// aces allow the hand to have multiple values (e.g. [1,11], [2,12,22], and so on)
+		while (aces-- > 0 && value[value.length-1] < 12) {
+			value.push(value[value.length-1]+10);
+		}
+		return value;
 	}
 	toString() {
 		var hand  = super.toString();
@@ -43,198 +64,166 @@ class BlackjackPlayer extends Hand {
 	}
 }
 
-class Blackjack {
-	constructor(client, host, channel) {
-		if (Bank.get(client, host).credits < BLACKJACK_BET_MINIMUM) {
-			throw 'You need at least ' + Bank.formatCredits(BLACKJACK_BET_MINIMUM) + ' to host a game of Blackjack.';
-		}
-		this.client = client;
-		this.deck = new Deck(4); // play with 4 decks of cards.
-		this.host = host;
-		this.channelID = channel;
-		this.stage = STAGE.WAITING;
-		this.users = {
-			'Bot':  new BlackjackPlayer(true),
-			[host]: new BlackjackPlayer()
-		};
+class Blackjack extends Session {
+	static generateID(context) {
+		return `blackjack-${context.channelID}-${context.userID}`;
 	}
-	join(user) {
-		if (this.users[user]) {
-			throw 'User is already part of this game.';
-		}
-		this.users[user] = new BlackjackPlayer();
-	}
-	leave(user) {
-		if (!this.users[user]) {
-			throw 'User is not part of this game.';
-		}
-		delete this.users[user];
-	}
-	start() {
-		this.stage = STAGE.READY;
-		for (var id in this.users) {
-			this.users[id].returnToDeck(this.deck);
-		}
-		this.deck.shuffle(2);
-		for (var id in this.users) {
-			this.users[id].start(deck);
-		}
-		this.client.wait(3000)
-		.then(this.displayGameProgress)
-		.then(e => this.client.send(this.channelID, e));
-	}
-	stop() {
-		for (var id in this.users) {
-			delete this.users[id];
-		}
-	}
-	setBet(user, bet) {
-		if (bet < BLACKJACK_BET_MINIMUM) {
-			throw md.mention(userID) + ', you must make a minimum bet of ' + Bank.formatCredits(BLACKJACK_BET_MINIMUM);
-		}
-		this.users[user].bet = bet;
-	}
-}
-
-function displayGameProgress(data) {
-	var embed = {
-		title: HEADER,
-		fields: []
-	};
-	for (var id of data.users) {
-		embed.fields.push({
-			name: md.mention(id),
-			value: data.users[id].toString(),
-			inline: true
-		});
-	}
-	return embed;
-}
-
-function BlackjackSession(client, host, channelID) {
-	return {
-		id: channelID,
-		title: 'Blackjack',
-		info: '',
-		settings: {
-			expires: 60000,
-			reset: true,
-			max: -1,
-			cancel: -1,
-			silent: false
-		},
-		data: {
-			game: this
-		},
-		permissions: {
-			channels: [channelID]
-		},
-		resolver({client, message, userID}) {
-			var mention  = md.mention(userID);
-			var isPlayer = this.data.users.includes(userID);
-			var isHost   = this.data.host == userID;
-			var isWaiting = this.data.stage == STAGE.WAITING;
-			var isReady   = this.data.stage == STAGE.READY;
-			
-			switch (message.toLowerCase()) {
-				case 'stop':
-				case 'end':
-					if (!isPlayer) return;
-					if (!isHost)   throw mention + ', only the host may force the game to stop.';
-					return 'stop'; // Stop the Blackjack game abruptly.
-				case 'start':
-				case 'begin':
-				case 'ready':
-					if (!isPlayer)  return;
-					if (!isHost)    throw mention + ', only the host may start the round.';
-					if (!isWaiting) throw 'The round has already started.';
-					return 'start'; // Starts a round ("shoe") of Blackjack. No players may join or leave until the round is over.
-				case 'join':
-					if (isPlayer)   throw mention + ', you already joined.';
-					if (!isWaiting) throw mention + ', you may not join while a game is in play.';
-					return 'join';
-				case 'goodbye':
-				case 'quit':
-				case 'leave':
-					if (!isPlayer)  return;
-					if (!isWaiting) throw mention + ', you may not leave while a game is in play.';
-					return 'leave';
-				case 'bet':
-					if (!isPlayer) return;
-					if (!isWaiting) throw mention + ', you cannot change your bet during a round.';
-					return 'bet'; // Sets your bet, which must be at least the minimum and cannot exceed your bank.
-				
-				case 'hit':
-				case 'hitme':
-				case 'hit me':
-					if (!isPlayer) return;
-					if (!isReady)  return;
-					return 'hit'; // Add a card to your hand. If your hand does not go over 21, you are still in the round.
-				case 'stand':
-				case 'done':
-				case 'finish':
-					if (!isPlayer) return;
-					if (!isReady)  return;
-					return 'stand'; // Finish adding cards to your hand and await for other players and the dealer to finish.
-				case 'double':
-				case 'doubledown':
-					if (!isPlayer) return;
-					if (!isReady)  return;
-					return 'double'; // Add one more card and double your bet. Only if you\'re willing to be risky.
-				case 'surrender':
-					if (!isPlayer) return;
-					if (!isReady)  return;
-					return 'surrender'; // Relinquish only half your bet instead of your full bet if you think you\'ll lose this turn.
-				case 'insurance':
-					if (!isPlayer) return;
-					if (!isReady)  return;
-					//return 'insurance'; // Place a side bet when the dealer has an Ace; if they get a blackjack, you keep your money.
-					break;
-				case 'split':
-					if (!isPlayer) return;
-					if (!isReady)  return;
-					//return 'split'; 
-					break;
-			}
-		},
-		events: {
-			start({client, userID}) {
-				this.data.game.start();
-				return 'The game has started.';
+	constructor(client, context, bet) {
+		super({
+			id: Blackjack.generateID(context),
+			title: 'Blackjack',
+			info: 'Class Blackjack card game versus the bot.',
+			settings: {
+				expires: 30000,
+				reset: true,
+				max: -1,
+				cancel: 5,
+				silent: false
 			},
-			stop({client, userID}) {
-				this.data.game.stop();
-				this.fire('close');
-				return 'The host has stopped the game.';
+			data: {},
+			permissions: {
+				type: 'inclusive',
+				channels: [context.channelID],
+				users:    [context.userID],
+				servers:  [context.serverID]
 			},
-			join({client, userID}) {
-				this.data.game.join(userID);
-				return md.mention(user) + ' has joined the game.';
-			},
-			leave({client, userID}) {
-				this.data.game.leave(userID);
-				if (userID == this.data.game.host) {
-					this.fire('close');
-					return md.mention(userID) + ' has left, forcing the game to stop.';
-				} else {
-					return md.mention(userID) + ' has left this game.';
+			resolver({client, message, userID}) {
+				switch (message.toLowerCase()) {
+					case 'hit':
+					case 'hitme':
+					case 'hit me':
+						return 'hit'; // Add a card to your hand. If your hand does not go over 21, you are still in the round.
+					case 'stand':
+					case 'done':
+					case 'finish':
+						return 'stand'; // Finish adding cards to your hand and await for other players and the dealer to finish.
+					case 'double':
+					case 'doubledown':
+					case 'double down':
+						return 'double'; // Add one more card and double your bet. Only if you\'re willing to be risky.
+					case 'surrender':
+						return 'surrender'; // Relinquish only half your bet instead of your full bet if you think you\'ll lose this turn.
+					case 'insurance':
+						//return 'insurance'; // Place a side bet when the dealer has an Ace; if they get a blackjack, you keep your money.
+						break;
+					case 'cancel':
+						return 'cancel';
 				}
 			},
-			bet({client, userID, message}) {
-				var bet = ~~message.match(/\d+/)[0];
-				this.data.game.setBet(userID, bet);
-				return md.mention(userID) + ', your bet has been set to ' + Bank.formatCredits(bet);
-			},
-			start({client, userID}) {
-				
-				this.fire('startBlackjack', client);
-				return 'The host has started the round. No players may join or leave.';
-			},
-			hit({client, userID}) {
-				
+			events: {
+				start() {
+					// deal cards
+					this.deck.shuffle(2);
+					this.player.start(this.deck);
+					this.bot.start(this.deck);
+					this.winner = null;
+					
+					this.client.wait(3000)
+					.then(() => this.toEmbed())
+					.then(e => this.client.send(this.last_channel_id, e));
+				}
+				goodbye() {
+					return 'You waited too long. Game forfeited.';
+				},
+				cancel() {
+					this.close();
+					return 'Game canceled.';
+				},
+				hit() {
+					this.player.drawFromDeck(this.deck, 1);
+					return this.proceed();
+				},
+				stand() {
+					return this.finish();
+				},
+				double() {
+					this.bet *= 2;
+					this.player.drawFromDeck(this.deck, 1);
+					return this.proceed();
+				},
+				insurance() {
+					this.insurance = this.bet;
+					return this.proceed();
+				},
+				surrender() {
+					this.bet /= 2;
+					return this.finish();
+				}
+			}
+		});
+		
+		this.client = client;
+		this.bet    = bet;
+		this.insurance = 0;
+		this.deck   = new Deck(4);
+		this.bot    = new BlackjackPlayer(true);
+		this.player = new BlackjackPlayer();
+	}
+	get status() {
+		if (this.winner == this.player) {
+			return {
+				name: 'Win',
+				value: 'You win against the bot!'
+			};
+		} else if (this.winner == this.bot) {
+			return {
+				name: 'Lose',
+				value: 'The bot wins!'
+			};
+		} else if (this.winner == 'tie') {
+			return {
+				name: 'Tie',
+				value: '????'
+			};
+		} else {
+			return null;
+		}
+	}
+	get options() {
+		var options = [];
+		if (this.winner == null) {
+			options.push('stand');
+			var value = this.player.blackjackValue
+			if (value < 21) {
+				options.push('hit');
+			}
+			if (value > 9) {
+				options.push('double down');
+			}
+			if (value > 12) {
+				options.push('surrender');
+			}
+			if (this.bot.hasValue(1)) {
+				options.push('insurance');
 			}
 		}
-	};
+		return options;
+	}
+	toEmbed() {
+		var embed = {
+			title: BLACKJACK_HEADER,
+			fields: []
+		};
+		embed.fields.push({
+			name: 'Player\'s Hand',
+			value: this.player.toString(),
+			inline: true
+		});
+		embed.fields.push({
+			name: 'Bot\'s Hand',
+			value: this.bot.toString(),
+			inline: true
+		});
+		var status = this.status;
+		if (status) {
+			embed.fields.push(status);
+		}
+		var options = this.options;
+		if (options.length) {
+			embed.description = 'Options: ' + options.join(', ');
+		}
+		return embed;
+	}
 }
 
 module.exports = Blackjack;
