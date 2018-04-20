@@ -71,20 +71,21 @@ class Sessions extends Logger(TypeMapBase) {
 		this.info('Ending session:', id);
 		return this.delete(id);
 	}
-	resolve(input) {
-		for (let s of this.sessions) {
+	resolve(handler) {
+		var session, response;
+		for (session of this.sessions) {
 			try {
-				s.resolve(input);
-				if (input.response) {
-					this.info(s.id);
-					break;
+				response = session.resolve(handler);
+				if (handler.grant) {
+					this.info(session.id);
+					return response;
 				}
 			} catch (e) {
 				this.warn(e);
 				// ignore errors
 			}
 		}
-		return Promise.resolve(input);
+		return Promise.resolve(handler);
 	}
 	checkExpirations() {
 		for (var s of this.sessions) {

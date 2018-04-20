@@ -79,16 +79,16 @@ module.exports = {
 				title: PokemonGame.header + ' | PokeID',
 				info: 'Displays info about a Pokémon from your inventory.',
 				parameters: ['pokemon'],
-				fn({client, arg, userID}) {
-					return PokemonGame.displayPokemon(client, userID, arg);
+				fn({client, args, userID}) {
+					return PokemonGame.displayPokemon(client, userID, args[0]);
 				}
 			},
 			'gif': {
 				title: PokemonGame.header + ' | GIF',
 				info: 'Embeds a GIF of a Pokémon.',
 				parameters: ['[pokemon]'],
-				fn({client, arg}) {
-					return PokemonGame.GIF(arg);
+				fn({client, args}) {
+					return PokemonGame.GIF(args[0]);
 				}
 			},
 			'rename': {
@@ -142,8 +142,8 @@ module.exports = {
 				title: PokemonGame.header + ' | Release',
 				info: 'Remove one Pokémon from your inventory by its ID, then decrease your cooldown by up to 1 hour.',
 				parameters: ['pokemon'],
-				fn({client, arg, userID}) {
-					return PokemonGame.releasePokemon(client, userID, arg);
+				fn({client, args, userID}) {
+					return PokemonGame.releasePokemon(client, userID, arg[0]);
 				}
 			},
 			'trade': {
@@ -159,8 +159,8 @@ module.exports = {
 				title: PokemonGame.header + ' | Sell',
 				info: 'Sell a Pokémon for its value. Leveled Pokémon are worth more.',
 				parameters: ['pokemon'],
-				fn({client, arg, userID}) {
-					return PokemonGame.sellPokemon(client, userID, arg);
+				fn({client, args, userID}) {
+					return PokemonGame.sellPokemon(client, userID, arg[0]);
 				}
 			},
 			'fave': {
@@ -168,8 +168,8 @@ module.exports = {
 				title: PokemonGame.header + ' | Fave',
 				info: 'Favorite one of your Pokémon.',
 				parameters: ['pokemon'],
-				fn({client, arg, userID}) {
-					return PokemonGame.favoritePokemon(client, userID, arg);
+				fn({client, args, userID}) {
+					return PokemonGame.favoritePokemon(client, userID, args[0]);
 				}
 			},
 			'unfave': {
@@ -177,15 +177,16 @@ module.exports = {
 				title: PokemonGame.header + ' | Fave',
 				info: 'Un-favorite one of your Pokémon.',
 				parameters: ['pokemon'],
-				fn({client, arg, userID}) {
-					return PokemonGame.unfavoritePokemon(client, userID, arg);
+				fn({client, args, userID}) {
+					return PokemonGame.unfavoritePokemon(client, userID, args[0]);
 				}
 			},
 			
 			'battle': {
 				title: PokemonGame.header + ' | Battle!',
 				info: 'Battle against the bot or another player!',
-				fn() {
+				fn({client, context, args}) {
+					//PokemonGame.startBattle(client, context, args);
 					return 'Coming Soon: Pokémon battles. A great way to earn XP or catch more Pokemon!';
 				}
 			},
@@ -195,32 +196,22 @@ module.exports = {
 				info: `Scavenge for items that you can use in battle or sell for cash! Cooldown: ${PokemonGame.scavengingCooldownTime}`,
 				fn({client, userID}) {
 					return PokemonGame.scavengeItem(client, userID);
-				}/*,
-				subcommands: {
-					'use': {
-						title: PokemonGame.header + ' | Use Item',
-						info: 'Use an instant item from your inventory.',
-						parameters: ['pokemon','item'],
-						fn({client, args, userID}) {
-							return 'Work in progress!';
-						}
-					}
-				}*/
+				}
 			},
 			'candy': {
 				title: PokemonGame.header + ' | Use Rare Candy',
 				info: 'Use a Rare Candy from your inventory on one of your Pokémon.',
 				parameters: ['pokemon'],
-				fn({client, userID, arg}) {
-					return PokemonGame.useRareCandy(client, userID, arg);
+				fn({client, userID, args}) {
+					return PokemonGame.useRareCandy(client, userID, args[0]);
 				}
 			},
 			'train': {
 				title: PokemonGame.header + ' | Train',
 				info: `Give **5 XP** to one Pokémon of your choice, or one at random. Cooldown: ${PokemonGame.trainingCooldownTime}`,
 				parameters: ['[pokemon]'],
-				fn({client, arg, userID}) {
-					return PokemonGame.trainPokemon(client, userID, arg);
+				fn({client, args, userID}) {
+					return PokemonGame.trainPokemon(client, userID, args[0]);
 				}
 			},
 			'shop': {
@@ -232,8 +223,8 @@ module.exports = {
 						title: PokemonGame.header,
 						info: 'View the current inventory and prices of the PokéShop.',
 						parameters: ['[item]'],
-						fn({client, arg, userID, serverID}) {
-							return PokemonGame.showShopInventory(client, serverID, arg);
+						fn({client, args, userID, serverID}) {
+							return PokemonGame.showShopInventory(client, serverID, args[0]);
 						}
 					},
 					'buy': {

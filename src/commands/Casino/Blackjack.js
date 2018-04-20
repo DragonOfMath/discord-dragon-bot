@@ -272,7 +272,7 @@ class Blackjack extends Session {
 			if (value[value.length-1] > 9 && value[value.length-1] < BLACKJACK) {
 				options.push('double down');
 			}
-			if (this.bot.hasValue(1) && !this.insurance) {
+			if (this.bot.hasValue('A') && !this.insurance) {
 				options.push('insurance');
 			}
 		}

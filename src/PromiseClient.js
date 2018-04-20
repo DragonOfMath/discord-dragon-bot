@@ -6,139 +6,130 @@ const {DiscordEmbed} = require('./Utils');
 const MY_NAME = new RegExp(__dirname.split('\\').slice(1,3).join('\\\\'), 'gi');
 
 /**
-	Standard callback function used by discord.io made to suit Promises
-*/
-function cb(resolve, reject, error, response) {
-	if (error) return reject(error);
-	else return resolve(response);
-}
-/**
-	Resolves the parameter/argument list to create a payload for Discord.Client methods
-*/
-function makePayload(paramNames = [], args = []) {
-	if (typeof(args[0]) === 'object') {
-		if (args[0].constructor.name == 'Promise') {
-			throw new TypeError('payload args contains a Promise object');
-		}
-		if (Object.keys(args[0]).length == paramNames.length) {
-			return args[0];
-		}
-	}
-	var payload = {};
-	for (var p = 0; p < paramNames.length; p++) {
-		payload[paramNames[p]] = args[p]; // undefined arguments are handled by discord.io
-	}
-	return payload;
-}
-
-/**
 	Client wrapper for Discord.Client that supports using Promises instead of callbacks.
 	Also supports using param destructuring or plain parameter list.
 */
 class PromiseClient extends Discord.Client {
 	constructor(token, autorun = false) {
-		super(makePayload(['token','autorun'], arguments));
+		super({token,autorun});
 		this.ENABLE_EMBEDS = true;
 	}
 	
 	/* Utility methods */
 	wait(time, event, ...args) {
 		let client = this;
-		return Promise.delay(time).then((value) => {
+		return Promise.delay(time).then(value => {
 			if (typeof(event) === 'function') {
-				event.apply(client, args);
+				value = event.apply(client, args);
 			}
 			return value;
 		});
 	}
 	interval(time, event, ...args) {
 		let client = this;
-		function handle() {
-			if (event.apply(client, args)) return tick();
-		}
 		function tick() {
-			return client.wait(time).then(handle);
+			return client.wait(time, event, ...args).then(x => {if (x) return tick()});
 		}
 		return tick();
 	}
 	
 	/**
 		Creates a Promise that calls the equivalent method in Discord.Client
+		1.6.3+: Intercepts the response, and if the client is being rate-limited,
+		it will retry the request at a later time.
 	*/
 	await(method, payload) {
-		var client = this;
 		return new Promise((resolve, reject) => {
-			super[method](payload, cb.bind(client, resolve, reject));
+			return super[method](payload, (error, response) => {
+				return error ? reject(error) : resolve(response);
+			});
+		})
+		.catch(e => {
+			// intercept response errors
+			if (e.name && e.name == 'ResponseError') {
+				// https://discordapp.com/developers/docs/topics/opcodes-and-status-codes
+				console.log(e.response.message);
+				switch (e.statusCode) {
+					case 429: // TOO MANY REQUESTS
+						// handle rate-limiting
+						var retry_after = e.response.retry_after + 100;
+						console.log('Retrying',method,'after',retry_after,'ms');
+						return this.wait(retry_after).then(() => this.await(method, payload));
+					case 400: // BAD REQUEST
+					case 401: // UNAUTHORIZED
+					case 403: // FORBIDDEN
+					case 404: // NOT FOUND
+					case 405: // METHOD NOT ALLOWED
+					default:
+						throw e;
+				}
+			}
+			return e;
 		});
-//		.catch(e => {
-//			console.error(e); // log the error since Discord.io usually doesn't
-//			throw e;          // then toss it again
-//		});
 	}
 	
 	/* Shorthand methods */
-	send(to, message, embed) {
-		if (!message && !embed) return Promise.resolve('Nothing to send.'); // don't bother sending empty messages
-		//console.log(arguments);
-		if (typeof (message) === 'object') {
-			if (message.constructor.name == 'Promise') {
-				// message is a Promise, so wait for it to resolve before sending
-				return message.then(m => this.send(to, m))
-			} else {
-				([message, embed] = [embed, message]);
-			}
+	send(channelID, message, embed) {
+		var payload = new DiscordEmbed(message, embed);
+		if (!payload.message && !payload.embed) {
+			return Promise.resolve('Nothing to send.');
 		}
 		
-		var discordEmbedObject = new DiscordEmbed(message, embed);
 		// remove my name if it EVER shows up
-		discordEmbedObject.message = discordEmbedObject.message.replace(MY_NAME, '(Me)');
+		payload.replaceAll(MY_NAME, 'X');
 		
 		if (!this.ENABLE_EMBEDS) {
-			discordEmbedObject.message = discordEmbedObject.toString();
-			delete discordEmbedObject.embed;
+			payload.message = payload.toString();
+			delete payload.embed;
 		}
 		
 		// check that the data is of acceptable size
-		discordEmbedObject.checkPayloadLength();
+		if (payload.checkPayloadLength()) {
+			payload.to = channelID;
+			return this.sendMessage(payload);
+		}
+	}
+	upload(to, file, filename, message) {
+		if (typeof(file) === 'undefined') {
+			throw new Error('No file to upload.');
+		}
+		if (typeof(file) !== 'string' && typeof(filename) !== 'string') {
+			throw new Error('File buffer requires filename.');
+		}
+		if (typeof(message) === 'string' && message.length > 2000) {
+			throw new Error('Message length exceeds Discord\'s limit: ' + message.length);
+		}
 		
-		// send the package
-		discordEmbedObject.to = to;
-		return this.sendMessage(discordEmbedObject);
+		return this.uploadFile({to, file, filename, message});
 	}
 	get(channelID, messageID) {
-		//console.log(arguments);
-		return this.getMessage(makePayload(['channelID','messageID'], arguments));
+		return this.getMessage({channelID, messageID});
 	}
-	getAll(channelID, limit = 50) {
-		//console.log(arguments);
-		return this.getMessages(makePayload(['channelID','limit'], arguments));
+	getAll(channelID, limit = 50, before, after) {
+		return this.getMessages({channelID, limit, before, after});
 	}
 	getLast(channelID) {
 		var messageID = this.channels[channelID].last_message_id;
-		//console.log(arguments, messageID);
-		return this.getMessage({channelID,messageID});
+		return this.get(channelID, messageID);
 	}
 	delete(channelID, messageID) {
-		//console.log(arguments);
-		return this.deleteMessage(makePayload(['channelID','messageID'], arguments));
+		return this.deleteMessage({channelID, messageID});
 	}
 	deleteAll(channelID, messageIDs) {
-		//console.log(arguments);
-		return this.deleteMessages(makePayload(['channelID','messageIDs'], arguments));
+		return this.deleteMessages({channelID, messageIDs});
 	}
 	addRole(serverID, userID, roleID) {
-		//console.log(arguments);
-		return this.addToRole(makePayload(['serverID','userID','roleID'], arguments));
+		return this.addToRole({serverID, userID, roleID});
 	}
 	removeRole(serverID, userID, roleID) {
-		//console.log(arguments);
-		return this.removeFromRole(makePayload(['serverID','userID','roleID'], arguments));
+		return this.removeFromRole({serverID, userID, roleID});
 	}
 }
 
 /**
 	Delegate these methods to use await for Promisifying Discord.Client's methods
 */
+const PCP = PromiseClient.prototype;
 const DCP = Discord.Client.prototype;
 [
 	'getUser',
@@ -211,7 +202,8 @@ const DCP = Discord.Client.prototype;
 	'getAudioContext',
 	'getAllUsers'
 ].forEach(method => {
-	PromiseClient.prototype[method] = function (payload) {
+	//PCP[method] = Promise.promisify(DCP[method]);
+	PCP[method] = function (payload) {
 		return this.await(method, payload);
 	};
 });

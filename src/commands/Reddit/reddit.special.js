@@ -9,15 +9,15 @@ module.exports = {
 		type: 'public'
 	},
 	resolver({message}) {
-		var matches = message.match(/\B\/?[ru]\/[\w\d_]+/g);
+		var matches = message.match(/^\/?([ru]\/[\w\d_]+)$/);
 		if (matches) {
-			this.data.m = matches;
+			this.data.m = matches[1];
 			return 'r';
 		}
 	},
 	events: {
 		r() {
-			return this.data.m.map(x => 'https://reddit.com' + x).join('\n');
+			return 'https://reddit.com/' + this.data.m;
 		}
 	}
 }

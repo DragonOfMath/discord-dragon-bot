@@ -20,10 +20,10 @@ module.exports = {
 			'message': {
 				info: 'Set the server\'s welcome message for new users that join. To insert their name, type `$user`, and to mention them, type `$mention`.',
 				parameters: ['...message'],
-				fn({client, serverID, arg}) {
+				fn({client, serverID, input}) {
 					client.database.get('servers').modify(serverID, server => {
 						server.welcome = new Welcome(server.welcome);
-						server.welcome.message = arg;
+						server.welcome.message = input.arg;
 						return server;
 					}).save();
 					return 'Greeting message set for server.';
@@ -44,10 +44,10 @@ module.exports = {
 			'goodbye': {
 				info: 'Set the server\'s goodbye message for users that leave the server. To insert their name, type `$user`, and to mention them, type `$mention`.',
 				parameters: ['...message'],
-				fn({client, serverID, arg}) {
+				fn({client, serverID, input}) {
 					client.database.get('servers').modify(serverID, server => {
 						server.welcome = new Welcome(server.welcome);
-						server.welcome.goodbye = arg;
+						server.welcome.goodbye = input.arg;
 						return server;
 					}).save();
 					return 'Goodbye message set for server.';

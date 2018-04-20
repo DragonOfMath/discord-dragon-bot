@@ -1,58 +1,60 @@
+const {Format:fmt,tableify} = require('../../Utils');
+
 const TABLE = {
 	':dragon:': {
-		value: [1,100,10000],
+		value: [5,200,10000],
 		count: 1
 	},
 	':gem:': {
-		value: [1,90,1000],
+		value: [2,100,2500],
 		count: 1
 	},
 	':slot_machine:': {
 		value: [7,77,777],
 		count: 1
 	},
-	':joy:': {
-		value: [1,42,420],
+	':eggplant:': {
+		value: [6.9,69,690], // Nice.
 		count: 1
 	},
-	':thinking:': {
-		value: [1,25,250],
+	':ok_hand:': {
+		value: [1,50,500],
 		count: 2
 	},
-	':ok_hand:': {
-		value: [1,50,150],
+	':joy:': {
+		value: [1,42,420],
 		count: 2
+	},
+	':thinking:': {
+		value: [1,32,400],
+		count: 2
+	},
+	':banana:': {
+		value: [1,20,350],
+		count: 3
+	},
+	':watermelon:': {
+		value: [1,15,300],
+		count: 3
+	},
+	':grapes:': {
+		value: [1,15,300],
+		count: 3
+	},
+	':cherries:': {
+		value: [1,15,300],
+		count: 3
+	},
+	':melon:': {
+		value: [1,15,300],
+		count: 3
 	},
 	':100:': {
 		value: [1,10,100],
-		count: 3
-	},
-	':eggplant:': {
-		value: [6,9,69], // Nice.
-		count: 3
-	},
-	':banana:': {
-		value: [1,16,40],
-		count: 4
-	},
-	':watermelon:': {
-		value: [1,12,35],
-		count: 4
-	},
-	':grapes:': {
-		value: [1,8,30],
-		count: 4
-	},
-	':cherries:': {
-		value: [1,6,25],
-		count: 4
-	},
-	':melon:': {
-		value: [1,5,20],
 		count: 4
 	},
 	':poop:': {
-		value: [0,0,5],
+		value: [0,0,200],
 		count: 4
 	}
 };
@@ -129,13 +131,26 @@ class SlotMachine {
 	toString() {
 		var columnItems = this.columns.map(c => c.visible);
 		var rows = columnItems.map((x,i) => columnItems.map(c => c[i]));
-		return rows[0].join(' | ') + '\n' + rows[1].join(' | ') + ' <-\n' + rows[2].join(' | ');
+		return rows[0].join(' | ') + '\n' + rows[1].join(' | ') + ' :point_left:\n' + rows[2].join(' | ');
 	}
 	toEmbed() {
 		return {
 			title: 'Slot Machine :slot_machine: - Bet = ' + this.bet,
 			description: this.toString()
 		};
+	}
+	static showPayoutTable() {
+		var total = 0;
+		for (var item in TABLE) {
+			total += TABLE[item].count;
+		}
+		return tableify(['Item','Multipliers','Rarity'], Object.keys(TABLE), item => {
+			return [
+				item, // TODO: keep the emoji but align the other columns
+				TABLE[item].value.map(x => 'x'+x).join('|'),
+				fmt.percent(TABLE[item].count / total)
+			].map(c => '`' + c + '`');
+		});
 	}
 }
 

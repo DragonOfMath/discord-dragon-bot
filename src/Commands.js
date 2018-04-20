@@ -114,47 +114,44 @@ class Commands extends TypeMapBase {
 		}
 	}
 	/**
-		Resolve Input
+		Resolve Handler input
 		Matches input to a command
 		If 1 command found:
 			Checks permissions and parameters
 			Runs the command
 		Else:
 			Produces a listing of matched commands
-		@return the input object
+		@return a resolved Promise for the handler
 	*/
-	resolve(data) {
+	resolve(handler) {
 		// find the command object, if possible
-		var commands = this.get(data.cmds);
+		var commands = this.get(handler.cmds);
 		
 		if (commands.length == 0) {
-			data.error = `Not a recognized command: ${data.cmd}`;
-			return Promise.resolve(data);
-		}
-		
-		if (commands.length > 1) {
-			if (data.userID != data.client.ownerID) {
+			this.logger.warn('Not a command: ' + handler.cmd);
+			return handler.resolve();
+			
+		} else if (commands.length == 1) {
+			this.logger.info(handler.text);
+			var command = commands[0];
+			handler.cmd = command.fullID;
+			command.validate(handler);
+			if (handler.grant == 'granted') {
+				return command.run(handler);
+			} else {
+				return handler.resolve(':no_entry_sign: **Denied**: ' + handler.grant);
+			}
+			
+		} else {
+			this.logger.info(handler.text,'->',commands.length,'matches');
+			if (handler.userID != handler.client.ownerID) {
 				commands = commands.filter(cmd => !cmd.suppress);
 			}
-			data.response = commands.map(cmd => cmd.fullID).sort().join(', ');
-			data.response = truncate(data.response, 1985);
-			data.response = 'Matches:\n' + md.codeblock(data.response);
-			return Promise.resolve(data);
+			var msg = commands.map(cmd => cmd.fullID).sort().join(', ');
+			msg = truncate(msg, 1980);
+			msg = 'Matches:\n' + md.codeblock(msg);
+			return handler.resolve(msg);
 		}
-		
-		var command = commands[0];
-		data.cmd = command.fullID;
-		command.validate(data);
-		
-		if (data.grant == 'granted') {
-			this.logger.info(data.text);
-			command.run(data);
-		} else {
-			this.logger.warn(data.grant);
-			data.response = ':no_entry_sign: **Denied**: ' + data.grant;
-		}
-		
-		return Promise.resolve(data);
 	}
 	toHelpEmbed(client, showSuppressedCommands) {
 		var cmds = this.keys;

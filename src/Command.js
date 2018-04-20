@@ -3,7 +3,7 @@ const CPermissions = require('./ConfigurablePermissions');
 const Properties   = require('./Properties');
 const TypeMapBase  = require('./TypeMapBase');
 const Constants    = require('./Constants');
-const {Markdown:md,random,strcmp} = require('./Utils');
+const {Markdown:md,strcmp} = require('./Utils');
 
 /**
 	Subcommands class
@@ -240,63 +240,32 @@ class Command {
 	/**
 		Validating the arguments with the command's permissions, then return the result
 	*/
-	validate(input) {
-		let grant = this.checkPermissions(input);
+	validate(handler) {
+		let grant = this.checkPermissions(handler.context);
 		if (grant.granted) {
-			grant = this.checkParameters(input.args);
+			grant = this.checkParameters(handler.args);
 		}
-		input.grant = grant.value;
-		return input;
+		handler.grant = grant.value;
+		return handler;
 	}
 	/**
 		Run the command's handler with the input
 	*/
-	run(input) {
+	run(handler) {
 		// command functions can either generate responses internally or return one
-		if (this.fn instanceof Function) {
-			try {
-				input.response = this.fn.call(this,input);
-			} catch (e) {
-				input.error    = e;
-				input.response = ':warning: **Error**: ' + e;
-				input.temp     = true; // delete this error message after a few seconds
-			} finally {
-				if (input.response) {
-					if (input.response instanceof Promise) {
-						input.response = input.response.then(x => this.insertTitle(x));
-					} else {
-						if (input.response instanceof Array) {
-							input.response = random(input.response);
-						}
-						input.response = this.insertTitle(input.response);
-					}
-				}
+		var _handler, value;
+		try {
+			if (this.fn instanceof Function) {
+				value = this.fn.call(this, handler);
+			} else if (this.info) {
+				value = this.info + (this.hasSubcommands ? `\nUse ${md.code(this.fullID + '.?')} to list subcommands.` : '');
 			}
-		} else if (this.title || this.info) {
-			input.response = md.bold(this.title) + '\n' + this.info;
-			if (this.hasSubcommands) {
-				input.response += `\nUse ${md.code(this.fullID + '.?')} to list subcommands.`;
-			}
+			_handler = handler.resolve(value);
+		} catch (e) {
+			_handler = handler.reject(e);
+		} finally {
+			return _handler.then(() => {handler.title = this.title});
 		}
-		return input;
-	}
-	/**
-		Insert title where appropriate
-	*/
-	insertTitle(x) {
-		//console.log('Inserting title:',this.title)
-		if (typeof(this.title) === 'string' && this.title.length > 0) {
-			if (typeof(x) === 'object') {
-				if (typeof(x.message) === 'string') {
-					x.message = md.bold(this.title) + ' | ' + x.message;
-				} else {
-					x.title = this.title + (x.title ? ' | ' + x.title : '');
-				}
-			} else if (typeof(x) === 'string') {
-				x = md.bold(this.title) + ' | ' + x;
-			}
-		}
-		return x;
 	}
 	/**
 		Returns the representative string of the command

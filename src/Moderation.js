@@ -1,3 +1,4 @@
+const Constants = require('./Constants');
 const {embedMessage,hasContent} = require('./DiscordUtils');
 const {Markdown:md,Format:fmt} = require('./Utils');
 
@@ -42,6 +43,47 @@ function validateTargetUser(client, server, userID, modID) {
 	}
 	return userID;
 }
+function fetchMessages(client, channelID, limit, before, after) {
+	limit = Math.min(Math.max(1, limit), 100);
+	return client.getMessages({channelID, limit, before, after});
+}
+function filterMessages(client, messages, flags) {
+	var blacklist = {
+		cmds:   flags.includes('-cmds')   || flags.includes('-c'),
+		bot:    flags.includes('-bot')    || flags.includes('-b'),
+		text:   flags.includes('-text')   || flags.includes('-t'),
+		media:  flags.includes('-media')  || flags.includes('-m'),
+		pinned: flags.includes('-pinned') || flags.includes('-p')
+	};
+	var whitelist = {
+		cmds:   flags.includes('+cmds')   || flags.includes('+c'),
+		bot:    flags.includes('+bot')    || flags.includes('+b'),
+		text:   flags.includes('+text')   || flags.includes('+t'),
+		media:  flags.includes('+media')  || flags.includes('+m'),
+		pinned: flags.includes('+pinned') || flags.includes('+p')
+	};
+	return messages.filter(m => {
+		if (m.content.startsWith(Constants.Symbols.PREFIX) && blacklist.cmds && !whitelist.cmds) {
+			return false;
+		}
+		if (m.author.id == client.id && blacklist.bot && !whitelist.bot) {
+			return false;
+		}
+		if (hasContent(m)) {
+			if (blacklist.media && !whitelist.media) {
+				return false;
+			}
+		} else {
+			if (blacklist.text && !whitelist.text) {
+				return false;
+			}
+		}
+		if (m.pinned && blacklist.pinned && !whitelist.pinned) {
+			return false;
+		}
+		return true;
+	});
+}
 
 class Moderation {
 	static get(client, serverID) {
@@ -69,57 +111,80 @@ class Moderation {
 			return 'Archive channel set: ' + md.channel(channelID);
 		});
 	}
-	static archive(client, serverID, channelID, limit) {
+	static archive(client, serverID, channelID, count, flags) {
 		var archiveID = this.getArchiveChannel(client, serverID);
 		if (!archiveID) {
 			throw 'No archive channel set.';
 		}
-		limit = Math.max(1, Math.min(~~limit, 100));
-		console.log(`Archiving ${limit} messages in ${channelID}...`);
-		var lastMessage = client.channels[channelID].last_message_id;
-		return client.getMessages({channelID,limit,before:lastMessage})
+		var lastMessageID = client.channels[channelID].last_message_id;
+		return fetchMessages(client, channelID, count, lastMessageID)
 		.then(messages => {
-			function next() {
-				if (messages.length == 0) return console.log('Archiving done.');
-				let message = messages.pop();
-				return client.send(archiveID,`From ${md.channel(channelID)}:`,embedMessage(message)).then(() => client.delete(channelID, message.id)).delay(1000).then(next);
+			if (messages.length) {
+				return filterMessages(client, messages, flags);
+			} else {
+				throw 'No messages found.';
 			}
-			return next();
 		})
-		.then(res => `${fmt.plural(limit,'message')} archived in ${md.channel(archiveID)}.`);
+		.then(messages => {
+			console.log(`Archiving ${messages.length} messages in ${channelID}...`);
+			function loop() {
+				var message = messages.pop();
+				return client.send(archiveID,`From ${md.channel(channelID)}:`,embedMessage(message))
+				.then(() => client.delete(channelID, message.id))
+				.delay(1000)
+				.then(() => {
+					if (messages.length > 0) {
+						return loop();
+					} else {
+						return console.log('Archiving done.');
+					}
+				});
+			}
+			return loop();
+		})
+		.then(() => `${fmt.plural(count,'message')} archived in ${md.channel(archiveID)}.`);
 	}
 	static cleanup(client, channelID, count, flags) {
-		count = Math.max(1, ~~count);
-		//var lastMessage = client.channels[channelID].last_message_id;
-		function removeBatchOfMessages() {
-			if (count == 0) return console.log('Cleanup done.');
-			var limit = Math.min(count, 100);
-			console.log(`Deleting ${limit} messages in ${channelID}...`);
-			count -= limit;
-			return client.getMessages({channelID,limit})
+		var beforeMessageID = null;
+		function loop() {
+			return fetchMessages(client, channelID, count, beforeMessageID)
+			// filter messages by user-specified flags and count down from the number of messages
 			.then(messages => {
-				if (flags.includes('-text') || flags.includes('-t')) {
-					messages = messages.filter(hasContent);
-				}
-				if (flags.includes('-media') || flags.includes('-m')) {
-					messages = messages.filter(m => !hasContent(m));
-				}
-				if (flags.includes('-pinned') || flags.includes('-p')) {
-					messages = messages.filter(m => !m.pinned);
-				}
 				if (messages.length) {
-					var messageIDs = messages.map(x => x.id);
+					count -= messages.length;
+					beforeMessageID = messages[messages.length-1].id;
+					return filterMessages(client, messages, flags);
+				} else {
+					throw 'No messages found.';
+				}
+			})
+			// delete remaining messages
+			.then(messages => {
+				var messageIDs = messages.map(m => m.id);
+				if (messageIDs.length) {
+					console.log(`Deleting ${messageIDs.length} messages in ${channelID}...`);
 					if (messages.length > 1) {
-						return client.deleteMessages({channelID, messageIDs})
-						.delay(3000) // prevent rate-limiting
-						.then(removeBatchOfMessages);
+						return client.deleteMessages({channelID, messageIDs});
 					} else {
 						return client.deleteMessage({channelID, messageID: messageIDs[0]});
 					}
+				} else {
+					console.error('No messages to delete.');
+				}
+			})
+			// prevent rate-limiting
+			.delay(3000)
+			// retrieve more messages until done
+			.then(() => {
+				if (count > 0) {
+					return loop();
+				} else {
+					return console.log('Cleanup done.');
 				}
 			});
 		}
-		return removeBatchOfMessages();
+		
+		return loop();
 	}
 	static getModlogChannel(client, serverID) {
 		return this.get(client, serverID).modlogID;

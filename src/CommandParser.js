@@ -134,9 +134,8 @@ class CommandParser {
 				
 			// constructs
 			} else if (!quote) {
-				// inline comment
-				if (letter+next == '//') {
-					push();
+				// inline comment (only works if the token is empty; otherwise it keeps the // in links)
+				if (letter+next == '//' && token == '') {
 					j = i;
 					i = lookahead(i+2,'\n');
 					var comment = text.substring(j,i);

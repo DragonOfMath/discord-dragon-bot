@@ -176,7 +176,7 @@ module.exports = {
 			client.addReaction({channelID, messageID, reaction: '👽'}).catch(e => client.error(e));
 		},
 		what({client, channelID, messageID}) {
-			return client.getMessages({channelID,limit:1,before:messageID}).then(res => (res[0] ? `*${res[0].content}*` : ''));
+			return client.getMessages({channelID,limit:1,before:messageID}).then(res => (res[0] ? `*${res[0].content.toUpperCase()}*` : ''));
 		}
 	}
 };

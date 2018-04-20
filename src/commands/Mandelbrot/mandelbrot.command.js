@@ -1,10 +1,5 @@
-const Jimp       = require('jimp');
-const Promise    = require('bluebird');
 const Mandelbrot = require('./Mandelbrot');
-const {Color,ColorGradient,paginate} = require('../../Utils');
-
-// https://github.com/oliver-moran/jimp/issues/90
-Jimp.prototype.getBufferAsync = Promise.promisify(Jimp.prototype.getBuffer);
+const {Color,ColorGradient,paginate,Jimp} = require('../../Utils');
 
 const mandelbrot = new Mandelbrot();
 const style      = new ColorGradient();
@@ -21,24 +16,6 @@ const WHITE   = new Color(0xFF,0xFF,0xFF);
 const DEFAULT_STYLE = [RED,YELLOW,GREEN,CYAN,BLUE,MAGENTA];
 
 style.colors = DEFAULT_STYLE;
-
-function render() {
-	// mandelbrot -> style -> image
-	var start = Date.now();
-	//style.blend();
-	mandelbrot.render();
-	var image = new Jimp(mandelbrot.width, mandelbrot.height);
-	image.scan(0, 0, mandelbrot.width, mandelbrot.height, function (x,y,i) {
-		var d = mandelbrot.data[y][x];
-		var c = d < (mandelbrot.depth) ? style.get(d / style.scale) : BLACK;
-		this.bitmap.data[i+0] = c.r;
-		this.bitmap.data[i+1] = c.g;
-		this.bitmap.data[i+2] = c.b;
-		this.bitmap.data[i+3] = 255;
-	});
-	var time = Date.now() - start;
-	return { image, time };
-}
 
 function random(a,b) {
 	return a + (b - a) * Math.random();
@@ -59,20 +36,34 @@ module.exports = {
 			var [width,height] = args.map(Number);
 			mandelbrot.width  = width  ? Math.max(100, Math.min(width,  2000)) : 600;
 			mandelbrot.height = height ? Math.max(100, Math.min(height, 2000)) : 600;
-			var message;
+			
 			return client.simulateTyping(channelID)
-			.then(render)
-			.then(({image,time}) => {
-				message = this.insertTitle(`Rendered in **${time}ms**`);
-				return image.getBufferAsync(Jimp.MIME_PNG);
-			})
-			.then(buffer =>  {
-				return client.uploadFile({
-					to: channelID,
-					file: buffer,
-					filename: `mandelbrot_${Date.now()}.png`,
-					message
-				}).then(() => ''); // this is to prevent an empty embed from sending
+			.then(() => {
+				// mandelbrot -> style -> image
+				var start = Date.now();
+				
+				//style.blend();
+				mandelbrot.render();
+				
+				var image = new Jimp(mandelbrot.width, mandelbrot.height);
+				image.scan(0, 0, mandelbrot.width, mandelbrot.height, function (x,y,i) {
+					var d = mandelbrot.data[y][x];
+					var c = d < (mandelbrot.depth) ? style.get(d / style.scale) : BLACK;
+					this.bitmap.data[i+0] = c.r;
+					this.bitmap.data[i+1] = c.g;
+					this.bitmap.data[i+2] = c.b;
+					this.bitmap.data[i+3] = 255;
+				});
+				var time = Date.now() - start;
+				
+				return image.getBufferAsync(Jimp.MIME_PNG)
+				.then(buffer => {
+					return {
+						file: buffer,
+						filename: `mandelbrot_${Date.now()}.png`,
+						message: `Rendered in **${time}ms**`
+					};
+				});
 			});
 		},
 		subcommands: {

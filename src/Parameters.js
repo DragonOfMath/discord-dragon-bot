@@ -13,38 +13,32 @@ class Parameters extends TypeMapBase {
 		this.setProperty('command', command);
 	}
 	toString() {
-		return this.items.map(p => p.toString()).join(' ');
+		return this.items.map(String).join(' ');
 	}
 	check(args) {
-		if (args.length < this.requiredArgs) {
-			return Grant.denied(`Missing arguments: \`${this.getMissingParams(args).map(String).join(' ')}\``);
-		} else if (args.length > this.maximumArgs) {
-			//return Grant.denied(`Max number of arguments: ${this.maximumArgs}`);
-		} else {
-			var a = 0;
-			// find first unsatisfied parameter (if it exists)
-			for (var p in this) {
-				if (typeof(args[a]) !== 'undefined') {
-					if (this[p].isChoice) {
-						if (this[p].choices.includes(args[a].toLowerCase())) a++;
-						else return Grant.denied(`"${args[a]}" is not a valid choice: ${this[p].choices.join(', ')}`);
-					} else if (this[p].isBlock) {
-						if (this[p].isMulti) {
-							while (args[a] && args[a].cmd) ++a;
-						}
-						if (args[a] && !args[a].cmd) {
-							return Grant.denied(`"${args[a]}" is not runnable.`);
-						} else if (a < args.length) {
-							a++;
-						} else {
-							break;
-						}
-					} else {
-						a++;
+		var a = 0;
+		// find first unsatisfied parameter (if it exists)
+		for (var p in this) {
+			if (typeof(args[a]) !== 'undefined') {
+				if (this[p].isChoice) {
+					if (this[p].choices.includes(args[a].toLowerCase())) a++;
+					else return Grant.denied(`"${args[a]}" is not a valid choice: ${this[p].choices.join(', ')}`);
+				} else if (this[p].isBlock) {
+					if (this[p].isMulti) {
+						while (args[a] && args[a].cmd) ++a;
 					}
-				} else if (!this[p].optional) {
-					return Grant.denied(`Missing argument: \`${this[p].toString()}\``);
+					if (args[a] && !args[a].cmd) {
+						return Grant.denied(`"${args[a]}" is not runnable.`);
+					} else if (a < args.length) {
+						a++;
+					} else {
+						break;
+					}
+				} else {
+					a++;
 				}
+			} else if (!this[p].optional) {
+				return Grant.denied(`Missing argument: \`${this[p].toString()}\``);
 			}
 		}
 		return Grant.granted();

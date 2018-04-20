@@ -132,81 +132,40 @@ class Session {
 		var eventFn = typeof(event) === 'function' ? event : this.events[event];
 		return eventFn && eventFn.apply(this, args);
 	}
-	close(input, reason) {
-		if (input && reason && !this.settings.silent) {
-			if (typeof(input.response) === 'undefined') {
-				input.response = reason;
-			} else if (typeof(input.response) === 'string') {
-				input.response += '\n' + reason;
-			}
+	close(handler, reason) {
+		if (handler && reason && !this.settings.silent) {
+			handler.response.message += '\n' + reason;
 		}
 		this.fire('close');
 	}
-	resolve(input) {
-		var grant = this.permissions.check(input);
-		if (!grant.granted) {
-			return input;
-		}
+	resolve(handler) {
+		if (!this.resolver) return;
 		
-		if (!this.resolver) {
-			return input;
-		}
-		try {
-			var resolvedEvt = this.resolver.call(this, input);
-		} catch (e) {
-			input.error = e;
-			input.response = ':warning: **Error**: ' + (e.message||e);
-		} finally {
-			this.last_channel_id = input.channelID;
-			if (resolvedEvt && this.hasEvent(resolvedEvt)) {
-				this.uses++;
-				var result = this.fire(resolvedEvt, input);
-				if (result) {
-					if (result instanceof Array) {
-						result = random(result);
-					}
-					input.grant = 'granted';
-					input.response = result;
-				}
-				if (this.uses == this.settings.max) {
-					this.close(input, 'Max uses reached.');
-				}
-				if (this.settings.reset) {
-					this.elapsed = 0;
-				}
-			} else {
-				this.misses++;
-				if (this.misses == this.settings.cancel) {
-					this.close(input, 'Canceled.');
-				} else if (this.silent) {
-					input.response = '';
-				}
+		var grant = this.permissions.check(handler);
+		if (!grant.granted) return;
+		
+		this.last_channel_id = handler.channelID;
+		
+		var resolvedEvt = this.resolver.call(this, handler);
+		if (resolvedEvt && this.hasEvent(resolvedEvt)) {
+			this.uses++;
+			if (this.uses == this.settings.max) {
+				this.close(handler, 'Max uses reached.');
+			}
+			if (this.settings.reset) {
+				this.elapsed = 0;
+			}
+			var result = this.events[resolvedEvt].call(this, handler);
+			if (result) {
+				handler.grant = true;
+				return handler.resolve(result).then(() => {handler.title = this.title});
+			}
+		} else {
+			this.misses++;
+			if (this.misses == this.settings.cancel) {
+				this.close(handler, 'Canceled.');
 			}
 		}
-		if (input.response) {
-			input.response = this.insertTitle(input.response);
-		}
-		return input;
-	}
-	/**
-		Insert title where appropriate
-	*/
-	insertTitle(x) {
-		if (!x) {
-			x = '';
-		}
-		if (typeof(this.title) === 'string' && this.title.length > 0) {
-			if (typeof(x) === 'object') {
-				if (typeof(x.message) === 'string') {
-					x.message = md.bold(this.title) + ' | ' + x.message;
-				} else {
-					x.title = md.bold(this.title) + (x.title ? ' | ' + x.title : '');
-				}
-			} else if (typeof(x) === 'string') {
-				x = md.bold(this.title) + ' | ' + x;
-			}
-		}
-		return x;
 	}
 }
 

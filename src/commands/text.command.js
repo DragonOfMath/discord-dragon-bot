@@ -150,10 +150,10 @@ module.exports = {
 		category: 'Fun',
 		info: 'Adds :b: emojis to your text fam.',
 		parameters: ['...text'],
-		fn({args, userID}) {
+		fn({arg, userID}) {
 			let consonants = 'bvpdrmcsfh'.split('');
 			let vowels = 'aeiou'.split('');
-			return args.map(word => {
+			return arg.split(' ').map(word => {
 				let first = word[0].toLowerCase();
 				if (consonants.includes(first)) {
 					return word.replace(new RegExp(first,'gi'),':b:');

@@ -163,7 +163,7 @@ module.exports = {
 		fn(data) {
 			const {client, args, context} = data;
 			client.run(context, args[0])
-			.then(_data => propagate(data,_data));
+			.then(_data => {propagate(data,_data)});
 		}
 	}
 };

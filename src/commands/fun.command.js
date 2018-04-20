@@ -148,21 +148,20 @@ module.exports = {
 	'roll': {
 		category: 'Fun',
 		title: ':game_die:',
-		info: 'Generic dice-roll command, specify number of sides and number of roles. Alternatively, use the XdXX format to roll a XX-sided die X times.',
-		parameters: ['XdXX | sides','[rolls]'],
+		info: 'Advanced dice-roll command, using an expression of dice rolls in the form XdXX, plus modifiers.',
+		parameters: ['XdXX + offset + ...'],
 		fn({args, userID}) {
-			var rolls, sides, s;
-			try {
-				;[,rolls,sides] = args[0].match(/^(\d+)d(\d+)$/);
-			} catch (e) {
-				;[sides,rolls] = args;
-			}
-			s = randomDistribution(sides, rolls);
-			if (rolls == 1) {
-				return `<@${userID}> rolled a **${s.findIndex(x=>!!x)+1}**`;
-			} else {
-				return `<@${userID}> ${s.map((x,i) => `${i+1}x${x}`).join(' + ')} = **${rollSum(s)}**`;
-			}
+			var expression = args.map(a => {
+				try {
+					var [,rolls,sides] = a.match(/^(\d+)d(\d+)$/);
+					var s = randomDistribution(sides, rolls);
+					return s.map((x,i) => `(${i+1} * ${x})`).join(' + ');
+				} catch (e) {
+					return a;
+				}
+			}).join(' ');
+			
+			return md.mention(userID) + ' rolled ' + md.code(expression) + ' = ' + md.bold(eval(expression));
 		}
 	},
 	'random': {

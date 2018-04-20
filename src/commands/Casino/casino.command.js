@@ -107,7 +107,7 @@ module.exports = {
 		}
 	},
 	'slots': {
-		aliases: [],
+		aliases: ['slotmachine'],
 		category: 'Fun',
 		title: 'Slots:slot_machine:',
 		info: '3-column slot machine game!',
@@ -135,16 +135,17 @@ module.exports = {
 					}).then(spin);
 				} else {
 					var multiplier = slots.calculateMultiplier();
-					var reward = slots.bet * (multiplier - 1);
+					var reward = slots.bet * multiplier;
+					var cost = slots.bet;
 					if (reward) {
 						Bank.modify(client, userID, user => {
-							user.changeCredits(reward);
+							user.changeCredits(reward - cost);
 						});
 					}
-					if (reward > 0) {
-						return md.mention(userID) + ' Reward: `Bet * ' + (multiplier - 1) + '` = ' + Bank.formatCredits(reward);
-					} else if (reward < 0) {
-						return md.mention(userID) + ' Loss: ' + Bank.formatCredits(reward);
+					if (reward > cost) {
+						return md.mention(userID) + ' Reward: `' + slots.bet + ' * ' + multiplier + '` = ' + Bank.formatCredits(reward);
+					} else if (reward < cost) {
+						return md.mention(userID) + ' Loss: ' + Bank.formatCredits(-cost);
 					} else {
 						return md.mention(userID) + ' No payout.';
 					}
@@ -152,6 +153,16 @@ module.exports = {
 			}
 			return client.send(channelID, slots.toEmbed())
 			.then(message => {messageID = message.id}).then(spin);
+		},
+		subcommands: {
+			'table': {
+				aliases: ['info', 'payout'],
+				title: 'Slot Machine:slot_machine: | Payout Table',
+				info: 'Displays the multipliers and chances of the slot items.',
+				fn() {
+					return SlotMachine.showPayoutTable();
+				}
+			}
 		}
 	},
 	'videoslots': {

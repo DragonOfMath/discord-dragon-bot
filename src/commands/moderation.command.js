@@ -1,5 +1,4 @@
 /**
-	cmd_moderation.js
 	Command file for archiving/cleaning up messages.
 */
 
@@ -10,8 +9,8 @@ module.exports = {
 	'archive': {
 		category: 'Moderation',
 		title: 'Archive',
-		info: 'Move up to 100 messages in the current channel to an archive that anyone can access. (Deletes original messages)',
-		parameters: ['count'],
+		info: 'Move up to 100 messages in the current channel to an archive channel. Use flags to specify the kinds of messages to filter out: `-cmds`, `-bot`, `-media`, `-text`, and `-pinned`.',
+		parameters: ['count', '[...flags]'],
 		permissions: {
 			type: 'inclusive'
 		},
@@ -19,22 +18,18 @@ module.exports = {
 			return Moderation.archive(client, serverID, channelID, args[0]);
 		},
 		subcommands: {
-			'setup': {
-				aliases: ['init'],
-				title: 'Archive | Setup',
-				info: 'Setup the archive channel.',
-				parameters: ['channel'],
-				fn({client, args, channelID, server}) {
-					return Moderation.setArchiveChannel(client, server, args[0]);
-				}
-			},
 			'id': {
 				aliases: ['channel', 'channelid'],
 				title: 'Archive | ID',
-				info: 'Gets the archive channel ID if one is set.',
-				fn({client, channelID, serverID}) {
-					let archiveID = Moderation.getArchiveChannel(client, serverID);
-					return archiveID ? md.channel(archiveID) : 'No archive channel set.';
+				info: 'Gets or sets the archive channel ID.',
+				parameters: ['[channel]'],
+				fn({client, channelID, server, args}) {
+					if (args[0]) {
+						return Moderation.setArchiveChannel(client, server, args[0]);
+					} else {
+						var archiveID = Moderation.getArchiveChannel(client, server.id);
+						return archiveID ? md.channel(archiveID) : 'No archive channel set.';
+					}
 				}
 			}
 		}
@@ -43,7 +38,7 @@ module.exports = {
 		aliases: ['delete', 'nuke'],
 		category: 'Moderation',
 		title: 'Cleanup',
-		info: 'Delete up to 100 messages in the current channel. (Specify `count` and any flags (`-media`, `-pinned`, `-text`) to prevent deleting images, pinned messages, or text messages.)',
+		info: 'Delete messages in the current channel. Use flags to specify the kinds of messages to filter out: `-cmds`, `-bot`, `-media`, `-text`, and `-pinned`.',
 		parameters: ['[count]','[...flags]'],
 		permissions: {
 			type: 'inclusive'
@@ -61,25 +56,17 @@ module.exports = {
 			type: 'inclusive'
 		},
 		subcommands: {
-			'setup': {
-				aliases: ['init'],
-				title: 'Moderation | Setup Modlog',
-				info: 'Setup a modlog channel that keeps a log of moderation cases.',
-				parameters: ['channel'],
-				permissions: {
-					type: 'private'
-				},
-				fn({client, args, channelID, server}) {
-					return Moderation.setModlogChannel(client, server, args[0]);
-				}
-			},
 			'id': {
-				aliases: ['channel', 'channelid'],
+				aliases: ['channel', 'channelid', 'modlog', 'log'],
 				title: 'Moderation | Modlog ID',
-				info: 'Get the modlog channel ID if one is set.',
-				fn({client, channelID, serverID}) {
-					var modlogID = Moderation.getModlogChannel(client, serverID);
-					return modlogID ? md.channel(modlogID) : 'No modlog channel set.';
+				info: 'Gets or sets the modlog channel ID. The modlog contains information about bans, kicks, and other moderation actions.',
+				fn({client, channelID, server, args}) {
+					if (args[0]) {
+						return Moderation.setModlogChannel(client, server, args[0]);
+					} else {
+						var modlogID = Moderation.getModlogChannel(client, server.id);
+						return modlogID ? md.channel(modlogID) : 'No modlog channel set.';
+					}
 				}
 			},
 			'strike': {

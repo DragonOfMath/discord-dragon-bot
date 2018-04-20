@@ -1,7 +1,8 @@
 /**
-	cmd_math.js
 	Command file for math-related commands.
 */
+
+const {Markdown:md} = require('../Utils');
 
 function summation(a,b,f) {
 	let sum = 0;
@@ -46,13 +47,21 @@ function prime(x) {
 	if (x % 2 == 0) {
 		return false;
 	}
-	let root = ~~Math.sqrt(x) + 1;
-	for (let n = 3; n < root; n += 2) {
+	var root = Math.ceil(Math.sqrt(x));
+	for (var n = 3; n < root; n += 2) {
 		if (x % n == 0) {
 			return false;
 		}
 	}
 	return true;
+}
+function primesUpTo(x) {
+	for (var n = 3, primes = [2], factor; n <= x; n += 2) {
+		if (primes.every(p => n % p)) {
+			primes.push(n);
+		}
+	}
+	return primes;
 }
 function gcd(a,b) {
 	// Euclidean algorithm
@@ -63,6 +72,17 @@ function gcd(a,b) {
 			b -= a;
 	}
 	return a;
+}
+function pascalsTriangle(N) {
+	var rows = [[1]];
+	for (var n = 0, k, lastRow, row; n < N; ++n) {
+		lastRow = rows[n];
+		for (k = 0, row = []; k < lastRow.length + 1; ++k) {
+			row.push((lastRow[k-1]|0) + (lastRow[k]|0));
+		}
+		rows.push(row);
+	}
+	return rows;
 }
 
 module.exports = {
@@ -114,7 +134,7 @@ module.exports = {
 				}
 			},
 			'factorial': {
-				title: 'Math:1234:',
+				title: 'Math:1234: | Factorial',
 				info: 'Calculates the factorial of an integer.',
 				parameters: ['number'],
 				fn({args}) {
@@ -135,7 +155,7 @@ module.exports = {
 				}
 			},
 			'factor': {
-				title: 'Math:1234:',
+				title: 'Math:1234: | Prime Factorization',
 				info: 'Find the prime factors of a number.',
 				parameters: ['number'],
 				fn({args}) {
@@ -157,7 +177,7 @@ module.exports = {
 				}
 			},
 			'isprime':{
-				title: 'Math:1234:',
+				title: 'Math:1234: | Prime Finder',
 				info: 'Determine if a given number is prime (limit is 10^8, or 100 million)',
 				parameters: ['number'],
 				fn({args}) {
@@ -182,7 +202,7 @@ module.exports = {
 			},
 			'gcd': {
 				aliases: ['greatestdivisor','greatestfactor','greatestmultiple','gcf','gcm'],
-				title: 'Math:1234:',
+				title: 'Math:1234: | Greatest Common Factor',
 				info: 'Find the GCD of two numbers.',
 				parameters: ['number1','number2'],
 				fn({args}) {
@@ -198,7 +218,7 @@ module.exports = {
 			},
 			'fraction': {
 				aliases: ['decimal2fraction','d2f'],
-				title: 'Math:1234:',
+				title: 'Math:1234: | Dirty Fraction',
 				info: 'Convert a floating-point number to its approximated ratio (Experimental, might not work!)',
 				parameters: ['[number]'],
 				fn({args}) {
@@ -222,6 +242,20 @@ module.exports = {
 					denominator /= factor;
 					
 					return `${real} is approximately **${numerator} / ${denominator}**`;
+				}
+			},
+			'pascal': {
+				aliases: ['pascaltri','pascaltriangle'],
+				title: 'Math:1234: | Pascal\'s Triangle',
+				info: 'Calculate a few rows of Pascal\'s Triangle. You can specify the *Nth* row to display.',
+				parameters: ['[N]'],
+				fn({args}) {
+					var triangle = pascalsTriangle(args[0] || 5);
+					if (triangle.length > 10) {
+						return 'Row ' + (triangle.length-1) + ':\n' + md.codeblock(triangle[triangle.length-1].join(' '));
+					} else {
+						return md.codeblock(triangle.map(n => n.join(' ')).join('\n'));
+					}
 				}
 			}
 		}

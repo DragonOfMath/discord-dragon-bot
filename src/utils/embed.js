@@ -1,11 +1,14 @@
 class DiscordEmbed {
 	constructor(message = '', embed) {
-		if (typeof(embed) == 'object' && (typeof (embed.message) === 'string' || typeof (embed.embed) === 'object')) {
-			({message, embed} = embed);
+		if (typeof (message) === 'object') {
+			[message, embed] = [embed, message];
 		}
-		
-		this.message = message;
-		this.embed   = embed;
+		if (typeof(message) === 'string') {
+			this.message = message;
+		}
+		if (typeof(embed) === 'object' && embed != null) {
+			this.embed = embed;
+		}
 	}
 	embedThumbnail(url,width,height) {
 		this.embed = this.embed || {};
@@ -138,6 +141,30 @@ class DiscordEmbed {
 		}
 		
 		return true;
+	}
+	/**
+		Modifies all string properties and fields
+	*/
+	replaceAll(regex, sub) {
+		if (this.message) {
+			this.message = this.message.replace(regex, sub);
+		}
+		if (this.embed) {
+			if (this.embed.title) {
+				this.embed.title = this.embed.title.replace(regex, sub);
+			}
+			if (this.embed.description) {
+				this.embed.description = this.embed.description.replace(regex, sub);
+			}
+			if (this.embed.footer) {
+				this.embed.footer.text = this.embed.footer.text.replace(regex, sub);
+			}
+			if (this.embed.fields) for (var field of this.embed.fields) {
+				field.name = field.name.replace(regex, sub);
+				field.value = field.value.replace(regex, sub);
+			}
+		}
+		return this;
 	}
 	toString() {
 		var str = this.message + '\n';

@@ -8,6 +8,7 @@ const Constants     = require('./Constants');
 const Analytics     = require('./Analytics');
 const Context       = require('./Context');
 const CommandParser = require('./CommandParser');
+const Handler       = require('./Handler');
 
 const {Markdown:md} = Utils;
 
@@ -143,8 +144,8 @@ class DragonBot extends DebugClient {
 		
 		this.log(user.username,'has left',server.name);
 		
-		var context = new Context(this, user.id, channel, message);
-		this.send(channel, this.normalize(message, context));
+		var context = new Context(this, user.id, channel, goodbye);
+		this.send(channel, this.normalize(goodbye, context));
 	}
 	/**
 		Handles connecting the client.
@@ -179,97 +180,65 @@ class DragonBot extends DebugClient {
 		}
 		
 		this.run(new Context(this, userID, channelID, message, WSMessage), CommandParser.parse(message))
-		.catch(e => this.warn(e));
-	}	
+		.catch(e => this.error(e));
+	}
 	/**
 		Run input with the given Context
 		@arg {Context} context - see src/Context.js
 		@arg {Block}   input   - see src/CommandParser.js
+		@return A Promise for the handler
 	*/
 	run(context, input) {
-		if (typeof(input) !== 'object') {
-			return Promise.reject(`Input not runnable: ${input} (${typeof input})`);
-		}
-		// prepare a data structure to hold all information about this message
-		var data = Object.assign({
-			context,
-			response: null,
-			error: null,
-			grant: null,
-			temp: false
-		}, context, input);
-		
-		var client = this;
-		function _send() {
-			return client.send(data.channelID, data.response).then(_response).catch(_error);
-		}
-		function _response(m) {
-			if (typeof(m) !== 'object') return;
-			// self-destruct temporary messages
-			if (data.temp) {
-				return client.wait(Constants.DragonBot.TEMP_MSG_LIFETIME)
-				.then(() => client.delete(data.channelID, m.id));
-			}
-		}
-		function _error(e) {
-			if (e.name && e.name == 'ResponseError') {
-				client.warn(e.response.message);
-				// https://discordapp.com/developers/docs/topics/opcodes-and-status-codes
-				switch (e.statusCode) {
-					case 400: // BAD REQUEST
-					case 401: // UNAUTHORIZED
-					case 403: // FORBIDDEN
-					case 404: // NOT FOUND
-					case 405: // METHOD NOT ALLOWED
-						client.warn(e);
-						break;
-					case 429: // TOO MANY REQUESTS
-						// handle rate-limiting
-						client.warn('Retrying after',e.response.retry_after,'ms');
-						return client.wait(e.response.retry_after).then(_send);
-					case 502: // GATEWAY UNAVAILABLE
-						client.warn(e);
-						break;
-					default:
-						client.error(e);
-						//client.warn('Resending...');
-						//return _send();
-				}
-			} else {
-				client.error(e);
-				return client.send(data.channelID, '<:fuck:351198367835095040> Oopsie woopsie! UwU we made a fucky wucky! A wittle fucko boingo!\n' + md.codeblock(e.toString()));
-			}
-		}
-		
 		try {
-			// create a copy of the array with normalized values
-			data.args = input.args.map(a => this.normalize(a,context));
-		} catch (e) {
-			return _error(e);
-		}
-		
-		// resolve command or special text
-		return (data.cmd ? this.commands : this.sessions).resolve(data)
-		.then(() => {
-			if (data.error) {
-				this.warn(data.error);
-			} else if (data.cmd && !data.cmd.endsWith('.?') && data.grant == 'granted') {
-				// analytics is updated if a command was successfully resolved
-				Analytics.push(this, data.serverID, data.cmd);
-			}
+			var handler = new Handler(context, input);
 			
-			if (typeof(data.response) !== 'undefined') {
-				// a response should be immediately handled
-				if (typeof(data.response) === 'string') {
-					data.response = this.normalize(data.response, data.context);
+			// create a copy of the args array with normalized values
+			handler.args = input.args.map(a => this.normalize(a,context));
+			handler.arg  = handler.args.map(String).join(' ');
+			
+			// resolve command or special text
+			return (handler.cmd ? this.commands : this.sessions).resolve(handler)
+			// handle sending a message or uploading a file
+			.then(() => {
+				if (handler.error) {
+					this.warn(handler.error);
+				} else if (handler.cmd && !handler.cmd.endsWith('.?') && handler.grant == 'granted') {
+					// analytics is updated if a command was successfully resolved
+					Analytics.push(this, handler.serverID, handler.cmd);
 				}
-				return _send();
-			} else {
-				return Promise.resolve(data);
-			}
-		})
-		.then(() => this.wait(Constants.DragonBot.RATE_LIMIT_DELAY))
-		.then(() => data);
+				
+				if (!handler.response || !(handler.response.message || handler.response.embed || handler.response.file)) {
+					return;
+				}
+				
+				handler.response.message = this.normalize(handler.response.message, handler.context);
+				
+				return (handler.response.file ?
+					this.upload(handler.channelID, handler.response.file, handler.response.filename, handler.response.message) :
+					this.send(handler.channelID, handler.response.message, handler.response.embed))
+				// delete temporary messages after a set duration
+				.then(message => {
+					if (typeof(message) !== 'object') return;
+					// if the message expires, delete it after a set duration
+					if (handler.response.expires) {
+						return this.wait(Constants.DragonBot.TEMP_MSG_LIFETIME)
+						.then(() => this.delete(handler.channelID, message.id));
+					}
+				});
+			})
+			// send an error message if applicable
+			.catch(e => {
+				this.warn(e);
+				return this.send(handler.channelID, '<:fuck:351198367835095040> Oopsie woopsie! UwU we made a fucky wucky! A wittle fucko boingo!\n' + md.codeblock(e.toString()));
+			})
+			// if this command is part of a metacommand, add a delay to prevent rate-limiting
+			.then(() => {
+				return this.wait(Constants.DragonBot.RATE_LIMIT_DELAY);
+			})
+			.then(() => handler);
+		} catch (e) {
+			return Promise.reject(e);
+		}
 	}
 }
 

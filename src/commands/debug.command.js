@@ -17,6 +17,9 @@ function snapshot(data) {
 		}
 	});
 }
+function getIconURL(server) {
+	return `https://cdn.discordapp.com/icons/${server.id}/${server.icon}.png`;
+}
 
 const CHANNEL_TYPE = [
 	'Text',
@@ -102,7 +105,7 @@ module.exports = {
 		},
 		suppress: true,
 		fn({client, args}) {
-			return md.codeblock(arg.map(String).join(' '));
+			return md.codeblock(args.map(String).join(' '));
 		}
 	},
 	'memdump': {
@@ -196,7 +199,7 @@ module.exports = {
 					let channels = Object.keys(server.channels);
 					let roles    = Object.keys(server.roles);
 					let emojis   = Object.keys(server.emojis);
-					let icon = `https://cdn.discordapp.com/icons/${server.id}/${server.icon}.png`;
+					let icon = getIconURL(server);
 					
 					return {
 						fields: [
@@ -358,6 +361,45 @@ module.exports = {
 							}
 						]
 					};
+				}
+			},
+			'invite': {
+				title: 'Debug | Invite',
+				info: 'Reveals information about a server invite.',
+				parameters: ['invite'],
+				fn({client, args}) {
+					var inviteCode = args[0].match(/discord.gg\/(.+)/);
+					if (inviteCode) inviteCode = inviteCode[1];
+					else inviteCode = args[0];
+					return client.queryInvite(inviteCode)
+					.then(response => {
+						var {inviter,code,guild,channel} = response;
+						return {
+							thumbnail: {
+								url: getIconURL(guild),
+								width: 100,
+								height: 100
+							},
+							fields: [
+								{
+									name: 'ID',
+									value: code
+								},
+								{
+									name: 'Inviter',
+									value: `${inviter.username}#${inviter.discriminator} (ID: ${inviter.id})`
+								},
+								{
+									name: 'Guild',
+									value: guild.name + ' (ID: ' + guild.id + ')'
+								},
+								{
+									name: 'Channel',
+									value: channel.name + ' (ID: ' + channel.id + ')'
+								}
+							]
+						}
+					});
 				}
 			}
 		}

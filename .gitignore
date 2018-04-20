@@ -4,7 +4,6 @@ database_backup/
 debug/
 src/deprecated/
 src/static/
-src/commands/NSFW/
 src/commands/WIP/
 *.log
 *.bat
