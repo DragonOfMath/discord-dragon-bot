@@ -143,7 +143,7 @@ module.exports = {
 				info: 'Remove one Pokémon from your inventory by its ID, then decrease your cooldown by up to 1 hour.',
 				parameters: ['pokemon'],
 				fn({client, args, userID}) {
-					return PokemonGame.releasePokemon(client, userID, arg[0]);
+					return PokemonGame.releasePokemon(client, userID, args[0]);
 				}
 			},
 			'trade': {
@@ -160,7 +160,7 @@ module.exports = {
 				info: 'Sell a Pokémon for its value. Leveled Pokémon are worth more.',
 				parameters: ['pokemon'],
 				fn({client, args, userID}) {
-					return PokemonGame.sellPokemon(client, userID, arg[0]);
+					return PokemonGame.sellPokemon(client, userID, args[0]);
 				}
 			},
 			'fave': {

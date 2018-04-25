@@ -94,6 +94,11 @@ class Analytics extends MapBase {
 			return analytics;
 		}).save();
 	}
+	static pushTemp(serverID, command) {
+		Analytics._temp[serverID] = Analytics._temp[serverID] || new Analytics();
+		Analytics._temp[serverID].add(command);
+		return this;
+	}
 	static retrieve(client, serverID) {
 		if (serverID) {
 			return new Analytics(client.database.get('analytics').get(serverID));
@@ -102,6 +107,17 @@ class Analytics extends MapBase {
 			client.database.get('analytics').forEach((serverID, analytics) => {
 				a.add(analytics);
 			});
+			return a;
+		}
+	}
+	static retrieveTemp(serverID) {
+		if (serverID) {
+			return Analytics._temp[serverID] || new Analytics();
+		} else {
+			var a = new Analytics();
+			for (var sid in Analytics._temp) {
+				a.add(Analytics._temp[sid]);
+			}
 			return a;
 		}
 	}
@@ -133,5 +149,8 @@ class Analytics extends MapBase {
 		}).save();
 	}
 }
+
+// current process analytics
+Analytics._temp = {};
 
 module.exports = Analytics;

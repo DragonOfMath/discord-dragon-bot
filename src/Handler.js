@@ -36,7 +36,7 @@ class Handler {
 				if (this.response.message) {
 					this.response.message = md.bold(x) + ' | ' + this.response.message;
 				} else {
-					this.response.message = md.bold(x);
+					//this.response.message = md.bold(x);
 				}
 			}
 		}
@@ -52,6 +52,8 @@ class Handler {
 					this.response = x;
 				} else if (x.title || x.description || x.fields) {
 					this.response.embed = x;
+				} else if (x instanceof Array) {
+					return this.resolve(x[Math.floor(x.length * Math.random())]);
 				} else {
 					throw 'Invalid object keys: ' + Object.keys(x).join(', ');
 				}

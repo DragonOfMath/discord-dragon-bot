@@ -111,18 +111,14 @@ module.exports = class E621 {
 		
 		if (/(webm|mp4)$/.test(file_url)) {
 			// webms and mp4s have preview thumbnails that can be used
+			// todo: see if embedding videos works now?
 			embed.image = {
-				url:    sample_url,
+				url:    preview_url,
 				width:  sample_width,
 				height: sample_height
 			};
+			embed.fields.push({name: 'Video', value: '(Sorry, video embedding doesn\'t quite work yet)\n' + file_url});
 			
-			embed.fields.push({name: 'Video', value: '*This is a video. Visit the title link to view it.*'});
-			
-			// Warn the user if there is sound
-			if (tags.includes('sound')) {
-				embed.fields.push({name: 'Sound', value: '*Content contains audio. Mute before playing if you need to.*'});
-			}
 		} else if (/swf$/.test(file_url)) {
 			// flash animations have no previews yet
 			embed.image = {
@@ -131,14 +127,7 @@ module.exports = class E621 {
 				height: preview_height
 			};
 			
-			embed.fields.push({name: 'Flash', value: '*This is a Flash file. Visit the title link to view it.*'});
-			
-			// Warn the user if there is sound
-			if (tags.includes('sound')) {
-				embed.fields.push({name: 'Sound', value: '*Content contains audio. Mute before playing if you need to.*'});
-			}
-		
-			// add tags to assist describing the content
+			// add tags to assist describing the content since no thumbnail is available yet
 			embed.fields.push({name: 'Tags', value: truncate(tags.join(', '),1000)});
 		} else {
 			// large filesizes have difficulty embedding
@@ -147,10 +136,14 @@ module.exports = class E621 {
 				width:  sample_width,
 				height: sample_height
 			};
-			
-			if (tags.includes('absurd_res') || file_size > ABSURD_RES) {
-				embed.fields.push({name: 'Large Image Size', value: '*This is a very large image and may take a while to load!*'});
-			}
+		}
+		// Warn the user about large file sizes that may hog up slow internet lanes
+		if (tags.includes('absurd_res') || file_size > ABSURD_RES) {
+			embed.fields.push({name: 'Large File Size', value: '*This is a very large file and may take a while to load!*'});
+		}
+		// Warn the user if there is sound
+		if (tags.includes('sound')) {
+			embed.fields.push({name: 'Sound Warning', value: '*Content contains audio. Mute before playing if you need to.*'});
 		}
 		
 		// collect info such as score, faves, rating, and artists

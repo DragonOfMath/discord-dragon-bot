@@ -1,3 +1,5 @@
+const {random} = require('../Utils');
+
 const OOF = `
 ▒██████╗▒   ▒██████╗▒   ███████╗
 ██╔═══██╗   ██╔═══██╗   ██╔════╝
@@ -91,7 +93,7 @@ module.exports = {
 			return 'doot doot thank mr skeltal';
 		},
 		me_irl() {
-			return [
+			return random([
 				'haha this is so me',
 				'relatable',
 				'me_irl',
@@ -116,20 +118,20 @@ module.exports = {
 				'ek ook dankie', // afrikaans
 				'\u79C1\u3082\u3001\u3042\u308A\u304C\u3068\u3046', // japanese
 				'\u6211\u4E5F\u662F\uFF0C\u8B1D\u8B1D' // chinese
-			];
+			]);
 		},
 		thicc() {
-			return [
+			return random([
 				'***THICC***',
 				'***T H I C C***',
 				'***EXTRA THICC***',
 				'***E X T R A T H I C C***',
 				'\u4E47\u4E42\u3112\u5C3A\u5342 \u3112\u5344\u4E28\u531A\u531A',
 				'\uD835\uDCEE\uD835\uDD01\uD835\uDCFD\uD835\uDCFB\uD835\uDCEA \uD835\uDCFD\uD835\uDCF1\uD835\uDCF2\uD835\uDCEC\uD835\uDCEC'
-			];
+			]);
 		},
 		oof() {
-			return [
+			return random([
 				'*OOF*',
 				'**OOF**',
 				'***OOF***',
@@ -141,7 +143,7 @@ module.exports = {
 				'/r/bonehurtingjuice',
 				'/r/oof',
 				OOF
-			];
+			]);
 		},
 		ykihtditt() {
 			return '```\n' + YKIHTDITT + '\n```';
@@ -162,7 +164,7 @@ module.exports = {
 			return client.undo(channelID).then(() => 'ok');
 		},
 		deep() {
-			return [
+			return random([
 				'Really makes you think. :thinking:',
 				'Deep. :pensive:',
 				'omg deep af :eyes:',
@@ -170,7 +172,7 @@ module.exports = {
 				'this is so sad\ncan we hit 50 likes',
 				'this is so sad\ncan we hit ~~50 likes~~ babies',
 				'Real shit? <:wokeThink:341907071953797130>'
-			]
+			]);
 		},
 		ayylmao({client, channelID, messageID}) {
 			client.addReaction({channelID, messageID, reaction: '👽'}).catch(e => client.error(e));

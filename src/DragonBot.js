@@ -74,21 +74,14 @@ class DragonBot extends DebugClient {
 		Replaces variable symbols with their values, and if possible, evaluates the expression.
 		@arg {String} text - the string to normalize
 		@arg {Context} context - the Context object
+		@return the normalized text string
 	*/
 	normalize(text = '', context) {
 		if (!context) throw 'Context not defined';
 		if (typeof(text) !== 'string') return text;
 		
 		// define certain symbols and retrieve server vars
-		var vars = Object.assign({
-			user:        md.bold(context.user ? context.user.username : '?'),
-			mention:     md.mention(context.user ? context.user.id : '@?'),
-			channelname: md.bold(context.channel ? context.channel.name : '?'),
-			channel:     md.channel(context.channel ? context.channel.id : '#?'),
-			server:      md.bold(context.server ? context.server.name : '?'),
-			random:      String(Math.random()),
-			me:          md.mention(this.id)
-		}, this.variables.get(context.serverID));
+		var vars = Object.assign(this.getSymbols(context), this.variables.get(context.serverID));
 		
 		var matches = text.match(/\$[\w\d_]+/gi), value;
 		if (matches) {
@@ -110,42 +103,80 @@ class DragonBot extends DebugClient {
 		return text;
 	}
 	/**
+		Symbols are specialized values that can be inserted into text messages.
+		@arg {Context} context - the Context object
+		@return Object containing symbol names/values
+	*/
+	getSymbols(context) {
+		var date = new Date();
+		return {
+			// context
+			user:        md.bold(context.user ? context.user.username : '?'),
+			mention:     md.mention(context.user ? context.user.id : '@?'),
+			channelname: md.bold(context.channel ? context.channel.name : '?'),
+			channel:     md.channel(context.channel ? context.channel.id : '#?'),
+			server:      md.bold(context.server ? context.server.name : '?'),
+			// time
+			ms:          String(date.valueOf()),
+			time:        md.bold(date.toLocaleTimeString()),
+			date:        md.bold(date.toLocaleDateString()),
+			day:         md.bold(date.toLocaleDateString('en-US',{weekday:'long'})),
+			month:       md.bold(date.toLocaleDateString('en-US',{month:'long'})),
+			// misc
+			me:          md.mention(this.id),
+			owner:       md.mention(this.ownerID),
+			version:     md.bold(this.VERSION),
+			source:      md.bold(this.SOURCE_CODE),
+			prefix:      md.code(this.PREFIX),
+			random:      String(Math.random())
+		};
+	}
+	/**
 		Handles a user joining a server.
 	*/
 	greetUser(member, WSMessage) {
-		var data = WSMessage.d,
-			serverID = data.guild_id,
-			server = this.servers[serverID],
-			user = this.users[member.id];
-		
-		var welcome = this.database.get('servers').get(serverID).welcome;
-		if (!welcome) return;
-		var {channel = '', message = ''} = welcome;
-		if (!channel || !message) return;
-		
-		this.log(user.username,'has joined',server.name);
-		
-		var context = new Context(this, user.id, channel, message);
-		this.send(channel, this.normalize(message, context));
+		try {
+			var data = WSMessage.d,
+				serverID = data.guild_id,
+				server = this.servers[serverID],
+				user = this.users[member.id];
+			
+			this.log(user.username + '#' + user.discriminator,'has joined',server.name);
+			
+			var welcome = this.database.get('servers').get(serverID).welcome;
+			if (!welcome) return;
+			var {channel = '', message = ''} = welcome;
+			if (!channel || !message) return;
+			
+			var context = new Context(this, user.id, channel, message);
+			this.send(channel, this.normalize(message, context));
+		} catch (e) {
+			this.error(e);
+		}
 	}
 	/**
 		Handles a user leaving a server.
 	*/
 	goodbyeUser(member, WSMessage) {
-		var data = WSMessage.d,
-			serverID = data.guild_id,
-			server = this.servers[serverID],
-			user = this.users[member.id];
+		try {
+			// something's not right. member is undefined.
+			var data = WSMessage.d,
+				serverID = data.guild_id,
+				server = this.servers[serverID],
+				user = this.users[data.user.id];
 			
-		var welcome = this.database.get('servers').get(serverID).welcome;
-		if (!welcome) return;
-		var {channel = '', goodbye = ''} = welcome;
-		if (!channel || !goodbye) return;
-		
-		this.log(user.username,'has left',server.name);
-		
-		var context = new Context(this, user.id, channel, goodbye);
-		this.send(channel, this.normalize(goodbye, context));
+			this.log(user.username + '#' + user.discriminator,'has left',server.name);
+			
+			var welcome = this.database.get('servers').get(serverID).welcome;
+			if (!welcome) return;
+			var {channel = '', goodbye = ''} = welcome;
+			if (!channel || !goodbye) return;
+			
+			var context = new Context(this, user.id, channel, goodbye);
+			this.send(channel, this.normalize(goodbye, context));
+		} catch (e) {
+			this.error(e);
+		}
 	}
 	/**
 		Handles connecting the client.
@@ -205,6 +236,7 @@ class DragonBot extends DebugClient {
 				} else if (handler.cmd && !handler.cmd.endsWith('.?') && handler.grant == 'granted') {
 					// analytics is updated if a command was successfully resolved
 					Analytics.push(this, handler.serverID, handler.cmd);
+					Analytics.pushTemp(handler.serverID, handler.cmd); // current session analytics
 				}
 				
 				if (!handler.response || !(handler.response.message || handler.response.embed || handler.response.file)) {

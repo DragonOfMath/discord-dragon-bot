@@ -37,7 +37,7 @@ class DebugClient extends Logger(PromiseClient) {
 	}
 	_connected() {
 		this.info('Client connected.');
-		this._ignoreUsers = false;
+		this._ignoreUsers  = false;
 		this._tryReconnect = true;
 	}
 	_disconnected() {

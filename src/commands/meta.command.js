@@ -125,6 +125,32 @@ module.exports = {
 			});
 		}
 	},
+	'interval': {
+		category: 'Meta',
+		info: 'Repeat a command with delay.',
+		parameters: ['repetition', 'delay', '{command}'],
+		permissions: {
+			type: 'public'
+		},
+		fn(data) {
+			const {client, args, context} = data;
+			const [repetition, delay, command] = args;
+			function loop(counter) {
+				if (counter > 0) {
+					return client.run(context, args[1])
+					.then(_data => {
+						if (_data.error) {
+							propagate(data, _data);
+							return 'Interval run canceled. (counter: `' + counter + '`)';
+						} else return client.wait(delay).then(() => loop(counter-1));
+					});
+				} else {
+					//return 'Interval finished.';
+				}
+			}
+			return loop(repetition);
+		}
+	},
 	'cancel': {
 		aliases: ['throw','error'],
 		category: 'Meta',

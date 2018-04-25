@@ -8,7 +8,7 @@ const {Markdown:md,Format:fmt} = require('../Utils');
 module.exports = {
 	'archive': {
 		category: 'Moderation',
-		title: 'Archive',
+		//title: 'Archive',
 		info: 'Move up to 100 messages in the current channel to an archive channel. Use flags to specify the kinds of messages to filter out: `-cmds`, `-bot`, `-media`, `-text`, and `-pinned`.',
 		parameters: ['count', '[...flags]'],
 		permissions: {
@@ -37,7 +37,7 @@ module.exports = {
 	'cleanup': {
 		aliases: ['delete', 'nuke'],
 		category: 'Moderation',
-		title: 'Cleanup',
+		//title: 'Cleanup',
 		info: 'Delete messages in the current channel. Use flags to specify the kinds of messages to filter out: `-cmds`, `-bot`, `-media`, `-text`, and `-pinned`.',
 		parameters: ['[count]','[...flags]'],
 		permissions: {

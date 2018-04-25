@@ -13,7 +13,6 @@ function filterAnalytics(analytics, commands) {
 			analytics.delete(cmd);
 		}
 	}
-	
 	return analytics.embed(false);
 }
 
@@ -39,15 +38,6 @@ module.exports = {
 				},
 				fn({client, args, channelID, serverID}) {
 					var commands = args;
-					/*
-					for (var a of args) {
-						try {
-							commands = commands.concat(client.commands.get(a).map(c => c.fullID))
-						} catch (e) {
-							commands.push(a)
-						}
-					}
-					*/
 					Analytics.delete(client, serverID, commands);
 					return 'Items successfully deleted.';
 				}
@@ -93,6 +83,32 @@ module.exports = {
 					var commands = client.commands.get(...args).map(c => c.fullID);
 					var analytics = Analytics.retrieve(client);
 					return filterAnalytics(analytics, commands);
+				}
+			},
+			'session': {
+				aliases: ['current', 'temp'],
+				title: 'Analytics | This Session',
+				info: 'Retrieve command analytics since this application started.',
+				parameters: ['[...commands]'],
+				fn({client, args, serverID}) {
+					var commands = client.commands.get(...args).map(c => c.fullID);
+					var analytics = Analytics.retrieveTemp(serverID);
+					return filterAnalytics(analytics, commands);
+				},
+				subcommands: {
+					'all': {
+						title: 'Analytics | This Session | All',
+						info: 'Retrieves command analytics for this session across all servers.',
+						parameters: ['[...commands]'],
+						permissions: {
+							type: 'private'
+						},
+						fn({client, args, channelID}) {
+							var commands = client.commands.get(...args).map(c => c.fullID);
+							var analytics = Analytics.retrieveTemp();
+							return filterAnalytics(analytics, commands);
+						}
+					}
 				}
 			}
 		}

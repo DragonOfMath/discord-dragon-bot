@@ -1,7 +1,7 @@
 const Promise = require('bluebird');
 const request = require('request');
 
-const USER_AGENT = 'DragonBot/1.5.1 (DragonOfMath @ github)';
+const USER_AGENT = 'DragonBot (DragonOfMath @ github)';
 
 function fetch(url, options = {}) {
 	options.url = options.url || url;

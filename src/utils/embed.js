@@ -151,17 +151,17 @@ class DiscordEmbed {
 		}
 		if (this.embed) {
 			if (this.embed.title) {
-				this.embed.title = this.embed.title.replace(regex, sub);
+				this.embed.title = String(this.embed.title).replace(regex, sub);
 			}
 			if (this.embed.description) {
-				this.embed.description = this.embed.description.replace(regex, sub);
+				this.embed.description = String(this.embed.description).replace(regex, sub);
 			}
 			if (this.embed.footer) {
-				this.embed.footer.text = this.embed.footer.text.replace(regex, sub);
+				this.embed.footer.text = String(this.embed.footer.text).replace(regex, sub);
 			}
 			if (this.embed.fields) for (var field of this.embed.fields) {
-				field.name = field.name.replace(regex, sub);
-				field.value = field.value.replace(regex, sub);
+				field.name = String(field.name).replace(regex, sub);
+				field.value = String(field.value).replace(regex, sub);
 			}
 		}
 		return this;

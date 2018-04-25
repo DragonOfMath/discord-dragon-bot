@@ -28,7 +28,7 @@ class MapBase {
 		return this.keys.length;
 	}
 	has(key) {
-		return this.keys.includes(key);
+		return this.keys.map(String).includes(String(key));
 	}
 	includes(value) {
 		return this.items.includes(value);

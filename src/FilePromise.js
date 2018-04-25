@@ -2,47 +2,52 @@ const fs      = require('fs');
 const Promise = require('bluebird');
 const path    = require('path');
 
+const APP_DIR = path.dirname(require.main.filename);
 const WRITE = 'w';
 const WRITE_APPEND = 'wx';
 const READ = 'r';
 const ENCODING = 'utf8';
+
+function splitLines(content) {
+	return content.split(/\r?\n/).filter(String);
+}
 
 class FilePromise {
 	static resolve(filename) {
 		if (path.isAbsolute(filename)) {
 			return filename;
 		} else {
-			return path.resolve(__dirname, filename);
+			return path.resolve(APP_DIR, filename);
 		}
 	}
 	/**
 		Reads a file's contents and returns the data in a Promise
 		@arg {String} filename - location of the file
 	*/
-	static read(filename, json = true) {
+	static read(filename) {
 		filename = this.resolve(filename);
 		return new Promise((resolve, reject) => {
 			fs.readFile(filename, ENCODING, (err, data) => {
 				if (err) {
 					return reject(err);
 				}
-				if (json) {
+				if (/json$/.test(filename)) {
 					try {
 						data = JSON.parse(data);
 					} catch (e) {}
 				}
 				return resolve(data);
-			})
-		})
+			});
+		});
 	}
 	/**
 		Reads a file's contents synchronously, returns the data
 		@arg {String} filename - location of the file
 	*/
-	static readSync(filename, json = true) {
+	static readSync(filename) {
 		filename = this.resolve(filename);
 		let data = fs.readFileSync(filename, ENCODING);
-		if (json) {
+		if (/json$/.test(filename)) {
 			try {
 				data = JSON.parse(data);
 			} catch (e) {}
@@ -55,7 +60,7 @@ class FilePromise {
 	*/
 	static readLines(filename) {
 		filename = this.resolve(filename);
-		return this.read(filename).then(contents => contents.split('\n'));
+		return this.read(filename).then(splitLines);
 	}
 	/**
 		Reads a file's contents synchronously, and returns the data as an array of its lines
@@ -64,7 +69,7 @@ class FilePromise {
 	static readLinesSync(filename) {
 		filename = this.resolve(filename);
 		let data = this.readSync(filename);
-		return (data && data.split('\n')) || [];
+		return (data && splitLines(data)) || [];
 	}
 	/**
 		Reads multiple files and returns key/value pairs of their filenames/data
@@ -252,6 +257,52 @@ class FilePromise {
 	static existsSync(filename) {
 		filename = this.resolve(filename);
 		return fs.existsSync(filename);
+	}
+	/**
+		Make the directory at the given path
+		@arg {String} path
+	*/
+	static makeDir(path) {
+		path = this.resolve(path);
+		return new Promise((resolve, reject) => {
+			fs.mkdir(path, (err, res) => {
+				if (err) {
+					return reject(err);
+				}
+				return resolve(res);
+			});
+		});
+	}
+	/**
+		Make the directory synchronously
+		@arg {String} path
+	*/
+	static makeDirSync(path) {
+		path = this.resolve(path);
+		return fs.mkdirSync(path);
+	}
+	/**
+		Get a list of files in the given directory
+		@arg {String} path
+	*/
+	static readDir(path) {
+		path = this.resolve(path);
+		return new Promise((resolve, reject) => {
+			fs.readdir(path, (err, files) => {
+				if (err) {
+					return reject(err);
+				}
+				return resolve(files);
+			});
+		})
+	}
+	/**
+		Get a list of files in the given directory synchronously
+		@arg {String} path
+	*/
+	static readDirSync(path) {
+		path = this.resolve(path);
+		return fs.readdirSync(path);
 	}
 }
 

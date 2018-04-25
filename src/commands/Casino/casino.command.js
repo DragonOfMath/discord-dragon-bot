@@ -131,8 +131,8 @@ module.exports = {
 							channelID,
 							messageID,
 							embed: slots.toEmbed()
-						});
-					}).then(spin);
+						}).then(spin);
+					});
 				} else {
 					var multiplier = slots.calculateMultiplier();
 					var reward = slots.bet * multiplier;

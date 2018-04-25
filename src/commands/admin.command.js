@@ -19,6 +19,20 @@ module.exports = {
 			return eval(arg);
 		}
 	},
+	'presence': {
+		aliases: ['setpresence','botpresence'],
+		category: 'Admin',
+		title: 'Presence',
+		info: 'Sets the bot\'s current presence.',
+		parameters: ['game','[status]'],
+		permissions: {
+			type: 'private'
+		},
+		fn({client, args}) {
+			var [name, status = 'online'] = args;
+			client.setPresence({game: {name}, type: 0, status});
+		}
+	},
 	'stop': {
 		aliases: ['stopbot','quit','abort','exit','ctrlq'],
 		category: 'Admin',

@@ -111,9 +111,26 @@ class CardsAgainstHumanity extends Resource {
 	addCustomCard(type, text) {
 		this.custom[type].push(text);
 	}
+	removeCustomCard(type, id) {
+		return this.custom[type].splice(id, 1)[0];
+	}
 	clearCustomCards(type) {
 		if (type != 'b') this.custom.w = [];
 		if (type != 'w') this.custom.b = [];
+	}
+	static resolveType(type) {
+		switch (type.toLowerCase()) {
+			case 'w':
+			case 'white':
+				return 'w';
+				break;
+			case 'b':
+			case 'black':
+				return 'b';
+				break;
+			default:
+				throw 'Please specify whether you are making a __b__lack card or a __w__hite card.';
+		}
 	}
 }
 
@@ -266,7 +283,7 @@ module.exports = {
 					var cards = pack.getType(type);
 					return paginate(cards, page, 20, function(a,i) {
 						return {
-							name: (pack.hasBlack(cards[i]) ? 'Black Card' : 'White Card'),
+							name: (pack.hasBlack(cards[i]) ? 'Black Card' : 'White Card') + (' #' + i),
 							value: a[i]
 						};
 					});
@@ -277,23 +294,8 @@ module.exports = {
 				title: 'Cards Against Humanity | Custom Card',
 				info: 'Create a new white or black card to use on the server.',
 				parameters: ['<w|white|b|black>', '...text'],
-				permissions: {
-					type: 'inclusive'
-				},
 				fn({client, args, serverID}) {
-					var type = args[0].toLowerCase();
-					switch (type) {
-						case 'w':
-						case 'white':
-							type = 'w';
-							break;
-						case 'b':
-						case 'black':
-							type = 'b';
-							break;
-						default:
-							return 'Please specify whether you are making a __b__lack card or a __w__hite card.';
-					}
+					var type = CardsAgainstHumanity.resolveType(args[0]);
 					var text = args.slice(1).join(' ');
 					client.database.get('servers').modify(serverID, server => {
 						server.cah = new CardsAgainstHumanity(server.cah);
@@ -303,26 +305,33 @@ module.exports = {
 					return (type == 'b' ? 'Black' : 'White') + ' card saved as ' + md.code(text);
 				}
 			},
+			'remove': {
+				aliases: ['delete'],
+				title: 'Cards Against Humanity | Remove Custom Card',
+				info: 'Remove a single custom card from this server.',
+				parameters: ['<w|white|b|black>', 'id'],
+				fn({client, args, serverID}) {
+					var cardRemoved;
+					var type = CardsAgainstHumanity.resolveType(args[0]);
+					var id = args[1];
+					client.database.get('servers').modify(serverID, server => {
+						server.cah = new CardsAgainstHumanity(server.cah);
+						cardRemoved = server.cah.removeCustomCard(type, id);
+						if (!cardRemoved) {
+							throw 'Invalid card ID: ' + id;
+						}
+						return server;
+					}).save();
+					return (type == 'b' ? 'Black' : 'White') + ' card removed: ' + md.code(cardRemoved);
+				}
+			},
 			'clear': {
-				aliases: ['delete','reset'],
+				aliases: ['reset'],
 				title: 'Cards Against Humanity | Clear Custom Cards',
 				info: 'Clears all custom white/black cards for this server. Can choose a type of card, otherwise all are cleared.',
 				parameters: ['[<w|white|b|black>]'],
-				permissions: {
-					type: 'inclusive'
-				},
 				fn({client, args, serverID}) {
-					var type = args[0].toLowerCase();
-					switch (type) {
-						case 'w':
-						case 'white':
-							type = 'w';
-							break;
-						case 'b':
-						case 'black':
-							type = 'b';
-							break;
-					}
+					var type = CardsAgainstHumanity.resolveType(args[0]);
 					client.database.get('servers').modify(serverID, server => {
 						server.cah = new CardsAgainstHumanity(server.cah);
 						server.cah.clearCustomCards(type);
