@@ -1,6 +1,9 @@
+const path = require('path');
 const requireAll  = require('require-all');
 const MapBase     = require('./MapBase');
 const TypeMapBase = require('./TypeMapBase');
+
+const APP_DIR = path.dirname(require.main.filename);
 
 /**
 	Wrapper class for JS file contents
@@ -22,6 +25,13 @@ class FileCollector extends TypeMapBase {
 		super(JSFile);
 		this.setProperty('_filter', null);
 	}
+	resolve(filename) {
+		if (path.isAbsolute(filename)) {
+			return filename;
+		} else {
+			return path.resolve(APP_DIR, filename);
+		}
+	}
 	get filenames() {
 		return this.keys;
 	}
@@ -29,6 +39,7 @@ class FileCollector extends TypeMapBase {
 		return this.items;
 	}
 	load(dirname = __dirname, recursive = true, filter = /^.+\.js$/) {
+		dirname = this.resolve(dirname);
 		this._filter = filter;
 		return this._register(requireAll({dirname,recursive,filter}));
 	}

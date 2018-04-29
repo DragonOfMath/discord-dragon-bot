@@ -10,17 +10,13 @@ You will need to create a file called `init.json` with the following contents:
 {
 	"token":   "...",
 	"ownerID": "...",
-	"version": "1.x.x",
 	"permissions": 268790902,
-	"source":  "https://github.com/DragonOfMath/discord-dragon-bot/"
 }
 
 ```
 * `token` contains the Discord OAuth token you get from [here](https://discordapp.com/developers/applications/me). It is required for running the bot.
 * `ownerID` is your Discord user ID. It is required for identifying you for certain settings.
-* `version` is the current version of the bot. At the time of this typing, DragonBot runs 1.5.16.
 * `permissions` is the permission data the bot is given when it is added to a server. You can calculate this number [here](https://discordapp.com/developers/tools/permissions-calculator).
-* `source` is the GitHub repository of the bot's code. As it is licensed under MIT, anyone may use and change the code, but should always give credit where it is due.
 
 If you plan on using a database, create a folder in the root called `database` with the following .json files:
 * `analytics.json` for counting command usage

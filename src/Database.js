@@ -2,12 +2,16 @@ const TypeMapBase   = require('./TypeMapBase');
 const Table         = require('./Table');
 const Logger        = require('./LoggerMixin');
 const FileCollector = require('./FileCollector');
-const path = require('path');
+const FilePromise   = require('./FilePromise');
 
 class Database extends Logger(TypeMapBase) {
 	constructor() {
 		super(Table);
-		this.setProperty('root', __dirname);
+		this.setProperty('root', FilePromise.APP_DIR);
+	}
+	
+	get tables() {
+		return this.items;
 	}
 	
 	load(dir = this.root, recursive = true, filter = /^\w+\.json$/) {
@@ -39,7 +43,7 @@ class Database extends Logger(TypeMapBase) {
 			table = table.match(/^(\w+)\.json$/)[1];
 		} catch (e) {}
 		
-		var filename = path.join(this.root, table + '.json');
+		var filename = FilePromise.join(this.root, table + '.json');
 		
 		if (this.has(table)) {
 			return this.error('Table "' + table + '" already exists.');
@@ -66,6 +70,20 @@ class Database extends Logger(TypeMapBase) {
 		}
 		
 		return this.delete(table);
+	}
+	
+	/**
+		Create a backup folder copy of the tables
+	*/
+	backup() {
+		var backupDir = this.dir + '_backup';
+		if (!FilePromise.existsSync(backupDir)) {
+			FilePromise.makeDirSync(backupDir);
+		}
+		for (var table of this.tables) {
+			var filepath = FilePromise.join(backupDir, table.filename);
+			table.save(filepath);
+		}
 	}
 }
 

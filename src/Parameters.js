@@ -13,7 +13,7 @@ class Parameters extends TypeMapBase {
 		this.setProperty('command', command);
 	}
 	toString() {
-		return this.items.map(String).join(' ');
+		return this.items.map(p => p.toString()).join(' ');
 	}
 	check(args) {
 		var a = 0;

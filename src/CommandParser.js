@@ -1,5 +1,5 @@
 const Constants = require('./Constants');
-const {escape,quote} = require('./Utils');
+const {escape,quote,cast} = require('./Utils');
 
 /**
 	Abstract representation of a command-line "block", which includes a command and its arguments.
@@ -50,7 +50,6 @@ class Block {
 							if (/^(\/\/.*|\/\*.*\*\/)$/.test(t)) {
 								this.comments.push(t);
 							} else {
-								if (t == Number(t)) t = Number(t);
 								this.args.push(t);
 							}
 							break;
@@ -93,11 +92,15 @@ class CommandParser {
 		@arg {String} text
 	*/
 	static tokenize(text) {
-		var tokens = [], token = '', letter, next, quote = false, esc = false, scope = 0;
+		var tokens = [], token = '', letter, next, quote = false, forceString = false, esc = false, scope = 0;
 		
-		function push() {
-			if (token) tokens.push(token);
+		function addToken() {
+			if (token) {
+				if (!forceString) token = cast(token);
+				tokens.push(token);
+			}
 			token = '';
+			forceString = false;
 		}
 		function match(i,sub) {
 			return text.substring(i,i+sub.length) == sub;
@@ -129,6 +132,7 @@ class CommandParser {
 				
 			// enter/leave quote
 			} else if (letter == '"') {
+				forceString = true;
 				quote = !quote;
 				continue;
 				
@@ -144,7 +148,7 @@ class CommandParser {
 					
 				// block comment
 				} else if (letter+next == '/*') {
-					push();
+					addToken();
 					j = i;
 					i = lookahead(i+2,'*/') + 1;
 					var comment = text.substring(j,i+1);
@@ -153,20 +157,20 @@ class CommandParser {
 					
 				// whitespace
 				} else if (/\s/.test(letter)) {
-					push();
+					addToken();
 					continue;
 					
 				// blocks and full stop
 				} else if (letter == Constants.Symbols.BLOCK_START || 
 						   letter == Constants.Symbols.BLOCK_END   ||
 						   letter == Constants.Symbols.STOP) {
-					push();
+					addToken();
 					tokens.push(letter);
 					continue;
 					
 				// expression
 				} else if (letter == Constants.Symbols.EXPRESSION && next == Constants.Symbols.EXP_START) {
-					push();
+					addToken();
 					j = i;
 					i = lookaheadWithScope(i+1, Constants.Symbols.EXP_START, Constants.Symbols.EXP_END);
 					var expression = text.substring(j,i+1);
@@ -178,7 +182,7 @@ class CommandParser {
 			
 			token += letter;
 		}
-		push();
+		addToken();
 		
 		return tokens;
 	}

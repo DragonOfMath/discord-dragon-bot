@@ -36,7 +36,9 @@ class Subcommands extends TypeMapBase {
 				info: '(Automatically generated subcommand for listing other subcommands)',
 				permissions: { type: 'public' },
 				suppress: true,
-				fn: supercommand.listSubcommands.bind(supercommand)
+				fn() {
+					return supercommand.listSubcommands();
+				}
 			});
 			this.addSubcommand(help);
 		}
@@ -179,7 +181,7 @@ class Command {
 		Great for explaining everything about a command group
 	*/
 	listSubcommands() {
-		let text = `${this.toUsageString()}\n${this.info}\n`;
+		let text = `${this.toString()}\n${this.info}\n`;
 		for (let sub of this.subcommands.list) {
 			sub = this.subcommands[sub];
 			if (sub.suppress) continue;
@@ -191,7 +193,7 @@ class Command {
 		Does the same as above but also lists suppressed commands
 	*/
 	listAllSubcommands() {
-		let text = `${this.toUsageString()}\n${this.info}\n`;
+		let text = `${this.toString()}\n${this.info}\n`;
 		for (let sub of this.subcommands.list) {
 			text += this.subcommands[sub].listAllSubcommands();
 		}
@@ -270,7 +272,7 @@ class Command {
 	/**
 		Returns the representative string of the command
 	*/
-	toUsageString() {
+	toString() {
 		return md.code(this.fullID + ' ' + this.parameters.toString());
 	}
 	/**
@@ -283,7 +285,7 @@ class Command {
 			fields: [
 				{
 					name: 'Usage',
-					value: Constants.Symbols.PREFIX + this.toUsageString(),
+					value: Constants.Symbols.PREFIX + this.toString(),
 					inline: true
 				},
 				{

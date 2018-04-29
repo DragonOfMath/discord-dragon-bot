@@ -2,32 +2,8 @@
 	Command file for debugging tools.
 */
 
-const {Markdown:md,decircularize} = require('../Utils');
-const fs = require('fs');
-
-function snapshot(data) {
-	var time = new Date().toLocaleString().replace(/[:\\\/]/g,'-').replace(/\s+/g,'_');
-	var filename = `discord-dragon-bot/debug/snapshot_${time}.json`;
-	// pretty-print the stringified object to the file
-	fs.writeFile(filename, JSON.stringify(data, null, 4), err => {
-		if (err) {
-			console.error(err);
-		} else {
-			console.log('Snapshot saved to ' + filename);
-		}
-	});
-}
-function getIconURL(server) {
-	return `https://cdn.discordapp.com/icons/${server.id}/${server.icon}.png`;
-}
-
-const CHANNEL_TYPE = [
-	'Text',
-	'DM',
-	'Voice',
-	'Group DM',
-	'Category'
-];
+const {Markdown:md} = require('../Utils');
+const DiscordUtils = require('../DiscordUtils');
 
 module.exports = {
 	'console': {
@@ -112,14 +88,27 @@ module.exports = {
 		aliases: ['snapshot'],
 		category: 'Debug',
 		title: 'Memory Snapshot',
-		info: 'Takes a snapshot of the internal client data',
+		info: 'Takes a snapshot of the internal client data.',
 		permissions: {
 			type: 'private'
 		},
 		suppress: true,
 		fn({client}) {
-			snapshot(decircularize(client));
+			client.snapshot('debug');
 			return 'Snapshot of memory saved.';
+		}
+	},
+	'backup': {
+		category: 'Backup',
+		title: 'Database Backup',
+		info: 'Creates a backup of the database.',
+		permissions: {
+			type: 'private'
+		},
+		suppress: true,
+		fn({client}) {
+			client.database.backup();
+			return 'Database backup created.';
 		}
 	},
 	'debug': {
@@ -127,59 +116,31 @@ module.exports = {
 		title: 'Debug',
 		info: 'Debugging tools for Discord resources.',
 		subcommands: {
+			'message': {
+				title: 'Debug | Message',
+				info: 'Displays information about a message.',
+				parameters: ['[messageID]'],
+				fn({client, args, channelID, messageID}) {
+					var id = args[0] || messageID;
+					return client.getMessage({channelID, messageID: id})
+					.then(DiscordUtils.embedMessage)
+					.catch(e => {
+						client.error(e);
+						return 'Invalid Message ID: ' + id;
+					});
+				}
+			},
 			'channel': {
 				title: 'Debug | Channel',
 				info: 'Displays information about a channel.',
 				parameters: ['[channel]'],
 				fn({client, args, channelID}) {
-					let id = md.channelID(args[0]) || channelID;
-					let channel = client.channels[id];
-					
+					var id = md.channelID(args[0]) || channelID;
+					var channel = client.channels[id];
 					if (!channel) {
 						throw 'Invalid channel ID.';
 					}
-					
-					let sid = channel.guild_id;
-					
-					return {
-						fields: [
-							{
-								name: 'Name',
-								value: channel.name,
-								inline: true
-							},
-							{
-								name: 'ID',
-								value: channel.id,
-								inline: true
-							},
-							{
-								name: 'Type',
-								value: 	CHANNEL_TYPE[channel.type],
-								inline: true
-							},
-							{
-								name: 'Topic',
-								value: channel.topic,
-								inline: true
-							},
-							{
-								name: 'Position',
-								value: channel.position,
-								inline: true
-							},
-							{
-								name: 'In Server',
-								value: `${client.servers[sid].name} (ID: ${sid})`,
-								inline: true
-							},
-							{
-								name: 'NSFW?',
-								value: channel.nsfw ? 'Yes' : 'No',
-								inline: true
-							}
-						]
-					};
+					return DiscordUtils.embedChannel(channel);
 				}
 			},
 			'server': {
@@ -188,78 +149,12 @@ module.exports = {
 				info: 'Displays information about a server.',
 				parameters: ['[serverID]'],
 				fn({client, args, serverID}) {
-					let id = args[0] || serverID;
-					let server = client.servers[id];
-					
+					var id = args[0] || serverID;
+					var server = client.servers[id];
 					if (!server) {
 						throw 'Invalid server ID.';
 					}
-					
-					let members  = Object.keys(server.members);
-					let channels = Object.keys(server.channels);
-					let roles    = Object.keys(server.roles);
-					let emojis   = Object.keys(server.emojis);
-					let icon = getIconURL(server);
-					
-					return {
-						fields: [
-							{
-								name: 'Name',
-								value: server.name,
-								inline: true
-							},
-							{
-								name: 'ID',
-								value: server.id,
-								inline: true
-							},
-							{
-								name: 'Region',
-								value: server.region,
-								inline: true
-							},
-							{
-								name: 'Owner',
-								value: md.mention(server.owner_id),
-								inline: true
-							},
-							{
-								name: 'Large?',
-								value: server.large ? 'Yes' : 'No',
-								inline: true
-							},
-							{
-								name: 'Verification Level',
-								value: server.verification_level,
-								inline: true
-							},
-							{
-								name: 'Members',
-								value: members.length,
-								inline: true
-							},
-							{
-								name: 'Bots',
-								value: members.filter(m => client.users[m].bot).length,
-								inline: true
-							},
-							{
-								name: 'Channels',
-								value: channels.length,
-								inline: true
-							},
-							{
-								name: 'Roles',
-								value: roles.length,
-								inline: true
-							}
-						],
-						thumbnail: {
-							url: icon,
-							width: 60,
-							height: 60
-						}
-					};
+					return DiscordUtils.embedServer(server, client);
 				}
 			},
 			'user': {
@@ -268,58 +163,16 @@ module.exports = {
 				info: 'Displays information about a user.',
 				parameters: ['userID'],
 				fn({client, args, userID, server}) {
-					let id = md.userID(args[0]);
-					let member = server.members[id];
+					var id = md.userID(args[0]);
+					var member = server.members[id];
 					if (!member) {
 						throw 'Invalid member ID.';
 					}
-					let user = client.users[id];
+					var user = client.users[id];
 					if (!user) {
 						throw 'Invalid user ID.';
 					}
-					
-					let dateJoined = new Date(member.joined_at).toLocaleString();
-					console.log(member, dateJoined);
-					
-					return {
-						fields: [
-							{
-								name: 'Name',
-								value: (user.name || user.username) + (member.nick ? ` (AKA ${member.nick})`: ''),
-								inline: true
-							},
-							{
-								name: 'ID',
-								value: user.id,
-								inline: true
-							},
-							{
-								name: 'Discriminator',
-								value: user.discriminator,
-								inline: true
-							},
-							{
-								name: 'Status',
-								value: member.status || 'Offline?',
-								inline: true
-							},
-							{
-								name: 'Is Bot?',
-								value: String(member.bot),
-								inline: true
-							},
-							{
-								name: 'Joined',
-								value: dateJoined,
-								inline: true
-							},
-							{
-								name: 'Roles in this Server',
-								value: member.roles.map(r => `${server.roles[r].name} (ID: ${r})`).join(', ') || 'No Roles',
-								inline: true
-							}
-						]
-					};
+					return DiscordUtils.embedUser(user, member, server);
 				}
 			},
 			'role': {
@@ -333,34 +186,7 @@ module.exports = {
 					if (!role) {
 						throw 'Invalid role ID.';
 					}
-					
-					let members = server.members;
-					let membersWithRole = Object.keys(members).filter(m => members[m].roles.indexOf(role.name) > -1);
-					
-					return {
-						fields: [
-							{
-								name: 'Name',
-								value: role.name,
-								inline: true
-							},
-							{
-								name: 'ID',
-								value: role.id,
-								inline: true
-							},
-							{
-								name: 'In Server',
-								value: `${server.name} (ID: ${server.id})`,
-								inline: true
-							},
-							{
-								name: 'Users with Role',
-								value: membersWithRole.map(m => `${client.users[m].username} (ID: ${m})`).join(', ') || 'None',
-								inline: true
-							}
-						]
-					};
+					return DiscordUtils.embedRole(role, server);
 				}
 			},
 			'invite': {
@@ -372,33 +198,10 @@ module.exports = {
 					if (inviteCode) inviteCode = inviteCode[1];
 					else inviteCode = args[0];
 					return client.queryInvite(inviteCode)
-					.then(response => {
-						var {inviter,code,guild,channel} = response;
-						return {
-							thumbnail: {
-								url: getIconURL(guild),
-								width: 100,
-								height: 100
-							},
-							fields: [
-								{
-									name: 'ID',
-									value: code
-								},
-								{
-									name: 'Inviter',
-									value: `${inviter.username}#${inviter.discriminator} (ID: ${inviter.id})`
-								},
-								{
-									name: 'Guild',
-									value: guild.name + ' (ID: ' + guild.id + ')'
-								},
-								{
-									name: 'Channel',
-									value: channel.name + ' (ID: ' + channel.id + ')'
-								}
-							]
-						}
+					.then(DiscordUtils.embedInvite)
+					.catch(e => {
+						client.error(e);
+						return 'Invalid Invite Code: ' + inviteCode;
 					});
 				}
 			}

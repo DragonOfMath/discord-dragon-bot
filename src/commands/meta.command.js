@@ -137,7 +137,7 @@ module.exports = {
 			const [repetition, delay, command] = args;
 			function loop(counter) {
 				if (counter > 0) {
-					return client.run(context, args[1])
+					return client.run(context, command)
 					.then(_data => {
 						if (_data.error) {
 							propagate(data, _data);

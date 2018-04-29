@@ -42,7 +42,6 @@ class Logger {
 			writable: true,
 			enumerable: false
 		});
-		this.info('Starting logger');
 	}
 	indent() {
 		this._indent += '  ';
@@ -68,6 +67,24 @@ class Logger {
 	error(...x) {
 		console.error(FOREGROUND.Red + this.name, PIPE, CODE.Error, PIPE + this._indent, ...x, FONT.Reset);
 		return x[0];
+	}
+	red(...x) {
+		console.log(FOREGROUND.Red + this.name, PIPE + this._indent, ...x, FONT.Reset);
+	}
+	green(...x) {
+		console.log(FOREGROUND.Green + this.name, PIPE + this._indent, ...x, FONT.Reset)
+	}
+	yellow(...x) {
+		console.log(FOREGROUND.Yellow + this.name, PIPE + this._indent, ...x, FONT.Reset)
+	}
+	blue(...x) {
+		console.log(FOREGROUND.Blue + this.name, PIPE + this._indent, ...x, FONT.Reset)
+	}
+	magenta(...x) {
+		console.log(FOREGROUND.Magenta + this.name, PIPE + this._indent, ...x, FONT.Reset)
+	}
+	cyan(...x) {
+		console.log(FOREGROUND.Cyan + this.name, PIPE + this._indent, ...x, FONT.Reset)
 	}
 }
 

@@ -1,16 +1,23 @@
 const {random,Jimp} = require('../../Utils');
+const brailleify = require('./brailleify');
 //const comedy = require('./comedy.json');
 
 function processImage(client, channelID, args, filename, process) {
 	var mime = /png$/.test(filename) ? Jimp.MIME_PNG : Jimp.MIME_JPEG;
+	var _args = args.slice();
+	return getImageInChannel(client, channelID, _args)
+	.then(Jimp.read)
+	.then(image => process.call(client, image, ..._args))
+	.then(image => image.getBufferAsync(mime))
+	.then(file  => ({file, filename}));
+}
+function getImageInChannel(client, channelID, args) {
 	var url = args[0];
-	var _args = args;
-	var p;
 	if (isImage(url)) {
-		_args = args.slice(1);
-		p = Promise.resolve(url);
+		args.splice(0,1);
+		return Promise.resolve(url);
 	} else {
-		p = client.getMessages({channelID,limit:30}).then(messages => {
+		return client.getMessages({channelID,limit:30}).then(messages => {
 			for (var message of messages) {
 				if (message.attachments.length && isImage(message.attachments[0].url)) {
 					return message.attachments[0].url;
@@ -23,11 +30,6 @@ function processImage(client, channelID, args, filename, process) {
 			throw 'No image found.';
 		});
 	}
-	return p
-	.then(Jimp.read)
-	.then(image => process.call(client, image, ..._args))
-	.then(image => image.getBufferAsync(mime))
-	.then(file  => ({file, filename}));
 }
 function isImage(url) {
 	return /^http.+\.(jpg|jpeg|png)$/.test(url);
@@ -62,6 +64,25 @@ module.exports = {
 				fn({client, args, channelID}) {
 					return processImage(client, channelID, args, 'needsmorejpeg.jpg', function (image, compression = random(1,20)) {
 						return image.posterize(random(20,70)).quality(compression);
+					});
+				}
+			},
+			'brailleify': {
+				aliases: ['braille'],
+				info: 'Turns an image into a Braille text thing.',
+				parameters: ['[imageURL]', '[threshold]', '[scale]', '[invert]'],
+				fn({client, args, channelID}) {
+					var _args = args.slice();
+					return getImageInChannel(client, channelID, _args)
+					.then(Jimp.read)
+					.then(image => {
+						image = image.normalize();
+						var [threshold, scale, invert] = _args;
+						var kernelSize = 8;
+						var maxChars = 960;
+						var maxScale = 2 + (Math.log2((image.bitmap.width * image.bitmap.height) / (kernelSize * maxChars)) & 0xFE);
+						scale = Math.max(~~scale, maxScale);
+						return brailleify(image.bitmap, {threshold, scale, invert});
 					});
 				}
 			},

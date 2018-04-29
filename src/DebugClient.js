@@ -1,5 +1,7 @@
 const PromiseClient = require('./PromiseClient');
 const Logger        = require('./LoggerMixin');
+const FilePromise   = require('./FilePromise');
+const {decircularize} = require('./Utils');
 
 /**
 	Debug Client helps log useful debugging information
@@ -48,6 +50,13 @@ class DebugClient extends Logger(PromiseClient) {
 			this.info('Client stopped connection.');
 			process.exit(0);
 		}
+	}
+	
+	snapshot(dir) {
+		var data = decircularize(this);
+		var time = new Date().toLocaleString().replace(/[:\\\/]/g,'-').replace(/\s+/g,'_');
+		var filename = FilePromise.join(dir, `snapshot_${time}.json`);
+		return FilePromise.createSync(filename, JSON.stringify(data, null, 4));
 	}
 }
 

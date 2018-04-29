@@ -10,13 +10,21 @@ const FilePromise = require('./FilePromise');
 class Table extends TypeMapBase {
 	/**
 		Constructor
-		@arg {String} [dir] - location of the table file
+		@arg {String} [filepath] - location of the table file
 		@arg {Object} [data] - default data for the table to immediately load
 		@arg {Object} [fields] - fields of the table
 	*/
-	constructor(dir = './table.json', data = {}, fields = {}) {
+	constructor(filepath, data = {}, fields = {}) {
 		super(Record);
-		this.setProperty('dir', dir);
+		
+		filepath = FilePromise.resolve(filepath);
+		if (FilePromise.getExtension(filepath) !== '.json') {
+			throw new Error('Invalid Table format at filepath: ' + filepath);
+		}
+		
+		this.setProperty('filepath', filepath);
+		this.setProperty('dir', FilePromise.getDir(filepath));
+		this.setProperty('filename', FilePromise.getName(filepath));
 		this.setProperty('fields', fields);
 		this._load(data);
 		//this.init();
@@ -184,26 +192,26 @@ class Table extends TypeMapBase {
 
 	/**
 		Initializes the table properly by synchronously loading the contents of its file
-		@arg {String} [dir] - optional location of the file
+		@arg {String} [filepath] - optional location of the file
 		@return The Table object
 	*/
-	init(dir = this.dir) {
-		if (FilePromise.existsSync(dir)) {
-			this.load(dir);
+	init(filepath = this.filepath) {
+		if (FilePromise.existsSync(filepath)) {
+			this.load(filepath);
 		} else {
-			FilePromise.createSync(dir, {});
+			FilePromise.createSync(filepath, {});
 		}
 		this.setProperty('_initialized', true);
 		return this;
 	}
 	/**
 		Saves the table contents to a file synchronously
-		@arg {String} [dir] - optional location of the file
+		@arg {String} [filepath] - optional location of the file
 		@return The Table object
 	*/
-	save(dir = this.dir) {
+	save(filepath = this.filepath) {
 		try {
-			let result = FilePromise.createSync(dir, this);
+			FilePromise.createSync(filepath, this);
 		} catch (e) {
 			console.error(e);
 		} finally {
@@ -212,17 +220,17 @@ class Table extends TypeMapBase {
 	}
 	/**
 		Loads the contents of a file and internally parses its contents
-		@arg {String} [dir] - optional location of the file
+		@arg {String} [filepath] - optional location of the file
 		@return The Table object
 	*/
-	load(dir = this.dir) {
+	load(filepath = this.filepath) {
 		try {
-			let contents = FilePromise.readSync(dir);
+			let contents = FilePromise.readSync(filepath);
 			if (contents instanceof Object) {
 				this.clear();
 				this._load(contents);
 			} else {
-				throw 'Contents of table could not be loaded due to malformed format: ' + dir;
+				throw 'Contents of table could not be loaded due to malformed format: ' + filepath;
 			}
 		} catch (e) {
 			console.error(e);
@@ -232,12 +240,12 @@ class Table extends TypeMapBase {
 	}
 	/**
 		Deletes the table's file
-		@arg {String} [dir] - optional location of the file
+		@arg {String} [filepath] - optional location of the file
 		@return The Table object
 	*/
-	destroy(dir = this.dir) {
+	destroy(filepath = this.filepath) {
 		try {
-			FilePromise.deleteSync(dir);
+			FilePromise.deleteSync(filepath);
 		} catch (e) {
 			throw 'Table file could not be deleted: ' + (e.message || e);
 		} finally {
@@ -256,8 +264,8 @@ class Table extends TypeMapBase {
 			}
 		}
 		if (removed.length) {
-			console.log('Removed',removed.length,'records from',this.dir);
 			this.save();
+			console.log('Removed',removed.length,'records from',this.name);
 		}
 	}
 }

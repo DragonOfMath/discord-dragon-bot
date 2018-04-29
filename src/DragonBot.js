@@ -18,17 +18,16 @@ class DragonBot extends DebugClient {
 		@arg {Object}    input
 		@arg {String}    input.token       - client auth token
 		@arg {Snowflake} input.ownerID     - my user ID
-		@arg {String}    input.version     - bot version number
-		@arg {String}    input.source      - bot source code link
 		@arg {Number}    input.permissions - calculated permissions number
 	*/
-	constructor({token,ownerID,version,source,permissions}) {
+	constructor({token,ownerID,source,permissions}) {
 		super(token, false);
 		this.ownerID     = ownerID;
-		this.VERSION     = version;
-		this.SOURCE_CODE = source;
 		this.PERMISSIONS = permissions;
 		this.PREFIX      = Constants.Symbols.PREFIX;
+		
+		this.VERSION     = require('../package.json').version;
+		this.SOURCE_CODE = 'https://github.com/DragonOfMath/discord-dragon-bot/';
 		
 		this.utils  = Utils;
 		this.parser = CommandParser;
