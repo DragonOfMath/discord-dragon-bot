@@ -24,7 +24,7 @@ function paginate(items, page, itemsPerPage, callback) {
 			text: `Page ${page} of ${maxPages} | Showing ${start+1}-${end+1} of ${totalItems} Total`
 		};
 		for (var idx = start, temp; idx <= end; idx++) {
-			temp = callback(items, idx);
+			temp = callback(items, idx, items[idx]);
 			if (typeof(temp) === 'string') {
 				temp = {
 					name: `#${idx+1}`,

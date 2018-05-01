@@ -46,7 +46,8 @@ module.exports = {
 		DEFAULT_CATEGORY: '',
 		DEFAULT_TITLE: '',
 		DEFAULT_INFO: '',
-		DEFAULT_SUPPRESSION: false
+		DEFAULT_SUPPRESSION: false,
+		DEFAULT_ANALYTICS: true
 	},
 	Commands: {
 		FILE_REGEX: /^[^\.]+\.command\.js$/

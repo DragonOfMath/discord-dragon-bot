@@ -13,7 +13,7 @@ class Block {
 		this.args     = [];
 		this.comments = [];
 		
-		if (tokens.length > 0 && tokens[0].startsWith(Constants.Symbols.PREFIX)) {
+		if (tokens.length > 0 && String(tokens[0]).startsWith(Constants.Symbols.PREFIX)) {
 			try {
 				this.cmd  = tokens.shift().substring(1);
 				this.cmds = this.cmd.split(Constants.Symbols.DELIMITER);

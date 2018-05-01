@@ -39,7 +39,11 @@ class Markdown {
 		}
 	}
 	static emoji(e,id) {
-		return id ? `<:${e.name||e}:${e.id||id}>` : `:${e.name||e}:`;
+		if (typeof(e) === 'string' && e.startsWith(':') && e.endsWith(':')) {
+			return e;
+		} else {
+			return id ? `<:${e.name||e}:${e.id||id}>` : `:${e.name||e}:`;
+		}
 	}
 	static preventEmbed(x) {
 		return `<${x}>`;

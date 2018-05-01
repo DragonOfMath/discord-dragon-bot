@@ -1,4 +1,5 @@
 const Constants = require('../Constants');
+const {Markdown:md} = require('../Utils');
 
 /**
 	cmd_admin.js
@@ -56,17 +57,15 @@ module.exports = {
 			type: 'private'
 		},
 		suppress: true,
-		fn({client, args, channelID}) {
-			let [target,...message] = args;
-			try {
-				target = target.match(/<#(\d+)>/)[1];
-			} catch (e) {
-				target = channelID;
+		fn({client, args}) {
+			let [channelID,...message] = args;
+			if (!(channelID in client.channels)) {
+				channelID = md.channelID(channelID);
 			}
 			message = message.join(' ');
-			client.simulateTyping(target)
+			client.simulateTyping(channelID)
 			.then(() => client.wait(5000))
-			.then(() => client.send(target, message))
+			.then(() => client.send(channelID, message))
 			.catch(console.error);
 		}
 	},

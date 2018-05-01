@@ -33,12 +33,23 @@ const BACKGROUND = {
 	Cyan:     "\x1b[46m",
 	White:    "\x1b[47m"
 };
+const LEVELS = {
+	None: 0,
+	Limited: 1,
+	Normal: 2,
+	All: 3
+};
 
 const LoggerMixin = (Base) => class LoggerBase extends Base {
 	constructor(...args) {
 		super(...args);
 		Object.defineProperty(this, '_indent', {
 			value: '',
+			writable: true,
+			enumerable: false
+		});
+		Object.defineProperty(this, '_level', {
+			value: LEVELS.Normal,
 			writable: true,
 			enumerable: false
 		});
@@ -54,19 +65,19 @@ const LoggerMixin = (Base) => class LoggerBase extends Base {
 		console.log('');
 	}
 	log(...x) {
-		console.log(FOREGROUND.White + this.constructor.name, PIPE + this._indent, ...x);
+		if (this._level > LEVELS.Normal) console.log(FOREGROUND.White + this.constructor.name, PIPE + this._indent, ...x);
 		return x[0];
 	}
 	info(...x) {
-		console.log(FOREGROUND.Green + this.constructor.name, PIPE, CODE.Info, PIPE + this._indent, ...x, FONT.Reset);
+		if (this._level > LEVELS.None) console.log(FOREGROUND.Green + this.constructor.name, PIPE, CODE.Info, PIPE + this._indent, ...x, FONT.Reset);
 		return x[0];
 	}
 	warn(...x) {
-		console.warn(FOREGROUND.Yellow + this.constructor.name, PIPE, CODE.Warn, PIPE + this._indent, ...x, FONT.Reset);
+		if (this._level > LEVELS.Limited) console.warn(FOREGROUND.Yellow + this.constructor.name, PIPE, CODE.Warn, PIPE + this._indent, ...x, FONT.Reset);
 		return x[0];
 	}
 	error(...x) {
-		console.error(FOREGROUND.Red + this.constructor.name, PIPE, CODE.Error, PIPE + this._indent, ...x, FONT.Reset);
+		if (this._level > LEVELS.Limited) console.error(FOREGROUND.Red + this.constructor.name, PIPE, CODE.Error, PIPE + this._indent, ...x, FONT.Reset);
 		return x[0];
 	}
 	red(...x) {

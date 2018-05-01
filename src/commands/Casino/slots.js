@@ -6,7 +6,7 @@ const TABLE = {
 		count: 1
 	},
 	':gem:': {
-		value: [2,100,2500],
+		value: [2,50,2500],
 		count: 1
 	},
 	':slot_machine:': {
@@ -26,36 +26,36 @@ const TABLE = {
 		count: 2
 	},
 	':thinking:': {
-		value: [1,32,400],
+		value: [1,24,400],
 		count: 2
 	},
 	':banana:': {
-		value: [1,20,350],
-		count: 3
+		value: [1,10,350],
+		count: 4
 	},
 	':watermelon:': {
-		value: [1,15,300],
-		count: 3
+		value: [1,5,300],
+		count: 4
 	},
 	':grapes:': {
-		value: [1,15,300],
-		count: 3
+		value: [1,5,300],
+		count: 4
 	},
 	':cherries:': {
-		value: [1,15,300],
-		count: 3
+		value: [1,5,300],
+		count: 4
 	},
 	':melon:': {
-		value: [1,15,300],
-		count: 3
+		value: [1,5,300],
+		count: 4
 	},
 	':100:': {
 		value: [1,10,100],
-		count: 4
+		count: 5
 	},
 	':poop:': {
 		value: [0,0,200],
-		count: 4
+		count: 5
 	}
 };
 const HIDDEN = [':grey_question:',':grey_question:',':grey_question:'];

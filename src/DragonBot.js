@@ -140,15 +140,18 @@ class DragonBot extends DebugClient {
 				server = this.servers[serverID],
 				user = this.users[member.id];
 			
-			this.log(user.username + '#' + user.discriminator,'has joined',server.name);
+			this.log(md.atUser(user),'has joined',server.name);
 			
 			var welcome = this.database.get('servers').get(serverID).welcome;
 			if (!welcome) return;
-			var {channel = '', message = ''} = welcome;
+			var {channel = '', role = '', message = ''} = welcome;
 			if (!channel || !message) return;
 			
 			var context = new Context(this, user.id, channel, message);
-			this.send(channel, this.normalize(message, context));
+			this.send(channel, this.normalize(message, context))
+			.then(() => {
+				if (role) this.addToRole({serverID, userID: user.id, roleID: role});
+			});
 		} catch (e) {
 			this.error(e);
 		}
@@ -164,7 +167,7 @@ class DragonBot extends DebugClient {
 				server = this.servers[serverID],
 				user = this.users[data.user.id];
 			
-			this.log(user.username + '#' + user.discriminator,'has left',server.name);
+			this.log(md.atUser(user),'has left',server.name);
 			
 			var welcome = this.database.get('servers').get(serverID).welcome;
 			if (!welcome) return;
@@ -184,7 +187,6 @@ class DragonBot extends DebugClient {
 		super._connected();
 		this.presenceText = `\uD83D\uDC32 | ${this.PREFIX}help`;
 		this.sessions.startSessionTimer();
-		
 		// Perform cleanup on the database
 		//this.database.get('servers').gc(this.servers);
 		//this.database.get('channels').gc(this.channels);
@@ -220,6 +222,10 @@ class DragonBot extends DebugClient {
 	*/
 	run(context, input) {
 		try {
+			this.log(input.text || '<empty>',
+				'\n\tUser:   ',md.atUser(context.user),
+				'\n\tChannel:',md.atChannel(context.channel),
+				'\n\tServer: ',context.server.name);
 			var handler = new Handler(context, input);
 			
 			// create a copy of the args array with normalized values
@@ -232,7 +238,7 @@ class DragonBot extends DebugClient {
 			.then(() => {
 				if (handler.error) {
 					this.warn(handler.error);
-				} else if (handler.cmd && !handler.cmd.endsWith('.?') && handler.grant == 'granted') {
+				} else if (handler.command && handler.command.analytics && handler.grant == 'granted') {
 					// analytics is updated if a command was successfully resolved
 					Analytics.push(this, handler.serverID, handler.cmd);
 					Analytics.pushTemp(handler.serverID, handler.cmd); // current session analytics
@@ -243,6 +249,7 @@ class DragonBot extends DebugClient {
 				}
 				
 				handler.response.message = this.normalize(handler.response.message, handler.context);
+				this.log('Response:',handler.response);
 				
 				return (handler.response.file ?
 					this.upload(handler.channelID, handler.response.file, handler.response.filename, handler.response.message) :

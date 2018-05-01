@@ -40,7 +40,7 @@ function embed(post) {
 			e.video = {
 				url: post.url
 			};
-		} else if (post.domain.includes('reddit.com')) {
+		} else if (post.domain && post.domain.includes('reddit.com')) {
 			e.description += '\n\n' + '**Cannot embed X-post.** :confused:';
 		} else {
 			// stupid imgur embed fix

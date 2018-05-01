@@ -31,33 +31,82 @@ function yes(x) {
 function no(x) {
 	return x ? 'No' : 'Yes';
 }
+function ID(id) {
+	return ' (ID: ' + md.code(id) + ')';
+}
 
-function find(o,a,x) {
-	for (let id in o) {
-		var k = o[id][a];
-		if (k == x || (k instanceof Array && k.indexOf(x) > -1)) return id;
+class DiscordUtils {
+	static getIconURL(server) {
+		return `https://cdn.discordapp.com/icons/${server.id}/${server.icon}.png`;
 	}
-	return '';
-}
-function findAll(o,a,x) {
-	let arr = [];
-	for (let id in o) {
-		var k = o[id][a];
-		if (k == x || (k instanceof Array && k.indexOf(x) > -1)) arr.push(id);
+	static getAvatarURL(user) {
+		if (user.avatar.startsWith('a_')) {
+			return `https://cdn.discordapp.com/avatars/${user.id}/${user.avatar}.gif`;
+		} else {
+			return `https://cdn.discordapp.com/avatars/${user.id}/${user.avatar}.png`;
+		}
 	}
-	return arr;
-}
-
-function hasContent(m) {
-	return m.attachments.length > 0 || m.embeds.length > 0 || m.content.match(/https?:\/\//g);
-}
-
-/**
-	Creates an embed frame for the message object. Useful for testing previews of archives.
-	@arg {Message} message object
-*/
-function embedMessage(message) {
-	try {
+	static find(o,a,x) {
+		for (var id in o) {
+			var k = o[id][a];
+			if (k == x || (k instanceof Array && k.includes(x))) return id;
+		}
+		return '';
+	}
+	static findAll(o,a,x) {
+		var arr = [];
+		for (var id in o) {
+			var k = o[id][a];
+			if (k == x || (k instanceof Array && k.includes(x))) arr.push(id);
+		}
+		return arr;
+	}
+	static getObjects(o) {
+		return o instanceof Array ? o : Object.keys(o).map(id => o[id]);
+	}
+	static getServerChannels(server) {
+		return this.getObjects(server.channels);
+	}
+	static getServerUsers(users, server) {
+		return this.getObjects(users).filter(user => user.id in server.members);
+	}
+	static getServerMembers(server) {
+		return this.getObjects(server.members);
+	}
+	static getServerRoles(server) {
+		return this.getObjects(server.roles);
+	}
+	static getServerEmojis(server) {
+		return this.getObjects(server.emojis);
+	}
+	static getMemberRoles(member) {
+		return this.getObjects(member.roles);
+	}
+	static getMembersWithRole(members, role) {
+		return this.getObjects(members).filter(member => member.roles.includes(role.id));
+	}
+	static getServersByUser(servers, user) {
+		return this.getObjects(servers).filter(server => user.id in server.members);
+	}
+	static getServerByRole(servers, role) {
+		return this.getObjects(servers).find(server => role.id in server.roles);
+	}
+	static getServerByChannel(servers, channel) {
+		return this.getObjects(servers).find(server => channel.id in server.channels);
+	}
+	static getAllChannels(servers) {
+		return this.getObjects(servers).map(this.getServerChannels).reduce((a,x) => a.concat(x), []);
+	}
+	static getAllRoles(servers) {
+		return this.getObjects(servers).map(this.getServerRoles).reduce((a,x) => a.concat(x), []);
+	}
+	static getAllEmojis(servers) {
+		return this.getObjects(servers).map(this.getServerEmojis).reduce((a,x) => a.concat(x), []);
+	}
+	static hasContent(m) {
+		return m.attachments.length > 0 || m.embeds.length > 0 || m.content.match(/https?:\/\//g);
+	}
+	static embedMessage(message) {
 		var embed = {
 			description: message.content,
 			timestamp: message.timestamp,
@@ -94,249 +143,223 @@ function embedMessage(message) {
 			});
 		}
 		return embed;
-	} catch (e) {
-		console.error(e);
 	}
-}
-function embedChannel(channel) {
-	return {
-		title: md.atChannel(channel),
-		fields: [
-			{
-				name: ':1234: ID',
-				value: channel.id,
-				inline: true
-			},
-			{
-				name: ':speech_balloon: Type',
-				value: 	CHANNEL_TYPES[channel.type],
-				inline: true
-			},
-			{
-				name: ':mega: Topic',
-				value: channel.topic || 'None',
-				inline: true
-			},
-			{
-				name: ':top: Position',
-				value: channel.position,
-				inline: true
-			},
-			{
-				name: ':warning: 18+?',
-				value: yes(channel.nsfw),
-				inline: true
+	static embedChannel(channel) {
+		return {
+			title: md.atChannel(channel),
+			fields: [
+				{
+					name: ':1234: ID',
+					value: channel.id,
+					inline: true
+				},
+				{
+					name: ':speech_balloon: Type',
+					value: 	CHANNEL_TYPES[channel.type],
+					inline: true
+				},
+				{
+					name: ':mega: Topic',
+					value: channel.topic || 'None',
+					inline: true
+				},
+				{
+					name: ':top: Position',
+					value: channel.position,
+					inline: true
+				},
+				{
+					name: ':warning: 18+?',
+					value: yes(channel.nsfw),
+					inline: true
+				}
+			]
+		};
+	}
+	static embedServer(server, client) {
+		var members  = Object.keys(server.members);
+		var channels = Object.keys(server.channels);
+		var roles    = Object.keys(server.roles);
+		var emojis   = Object.keys(server.emojis);
+		var icon     = this.getIconURL(server);
+		var owner    = client.users[server.owner_id];
+		
+		return {
+			title: server.name,
+			fields: [
+				{
+					name: ':1234: ID',
+					value: server.id,
+					inline: true
+				},
+				{
+					name: ':earth_americas: Region',
+					value: server.region,
+					inline: true
+				},
+				{
+					name: ':cowboy: Owner',
+					value: md.atUser(owner) + ' / ' + md.mention(owner),
+					inline: true
+				},
+				{
+					name: ':100: Large?',
+					value: server.large ? 'Yes' : 'No',
+					inline: true
+				},
+				{
+					name: ':white_check_mark: Verification',
+					value: VERIFICATION_LEVELS[server.verification_level],
+					inline: true
+				},
+				{
+					name: ':busts_in_silhouette: Members',
+					value: members.length,
+					inline: true
+				},
+				{
+					name: ':robot: Bots',
+					value: members.filter(m => client.users[m].bot).length,
+					inline: true
+				},
+				{
+					name: ':speech_balloon: Channels',
+					value: channels.length,
+					inline: true
+				},
+				{
+					name: ':pencil: Roles',
+					value: roles.length,
+					inline: true
+				},
+				{
+					name: ':joy: Emojis',
+					value: emojis.length,
+					inline: true
+				}
+			],
+			thumbnail: {
+				url: icon,
+				width: 60,
+				height: 60
 			}
-		]
-	};
-}
-function embedServer(server, client) {
-	var members  = Object.keys(server.members);
-	var channels = Object.keys(server.channels);
-	var roles    = Object.keys(server.roles);
-	var emojis   = Object.keys(server.emojis);
-	var icon     = getIconURL(server);
-	
-	return {
-		title: server.name,
-		fields: [
-			{
-				name: ':1234: ID',
-				value: server.id,
-				inline: true
-			},
-			{
-				name: ':earth_americas: Region',
-				value: server.region,
-				inline: true
-			},
-			{
-				name: ':cowboy: Owner',
-				value: md.mention(server.owner_id),
-				inline: true
-			},
-			{
-				name: ':100: Large?',
-				value: server.large ? 'Yes' : 'No',
-				inline: true
-			},
-			{
-				name: ':white_check_mark: Verification',
-				value: VERIFICATION_LEVELS[server.verification_level],
-				inline: true
-			},
-			{
-				name: ':busts_in_silhouette: Members',
-				value: members.length,
-				inline: true
-			},
-			{
-				name: ':robot: Bots',
-				value: members.filter(m => client.users[m].bot).length,
-				inline: true
-			},
-			{
-				name: ':speech_balloon: Channels',
-				value: channels.length,
-				inline: true
-			},
-			{
-				name: ':pencil: Roles',
-				value: roles.length,
-				inline: true
-			},
-			{
-				name: ':joy: Emojis',
-				value: emojis.length,
-				inline: true
+		};
+	}
+	static embedUser(user, member) {
+		return {
+			title: md.atUser(user) + ` (${member.nick||'No nickname'})`,
+			fields: [
+				{
+					name: ':1234: ID',
+					value: user.id,
+					inline: true
+				},
+				{
+					name: ':speaking_head: Mention',
+					value: md.mention(user),
+					inline: true
+				},
+				{
+					name: ':calendar: Joined',
+					value: new Date(member.joined_at).toLocaleString(),
+					inline: true
+				},
+				{
+					name: ':clock4: Status',
+					value: member.status || 'offline?',
+					inline: true
+				},
+				{
+					name: ':robot: Is Bot?',
+					value: yes(member.bot),
+					inline: true
+				},
+				{
+					name: ':pencil: Roles',
+					value: member.roles.map(md.role).join('\n') || 'None',
+					inline: true
+				}
+			],
+			thumbnail: {
+				url: this.getAvatarURL(user),
+				width: 60,
+				height: 60
 			}
-		],
-		thumbnail: {
-			url: icon,
-			width: 60,
-			height: 60
-		}
-	};
-}
-function embedUser(user, member) {
-	return {
-		title: md.atUser(user) + ` (${member.nick||'No nickname'})`,
-		fields: [
-			{
-				name: ':1234: ID',
-				value: user.id,
-				inline: true
-			},
-			{
-				name: ':calendar: Joined',
-				value: new Date(member.joined_at).toLocaleString(),
-				inline: true
-			},
-			{
-				name: ':clock4: Status',
-				value: member.status || 'offline?',
-				inline: true
-			},
-			{
-				name: ':robot: Is Bot?',
-				value: yes(member.bot),
-				inline: true
-			},
-			{
-				name: ':pencil: Roles',
-				value: member.roles.map(md.role).join('\n') || 'None',
-				inline: true
+		};
+	}
+	static embedRole(role, server) {
+		var membersWithRole = this.getMembersWithRole(server.members, role);
+		
+		return {
+			title: md.atRole(role),
+			color: role.color,
+			fields: [
+				{
+					name: ':1234: ID',
+					value: role.id,
+					inline: true
+				},
+				{
+					name: ':shield: Server',
+					value: server.name + ID(server.id),
+					inline: true
+				},
+				{
+					name: ':busts_in_silhouette: Members w/ Role',
+					value: membersWithRole.length,
+					inline: true
+				},
+				{
+					name: ':white_check_mark: Permissions',
+					value: role._permissions || 'Same as everyone',
+					inline: true
+				},
+				{
+					name: ':loudspeaker: Mentionable?',
+					value: yes(role.mentionable),
+					inline: true
+				},
+				{
+					name: ':top: Hoisted?',
+					value: yes(role.hoist),
+					inline: true
+				}
+			]
+		};
+	}
+	static embedInvite(invite) {
+		// TODO: get invite expiration and use count?
+		var {inviter,code,guild,channel} = invite;
+		return {
+			fields: [
+				{
+					name: ':1234: ID',
+					value: code,
+					inline: true
+				},
+				{
+					name: ':slight_smile: Inviter',
+					value: md.atUser(inviter) + ' / ' + md.mention(inviter),
+					inline: true
+				},
+				{
+					name: ':shield: Guild',
+					value: guild.name + ID(guild.id),
+					inline: true
+				},
+				{
+					name: ':speech_balloon: Channel',
+					value: md.atChannel(channel) + ID(channel.id),
+					inline: true
+				}
+			],
+			thumbnail: {
+				url: this.getIconURL(guild),
+				width: 100,
+				height: 100
 			}
-		],
-		thumbnail: {
-			url: getAvatarURL(user),
-			width: 60,
-			height: 60
-		}
-	};
-}
-function embedRole(role, server) {
-	var members = server.members;
-	var membersWithRole = Object.keys(members).filter(m => members[m].roles.includes(role.id));
-	
-	return {
-		title: md.atRole(role),
-		color: role.color,
-		fields: [
-			{
-				name: ':1234: ID',
-				value: role.id,
-				inline: true
-			},
-			{
-				name: ':shield: Server',
-				value: server.name + ID(server.id),
-				inline: true
-			},
-			{
-				name: ':busts_in_silhouette: Members w/ Role',
-				value: membersWithRole.length,
-				inline: true
-			},
-			{
-				name: ':white_check_mark: Permissions',
-				value: role._permissions || 'Same as everyone',
-				inline: true
-			},
-			{
-				name: ':loudspeaker: Mentionable?',
-				value: yes(role.mentionable),
-				inline: true
-			},
-			{
-				name: ':top: Hoisted?',
-				value: yes(role.hoist),
-				inline: true
-			}
-		]
-	};
-}
-function embedInvite(invite) {
-	// TODO: get invite expiration and use count?
-	var {inviter,code,guild,channel} = invite;
-	return {
-		fields: [
-			{
-				name: ':1234: ID',
-				value: code,
-				inline: true
-			},
-			{
-				name: ':slight_smile: Inviter',
-				value: md.mention(inviter.id),
-				inline: true
-			},
-			{
-				name: ':shield: Guild',
-				value: guild.name + ID(guild.id),
-				inline: true
-			},
-			{
-				name: ':speech_balloon: Channel',
-				value: md.atChannel(channel) + ID(channel.id),
-				inline: true
-			}
-		],
-		thumbnail: {
-			url: getIconURL(guild),
-			width: 100,
-			height: 100
-		}
-	};
-}
-
-function ID(id) {
-	return ' (ID: ' + md.code(id) + ')';
-}
-function getIconURL(server) {
-	return `https://cdn.discordapp.com/icons/${server.id}/${server.icon}.png`;
-}
-function getAvatarURL(user) {
-	if (user.avatar.startsWith('a_')) {
-		return `https://cdn.discordapp.com/avatars/${user.id}/${user.avatar}.gif`;
-	} else {
-		return `https://cdn.discordapp.com/avatars/${user.id}/${user.avatar}.png`;
+		};
 	}
 }
 
-module.exports = {
-	find,
-	findAll,
-	hasContent,
-	embedMessage,
-	embedServer,
-	embedChannel,
-	embedUser,
-	embedRole,
-	embedInvite,
-	getIconURL,
-	getAvatarURL,
-	CHANNEL_TYPES,
-	MESSAGE_TYPES,
-	VERIFICATION_LEVELS
-};
+module.exports = DiscordUtils;

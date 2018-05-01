@@ -134,6 +134,7 @@ class Commands extends TypeMapBase {
 		} else if (commands.length == 1) {
 			this.logger.info(handler.text);
 			var command = commands[0];
+			handler.command = command;
 			handler.cmd = command.fullID;
 			command.validate(handler);
 			if (handler.grant == 'granted') {

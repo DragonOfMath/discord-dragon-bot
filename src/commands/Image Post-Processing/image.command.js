@@ -78,10 +78,11 @@ module.exports = {
 					.then(image => {
 						image = image.normalize();
 						var [threshold, scale, invert] = _args;
-						var kernelSize = 8;
-						var maxChars = 960;
-						var maxScale = 2 + (Math.log2((image.bitmap.width * image.bitmap.height) / (kernelSize * maxChars)) & 0xFE);
-						scale = Math.max(~~scale, maxScale);
+						var pixels = image.bitmap.width * image.bitmap.height;
+						var maxScale = 1;
+						while (Math.ceil(pixels / (8 * Math.pow(maxScale, 2))) > 960) maxScale++;
+						while (Math.ceil(image.bitmap.height / (4 * maxScale)) > 40)  maxScale++;
+						scale = Math.max(scale, maxScale);
 						return brailleify(image.bitmap, {threshold, scale, invert});
 					});
 				}

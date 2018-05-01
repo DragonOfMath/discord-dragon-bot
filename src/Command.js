@@ -36,6 +36,7 @@ class Subcommands extends TypeMapBase {
 				info: '(Automatically generated subcommand for listing other subcommands)',
 				permissions: { type: 'public' },
 				suppress: true,
+				analytics: false,
 				fn() {
 					return supercommand.listSubcommands();
 				}
@@ -105,6 +106,7 @@ class Command {
 		permissions = {},
 		properties  = {},
 		suppress    = Constants.Command.DEFAULT_SUPPRESSION,
+		analytics   = Constants.Command.DEFAULT_ANALYTICS,
 		subcommands = {},
 		fn
 	}) {
@@ -151,6 +153,7 @@ class Command {
 		this.title    = title;
 		this.info     = info;
 		this.suppress = !!suppress;
+		this.analytics = !!analytics;
 		
 		this.parameters  = new Parameters(parameters, this);
 		this.properties  = new Properties(properties, this);

@@ -3,18 +3,18 @@ const KERNEL = [0,3,1,4,2,5,6,7];
 function brailleify(image, options = {}) {
 	options.align     = options.align     === undefined ? true  : !!options.align;
 	options.invert    = options.invert    === undefined ? false : !!options.invert;
-	options.threshold = options.threshold === undefined ? 120   : Math.max(0, Math.min(options.threshold, 255));
-	options.scale     = options.scale     === undefined ? 4     : ~~options.scale;
+	options.threshold = options.threshold === undefined ? 120   : options.threshold;
+	options.scale     = options.scale     === undefined ? 4     : options.scale;
 	
 	var w = image.width,
 		h = image.height,
 		a = options.align,       // Fix alignment issue with empty braille
 		inv = options.invert,    // Switch the dark/light values
 		th = +options.threshold, // the maximum value for darkness
-		kw = +options.scale,     // kernel width in pixels
-		kh = kw * 2,             // kernel height in pixels
-		kc = kw / 2,             // kernel cell size
+		kc = +options.scale,     // kernel cell width in pixels
 		ka = kc * kc,            // kernel cell area
+		kw = kc * 2,             // kernel width
+		kh = kc * 4,             // kernel height
 		result = '',
 		kernel,cell,value,
 		x,y,kx,ky,ox,oy,cx,cy,pos,i;
