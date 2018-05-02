@@ -3,9 +3,10 @@ const brailleify = require('./brailleify');
 //const comedy = require('./comedy.json');
 
 function processImage(client, channelID, args, filename, process) {
-	var mime = /png$/.test(filename) ? Jimp.MIME_PNG : Jimp.MIME_JPEG;
+	var mime = /\.png$/i.test(filename) ? Jimp.MIME_PNG : Jimp.MIME_JPEG;
 	var _args = args.slice();
-	return getImageInChannel(client, channelID, _args)
+	return client.type(channelID)
+	.then(() => getImageInChannel(client, channelID, _args))
 	.then(Jimp.read)
 	.then(image => process.call(client, image, ..._args))
 	.then(image => image.getBufferAsync(mime))

@@ -1,4 +1,31 @@
-const {Markdown:md} = require('./Utils');
+const {Markdown:md,random} = require('./Utils');
+
+class Response {
+	constructor() {
+		this.message  = '';
+		this.embed    = null;
+		this.filename = '';
+		this.file     = null;
+		this.expires  = false;
+	}
+	set title(x) {
+		if (typeof(x) === 'string' && x.length > 0) {
+			if (this.embed) {
+				if (this.embed.title) {
+					this.embed.title = x + ' | ' + this.embed.title;
+				} else {
+					this.embed.title = x;
+				}
+			} else {
+				if (this.message) {
+					this.message = md.bold(x) + ' | ' + this.message;
+				} else {
+					//this.message = md.bold(x);
+				}
+			}
+		}
+	}
+}
 
 class Handler {
 	constructor(context, input) {
@@ -13,33 +40,12 @@ class Handler {
 		this.input    = input;
 		this.grant    = null;
 		this.error    = null;
-		
-		this.response = {
-			message:  '',
-			embed:    null,
-			filename: '',
-			file:     null,
-			expires:  false
-		};
+		this.response = new Response();
 		
 		Object.assign(this, context, input);
 	}
 	set title(x) {
-		if (typeof(x) === 'string' && x.length > 0) {
-			if (this.response.embed) {
-				if (this.response.embed.title) {
-					this.response.embed.title = x + ' | ' + this.response.embed.title;
-				} else {
-					this.response.embed.title = x;
-				}
-			} else {
-				if (this.response.message) {
-					this.response.message = md.bold(x) + ' | ' + this.response.message;
-				} else {
-					//this.response.message = md.bold(x);
-				}
-			}
-		}
+		this.response.title = x;
 	}
 	resolve(x) {
 		if (typeof(x) !== 'undefined') {
@@ -50,10 +56,10 @@ class Handler {
 					return x.then(y => this.resolve(y));
 				} else if (x.message || x.embed || x.file) {
 					this.response = x;
-				} else if (x.title || x.description || x.fields) {
+				} else if (x.title || x.description || x.fields || x.color || x.image || x.video) {
 					this.response.embed = x;
 				} else if (x instanceof Array) {
-					return this.resolve(x[Math.floor(x.length * Math.random())]);
+					return this.resolve(random(x));
 				} else {
 					throw 'Invalid object keys: ' + Object.keys(x).join(', ');
 				}

@@ -20,10 +20,10 @@ module.exports = {
 		},
 		subcommands: {
 			'pokedex': {
-				aliases: ['pokeinventory','pinventory','pinv'],
+				aliases: ['pokeinventory', 'pinventory', 'pinv'],
 				title: PokemonGame.header,
 				info: 'Displays your Pokémon. Optionally include a search term to filter Pokémon.',
-				parameters: ['[user]','[page]','[search]'],
+				parameters: ['[user]', '[page]', '[search]'],
 				fn({client, args, userID}) {
 					userID = resolveTargetUser(args, userID);
 					if (args[1]) {
@@ -39,7 +39,7 @@ module.exports = {
 				aliases: ['lgds'],
 				title: PokemonGame.header,
 				info: 'Displays your legendary Pokémon.',
-				parameters: ['[user]','[page]'],
+				parameters: ['[user]', '[page]'],
 				fn({client, args, userID}) {
 					userID = resolveTargetUser(args, userID);
 					return PokemonGame.inventoryLegendaries(client, userID, args[0]);
@@ -49,7 +49,7 @@ module.exports = {
 				aliases: ['faves'],
 				title: PokemonGame.header,
 				info: 'Displays your faved Pokémon.',
-				parameters: ['[user]','[page]'],
+				parameters: ['[user]', '[page]'],
 				fn({client, args, userID}) {
 					userID = resolveTargetUser(args, userID);
 					return PokemonGame.inventoryFavorites(client, userID, args[0]);
@@ -59,7 +59,7 @@ module.exports = {
 				aliases: ['shinys'],
 				title: PokemonGame.header,
 				info: 'Displays your shiny Pokémon.',
-				parameters: ['[user]','[page]'],
+				parameters: ['[user]', '[page]'],
 				fn({client, args, userID}) {
 					userID = resolveTargetUser(args, userID);
 					return PokemonGame.inventoryShinies(client, userID, args[0]);
@@ -102,7 +102,7 @@ module.exports = {
 				}
 			},
 			'howmany': {
-				aliases: ['count'],
+				aliases: ['count', 'progress'],
 				title: PokemonGame.header + ' | How Many',
 				info: 'Shows how many Pokemon you\'ve caught out of the total.',
 				fn({client, userID}) {

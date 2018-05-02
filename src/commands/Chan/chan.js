@@ -79,11 +79,11 @@ module.exports = class Chan {
 				title: `8chan - /${board}/ | ${op.sub||'Untitled'} | ${post.name} - #${post.no}`,
 				description: parse(post.com).trim(),
 				footer: {
-					text: post.now
+					text: post.now // FIXME: this isn't the correct property
 				},
 				url: `https://8ch.net/${board}/res/${op.no}.html#${post.no}`
 			};
-			if (post.filename && ['.gif', '.png', '.jpg'].indexOf(post.ext) > -1) {
+			if (post.filename && ['.gif', '.png', '.jpg'].includes(post.ext)) {
 				embed.thumbnail = {
 					url: `https://media.8ch.net/file_store/${post.tim}${post.ext}`, // https://media.8ch.net/${board}/src/${post.tim}${post.ext}
 					width: post.tn_w,

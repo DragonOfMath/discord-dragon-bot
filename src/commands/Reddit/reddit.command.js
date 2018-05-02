@@ -10,25 +10,34 @@ function truncate(x, maxlen) {
 }
 
 function embed(post) {
+	if (typeof(post.subreddit) === 'undefined') {
+		console.error(post);
+	}
 	var e = {
-		title: `[/r/${post.subreddit}] ${truncate(post.title, 180)} - by ${post.author}`,
+		title: `[/r/${post.subreddit||'[deleted]'}] ${post.over_18 ? '[NSFW]' : ''} ${truncate(post.title, 180)} - by ${('/u/'+post.author)||'[deleted]'}`,
+		description: '',
 		color: 0xd25a32,
-		url: post.url,
-		description: `${post.score<0?':arrow_down:':':arrow_up:'} ${post.score}`,
 		footer: {
 			text: new Date(post.created * 1000).toLocaleString()
 		}
 	};
+	if (post.score) {
+		e.description += `${post.score<0?':arrow_down:':':arrow_up:'} ${post.score}`;
+	}
 	if (post.gilded) {
 		e.description += ' | <:redditgold:303781934813675520> ' + post.gilded;
 	}
 	if (post.num_comments) {
 		e.description += ' | :speech_balloon: ' + post.num_comments;
 	}
-	
-	post.permalink = `https://www.reddit.com${post.permalink}`;
-	if (post.url != post.permalink) {
-		e.description += ` | [Permalink](${post.permalink})`;
+	if (/^http/.test(post.url)) {
+		e.url = post.url;
+	}
+	if (post.permalink) {
+		post.permalink = `https://www.reddit.com${post.permalink}`;
+		if (post.permalink != post.url) {
+			e.description += ` | [Permalink](${post.permalink})`;
+		}
 	}
 	if (post.spoiler) {
 		e.description += '\n\n' + '**Spoiler alert!** This post contains spoilers, so please click the permalink.';
@@ -59,10 +68,6 @@ function embed(post) {
 			};
 		}
 	}
-	if (post.over_18) {
-		// TODO: use the nsfw property to ensure nsfw content doesn't get posted in safe channels
-		e.description += '\n\n' + '**NSFW!** You must be 18+ or older to view this post. If this Channel is not marked NSFW, you should delete this.'
-	} 
 	return e;
 }
 

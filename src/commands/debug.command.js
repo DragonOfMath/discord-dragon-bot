@@ -28,6 +28,7 @@ module.exports = {
 			type: 'private'
 		},
 		suppress: true,
+		analytics: false,
 		subcommands: {
 			'log': {
 				title: 'Console | Log',
@@ -36,6 +37,7 @@ module.exports = {
 				permissions: {
 					type: 'private'
 				},
+				analytics: false,
 				fn({client,args}) {
 					client.log(...args);
 				}
@@ -47,6 +49,7 @@ module.exports = {
 				permissions: {
 					type: 'private'
 				},
+				analytics: false,
 				fn({client,args}) {
 					client.info(...args);
 				}
@@ -58,6 +61,7 @@ module.exports = {
 				permissions: {
 					type: 'private'
 				},
+				analytics: false,
 				fn({client,args}) {
 					client.warn(...args);
 				}
@@ -69,6 +73,7 @@ module.exports = {
 				permissions: {
 					type: 'private'
 				},
+				analytics: false,
 				fn({client,args}) {
 					client.error(...args);
 				}
@@ -79,8 +84,9 @@ module.exports = {
 				permissions: {
 					type: 'private'
 				},
+				analytics: false,
 				fn({client}) {
-					console.clear();
+					console.log('\n'.repeat(process.stdout.rows));
 				}
 			}
 		}
@@ -96,33 +102,6 @@ module.exports = {
 		suppress: true,
 		fn({client, args}) {
 			return md.codeblock(args.map(String).join(' '));
-		}
-	},
-	'memdump': {
-		aliases: ['snapshot'],
-		category: 'Debug',
-		title: 'Memory Snapshot',
-		info: 'Takes a snapshot of the internal client data.',
-		permissions: {
-			type: 'private'
-		},
-		suppress: true,
-		fn({client}) {
-			client.snapshot('debug');
-			return 'Snapshot of memory saved.';
-		}
-	},
-	'backup': {
-		category: 'Backup',
-		title: 'Database Backup',
-		info: 'Creates a backup of the database.',
-		permissions: {
-			type: 'private'
-		},
-		suppress: true,
-		fn({client}) {
-			client.database.backup();
-			return 'Database backup created.';
 		}
 	},
 	'debug': {

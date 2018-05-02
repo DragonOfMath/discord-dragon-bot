@@ -60,9 +60,11 @@ module.exports = {
 				aliases: ['channel', 'channelid', 'modlog', 'log'],
 				title: 'Moderation | Modlog ID',
 				info: 'Gets or sets the modlog channel ID. The modlog contains information about bans, kicks, and other moderation actions.',
+				parameters: ['[channel]'],
 				fn({client, channelID, server, args}) {
-					if (args[0]) {
-						return Moderation.setModlogChannel(client, server, args[0]);
+					var [channel] = args;
+					if (channel) {
+						return Moderation.setModlogChannel(client, server, channel);
 					} else {
 						var modlogID = Moderation.getModlogChannel(client, server.id);
 						return modlogID ? md.channel(modlogID) : 'No modlog channel set.';
@@ -96,7 +98,8 @@ module.exports = {
 					type: 'inclusive'
 				},
 				fn({client, args, server, userID}) {
-					var strikes = Moderation.getStrikes(client, server, args[0]);
+					var [user] = args;
+					var strikes = Moderation.getStrikes(client, server, user);
 					return `That user has **${fmt.plural('Strike',strikes)}** on record.`;
 				}
 			},
@@ -108,7 +111,9 @@ module.exports = {
 					type: 'inclusive'
 				},
 				fn({client, args, server, userID}) {
-					return Moderation.kick(client, server, args[0], userID, args.slice(1).join(' '));
+					var [user, ...reason] = args;
+					reason = reason.join(' ');
+					return Moderation.kick(client, server, user, userID, reason);
 				}
 			},
 			'ban': {
@@ -119,7 +124,9 @@ module.exports = {
 					type: 'inclusive'
 				},
 				fn({client, args, server, userID}) {
-					return Moderation.ban(client, server, args[0], userID, args.slice(1).join(' '));
+					var [user, ...reason] = args;
+					reason = reason.join(' ');
+					return Moderation.ban(client, server, user, userID, reason);
 				}
 			},
 			'unban': {
@@ -130,7 +137,8 @@ module.exports = {
 					type: 'inclusive'
 				},
 				fn({client, args, server, userID}) {
-					return Moderation.unban(client, server, args[0], userID);
+					var [user] = args;
+					return Moderation.unban(client, server, user, userID);
 				}
 			}
 		}

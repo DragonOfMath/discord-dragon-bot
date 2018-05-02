@@ -12,6 +12,7 @@ class DebugClient extends Logger(PromiseClient) {
 		this.STARTED = this.milliseconds;
 		this._tryReconnect = false;
 		this._ignoreUsers  = true;
+		this._ignoreBots   = true;
 		
 		//this.on('log',        this.info);
 		//this.on('ready',      this._connected);
@@ -36,10 +37,12 @@ class DebugClient extends Logger(PromiseClient) {
 	stop() {
 		this._tryReconnect = false;
 		this._ignoreUsers  = true;
+		this._ignoreBots   = true;
 	}
 	_connected() {
 		this.info('Client connected.');
 		this._ignoreUsers  = false;
+		this._ignoreBots   = false;
 		this._tryReconnect = true;
 	}
 	_disconnected() {

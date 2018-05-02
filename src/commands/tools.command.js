@@ -1,16 +1,9 @@
 /**
-	cmd_tools.js
 	Command file for miscellaneous helpful commands.
 */
 
-const {Markdown:md,strcmp}    = require('../Utils');
+const {Markdown:md,strcmp,substrcmp} = require('../Utils');
 const {embedMessage} = require('../DiscordUtils');
-
-function substrcmp(str, sub) {
-	str = str.toLowerCase();
-	sub = sub.toLowerCase();
-	return str.indexOf(sub) > -1;
-}
 
 module.exports = {
 	'invite': {

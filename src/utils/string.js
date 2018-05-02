@@ -4,6 +4,9 @@
 function strcmp(a,b) {
 	return String(a).toLowerCase() == String(b).toLowerCase();
 }
+function substrcmp(a,b) {
+	return String(a).toLowerCase().indexOf(String(b).toLowerCase()) > -1;
+}
 
 /**
 	Truncate text to a fixed length
@@ -29,4 +32,4 @@ function quote(text) {
 	return '"' + escape(text) + '"';
 }
 
-module.exports = {strcmp,truncate,escape,quote};
+module.exports = {strcmp,substrcmp,truncate,escape,quote};

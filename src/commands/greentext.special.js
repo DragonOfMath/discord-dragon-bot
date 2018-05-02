@@ -17,10 +17,7 @@
 		```
 */
 
-const IGNORE_REGEX = /<.*>/gm;
-const GT_REGEX = />*[^>\n]+/g;
-const START_GT = '\n```css\n';
-const END_GT   = '\n```\n';
+const {Markdown:md} = require('../Utils');
 
 module.exports = {
 	id: 'greentext',
@@ -32,33 +29,40 @@ module.exports = {
 		users: ['172002275412279296'] // tatsu
 	},
 	resolver({message}) {
-		if (1) return; // disable for now
-		var gt = this.data.message = message.replace(IGNORE_REGEX, '').replace(/\s{2,}/g,'\n').match(GT_REGEX);
-		if (gt && gt.some(ln => ln[0] == '>' && ln[1] != '>')) {
+		var gt = this.data.message = message.replace(/<.*>/gm, '').replace(/\s{2,}/g,'\n').match(/>*[^<>\n]+/g);
+		if (gt && gt.some(ln => ln.startsWith('>') && ln[1] != '>')) {
 			return 'greentext';
 		}
 	},
 	events: {
 		greentext() {
-			var gt = this.data.message;
-			var inGT = false;
-			gt = gt.map(line => {
-				//console.log('Checking line:',line)
-				if (line[0] == '>' && (inGT || line[1] != '>')) {
-					if (!inGT) {
-						line = START_GT + line;
-						inGT = true;
+			var input = this.data.message;
+			var output = '';
+			var lines = '';
+			var gt = false;
+			for (var line of input) {
+				if (line.startsWith('>') && (gt || line[1] != '>')) {
+					if (!gt) {
+						output += lines;
+						lines = '';
+						gt = true;
 					}
-				} else if (inGT) {
-					line = END_GT + line;
-					inGT = false;
+				} else {
+					if (gt) {
+						output += md.codeblock(lines,'css');
+						lines = '';
+						gt = false;
+					}
 				}
-				return line.trim();
-			}).join('\n');
-			if (inGT) {
-				gt += END_GT;
+				lines += line + '\n';
 			}
-			return gt.trim();
+			if (gt) {
+				output += md.codeblock(lines,'css');
+			} else {
+				output += lines;
+			}
+			
+			return output.trim();
 		}
 	}
 }

@@ -1,4 +1,4 @@
-const {Markdown:md} = require('./Utils');
+const {Markdown:md,strcmp} = require('./Utils');
 
 const CHANNEL_TYPES = [
 	'Text',
@@ -81,6 +81,24 @@ class DiscordUtils {
 	}
 	static getMemberRoles(member) {
 		return this.getObjects(member.roles);
+	}
+	static getServerByName(servers, serverName) {
+		return this.getObjects(servers).find(server => strcmp(server.name, serverName));
+	}
+	static getChannelByName(server, channelName) {
+		return this.getServerChannels(server).find(channel => strcmp(channel.name, channelName));
+	}
+	static getUserByName(users, server, userName) {
+		return this.getServerUsers(users, server).find(user => {
+			var nick = server.members[user.id].nick;
+			return strcmp(user.username, userName) || (nick && strcmp(nick, userName));
+		});
+	}
+	static getRoleByName(server, roleName) {
+		return this.getServerRoles(server).find(role => strcmp(role.name, roleName));
+	}
+	static getEmojiByName(server, emojiName) {
+		return this.getServerEmojis(server).find(emoji => strcmp(emoji.name, emojiName));
 	}
 	static getMembersWithRole(members, role) {
 		return this.getObjects(members).filter(member => member.roles.includes(role.id));

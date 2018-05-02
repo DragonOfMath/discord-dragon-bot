@@ -2,7 +2,6 @@ const Constants = require('../Constants');
 const {Markdown:md} = require('../Utils');
 
 /**
-	cmd_admin.js
 	Command file for private (owner-only) bot commands.
 */
 module.exports = {
@@ -16,8 +15,10 @@ module.exports = {
 			type: 'private'
 		},
 		suppress: true,
-		fn({client,clientID,input,cmd,cmds,arg,args,channel,channelID,server,serverID,user,userID,message,messageID}) {
-			return eval(arg);
+		fn({client,context,input,arg}) {
+			with (context) {
+				return eval(arg);
+			}
 		}
 	},
 	'presence': {
@@ -58,32 +59,13 @@ module.exports = {
 		},
 		suppress: true,
 		fn({client, args}) {
-			let [channelID,...message] = args;
+			let [channelID, ...message] = args;
 			if (!(channelID in client.channels)) {
 				channelID = md.channelID(channelID);
 			}
 			message = message.join(' ');
-			client.simulateTyping(channelID)
-			.then(() => client.wait(5000))
-			.then(() => client.send(channelID, message))
-			.catch(console.error);
-		}
-	},
-	'ignore': {
-		category: 'Admin',
-		info: 'Toggles ignoring users other than the bot owner.',
-		parameters: ['[boolean]'],
-		permissions: {
-			type: 'private'
-		},
-		suppress: true,
-		fn({client, args, channelID}) {
-			client._ignoreUsers = Boolean(args[0]);
-			if (client._ignoreUsers) {
-				return 'Set to ignore users.';
-			} else {
-				return 'No longer ignoring users.';
-			}
+			client.send(channelID, message)
+			.catch(client.error);
 		}
 	},
 	'alias': {
@@ -110,6 +92,30 @@ module.exports = {
 			return result.join('\n');
 		}
 	},
+	'ignore': {
+		category: 'Admin',
+		title: 'Ignoring',
+		info: 'Toggles ignoring other users and bots (the owner is not affected).',
+		parameters: ['<users|bots|none>'],
+		permissions: {
+			type: 'private'
+		},
+		suppress: true,
+		fn({client, args, channelID}) {
+			switch (args[0]) {
+				case 'users':
+					client._ignoreUsers = true;
+					return 'Ignoring users.';
+				case 'bots':
+					client._ignoreBots = true;
+					return 'Ignoring bots.';
+				default:
+					client._ignoreUsers = false;
+					client._ignoreBots = false;
+					return 'Not ignoring anymore.';
+			}
+		}
+	},
 	'embeds': {
 		category: 'Admin',
 		info: 'Toggles the use of embeds in messages.',
@@ -119,8 +125,60 @@ module.exports = {
 		},
 		suppress: true,
 		fn({client, args}) {
-			client.ENABLE_EMBEDS = args[0] ? Boolean(args[0]) : !client.ENABLE_EMBEDS;
-			return 'Embedding is now ' + (client.ENABLE_EMBEDS ? 'enabled' : 'disabled');
+			client._enableEmbedding = typeof args[0] !== 'undefined' ? Boolean(args[0]) : !client._enableEmbedding;
+			return 'Embedding is now ' + (client._enableEmbedding ? 'enabled' : 'disabled');
+		}
+	},
+	'tts': {
+		aliases: ['text-to-speech','texttospeech','text2speech','t2s'],
+		category: 'Admin',
+		info: 'Toggles the use of text-to-speech in messages.',
+		parameters: ['[boolean]'],
+		permissions: {
+			type: 'private'
+		},
+		fn({client, args}) {
+			client._textToSpeech = typeof args[0] !== 'undefined' ? Boolean(args[0]) : !client._textToSpeech;
+			return 'Text-to-speech is now ' + (client._textToSpeech ? 'enabled' : 'disabled');
+		}
+	},
+	'typing': {
+		category: 'Admin',
+		info: 'Toggles typing simulation before each message.',
+		parameters: ['[boolean]'],
+		permissions: {
+			type: 'private'
+		},
+		fn({client, args}) {
+			client._simulateTyping = typeof args[0] !== 'undefined' ? Boolean(args[0]) : !client._simulateTyping;
+			return 'Typing simulation is now ' + (client._simulateTyping ? 'enabled' : 'disabled');
+		}
+	},
+	'memdump': {
+		aliases: ['snapshot'],
+		category: 'Admin',
+		title: 'Memory Snapshot',
+		info: 'Takes a snapshot of the internal client data.',
+		permissions: {
+			type: 'private'
+		},
+		suppress: true,
+		fn({client}) {
+			client.snapshot('debug');
+			return 'Snapshot of memory saved.';
+		}
+	},
+	'backup': {
+		category: 'Admin',
+		title: 'Database Backup',
+		info: 'Creates a backup of the database.',
+		permissions: {
+			type: 'private'
+		},
+		suppress: true,
+		fn({client}) {
+			client.database.backup();
+			return 'Database backup saved.';
 		}
 	}
 };

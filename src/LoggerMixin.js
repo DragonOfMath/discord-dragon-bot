@@ -2,7 +2,8 @@ const PIPE = '|';
 const CODE = {
 	Info: 'info',
 	Warn: 'warn',
-	Error: 'error'
+	Error: 'error',
+	Notice: 'notice'
 };
 const FONT = {
 	Reset:      "\x1b[0m",
@@ -78,6 +79,10 @@ const LoggerMixin = (Base) => class LoggerBase extends Base {
 	}
 	error(...x) {
 		if (this._level > LEVELS.Limited) console.error(FOREGROUND.Red + this.constructor.name, PIPE, CODE.Error, PIPE + this._indent, ...x, FONT.Reset);
+		return x[0];
+	}
+	notice(...x) {
+		if (this._level > LEVELS.Limited) console.log(FOREGROUND.Cyan + this.constructor.name, PIPE. CODE.Notice, PIPE + this._index, ...x, FONT.Reset);
 		return x[0];
 	}
 	red(...x) {

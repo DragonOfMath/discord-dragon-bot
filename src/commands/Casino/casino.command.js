@@ -120,39 +120,34 @@ module.exports = {
 			var gamble = new Gamble(args[0], user.credits);
 			var slots  = new SlotMachine(gamble.bet);
 			
-			var messageID, spinIdx = 0;
+			var messageID, spinIdx = 0, message = md.mention(userID);
 			function spin() {
-				if (spinIdx < 3) {
-					return client.wait(1500)
-					.then(() => {
-						slots.spin(spinIdx);
-						slots.columns[spinIdx++].hidden = false;
-						return client.editMessage({
-							channelID,
-							messageID,
-							embed: slots.toEmbed()
-						}).then(spin);
-					});
-				} else {
-					var multiplier = slots.calculateMultiplier();
-					var reward = slots.bet * multiplier;
-					var cost = slots.bet;
-					if (reward) {
-						Bank.modify(client, userID, user => {
-							user.changeCredits(reward - cost);
-						});
+				if (spinIdx < 3) return client.wait(1500)
+				.then(() => {
+					slots.spin(spinIdx);
+					slots.columns[spinIdx++].hidden = false;
+					if (spinIdx == 3) {
+						var multiplier = slots.calculateMultiplier();
+						var reward = slots.bet * multiplier;
+						var cost = slots.bet;
+						if (reward || cost) {
+							Bank.modify(client, userID, user => {
+								user.changeCredits(reward - cost);
+							});
+						}
+						if (reward > cost) {
+							message += ' Reward: `' + slots.bet + ' * ' + multiplier + '` = ' + Bank.formatCredits(reward);
+						} else if (reward < cost) {
+							message += ' Loss: ' + Bank.formatCredits(-cost);
+						} else {
+							message += ' No payout.';
+						}
 					}
-					if (reward > cost) {
-						return md.mention(userID) + ' Reward: `' + slots.bet + ' * ' + multiplier + '` = ' + Bank.formatCredits(reward);
-					} else if (reward < cost) {
-						return md.mention(userID) + ' Loss: ' + Bank.formatCredits(-cost);
-					} else {
-						return md.mention(userID) + ' No payout.';
-					}
-				}
+					return client.edit(channelID, messageID, message, slots.toEmbed()).then(spin);
+				});
 			}
-			return client.send(channelID, slots.toEmbed())
-			.then(message => {messageID = message.id}).then(spin);
+			return client.send(channelID, message, slots.toEmbed())
+			.then(m => {messageID = m.id}).then(spin);
 		},
 		subcommands: {
 			'table': {

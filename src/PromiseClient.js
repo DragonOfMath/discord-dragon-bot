@@ -12,7 +12,9 @@ const MY_NAME = new RegExp(__dirname.split('\\').slice(1,3).join('\\\\'), 'gi');
 class PromiseClient extends Discord.Client {
 	constructor(token, autorun = false) {
 		super({token,autorun});
-		this.ENABLE_EMBEDS = true;
+		this._enableEmbedding = true;
+		this._textToSpeech    = false;
+		this._simulateTyping  = false;
 	}
 	
 	/* Utility methods */
@@ -78,15 +80,42 @@ class PromiseClient extends Discord.Client {
 		// remove my name if it EVER shows up
 		payload.replaceAll(MY_NAME, 'X');
 		
-		if (!this.ENABLE_EMBEDS) {
+		if (!this._enableEmbedding) {
 			payload.message = payload.toString();
 			delete payload.embed;
 		}
 		
+		if (this._textToSpeech) {
+			payload.tts = true;
+		}
+		
+		if (this._simulateTyping) {
+			payload.typing = true;
+		}
+	
 		// check that the data is of acceptable size
 		if (payload.checkPayloadLength()) {
 			payload.to = channelID;
 			return this.sendMessage(payload);
+		}
+	}
+	edit(channelID, messageID, message, embed) {
+		var payload = new DiscordEmbed(message, embed);
+		if (!payload.message && !payload.embed) {
+			return this.delete(channelID, messageID);
+		}
+		
+		payload.replaceAll(MY_NAME, 'X');
+		
+		if (!this._enableEmbedding) {
+			payload.message = payload.toString();
+			delete payload.embed;
+		}
+		
+		if (payload.checkPayloadLength()) {
+			payload.channelID = channelID;
+			payload.messageID = messageID;
+			return this.editMessage(payload);
 		}
 	}
 	upload(to, file, filename, message) {
@@ -101,6 +130,15 @@ class PromiseClient extends Discord.Client {
 		}
 		
 		return this.uploadFile({to, file, filename, message});
+	}
+	type(channelID, time = 0) {
+		return this.await('simulateTyping', channelID)
+		.then(() => {
+			if (time > 0) {
+				return this.wait(Math.min(time, 5000))
+				.then(() => this.type(channelID, time - 5000));
+			}
+		});
 	}
 	get(channelID, messageID) {
 		return this.getMessage({channelID, messageID});
@@ -146,7 +184,7 @@ const DCP = Discord.Client.prototype;
 	'pinMessage',
 	'getPinnedMessages',
 	'deletePinnedMessage',
-	'simulateTyping',
+//	'simulateTyping',
 	'addReaction',
 	'getReaction',
 	'removeReaction',

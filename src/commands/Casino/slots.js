@@ -135,7 +135,7 @@ class SlotMachine {
 	}
 	toEmbed() {
 		return {
-			title: 'Slot Machine :slot_machine: - Bet = ' + this.bet,
+			title: 'Slot Machine :slot_machine:' + (this.bet ? ' - Bet = ' + this.bet : ''),
 			description: this.toString()
 		};
 	}

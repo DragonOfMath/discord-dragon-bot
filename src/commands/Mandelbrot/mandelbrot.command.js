@@ -37,7 +37,7 @@ module.exports = {
 			mandelbrot.width  = width  ? Math.max(100, Math.min(width,  2000)) : 600;
 			mandelbrot.height = height ? Math.max(100, Math.min(height, 2000)) : 600;
 			
-			return client.simulateTyping(channelID)
+			return client.type(channelID)
 			.then(() => {
 				// mandelbrot -> style -> image
 				var start = Date.now();

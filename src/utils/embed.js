@@ -1,5 +1,6 @@
 class DiscordEmbed {
 	constructor(message = '', embed) {
+		this.message = '';
 		if (typeof (message) === 'object') {
 			[message, embed] = [embed, message];
 		}

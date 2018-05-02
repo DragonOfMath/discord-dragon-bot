@@ -15,6 +15,9 @@ class Context {
 		
 		this.userID    = userID;
 		this.user      = client.users[userID];
+		if (!this.user) {
+			throw new TypeError(`Undefined user ID: ${userID}`);
+		}
 		
 		var DMchannel  = client.directMessages[channelID];
 		
@@ -22,6 +25,9 @@ class Context {
 		
 		this.channelID = channelID;
 		this.channel   = this.isDM ? DMchannel : client.channels[channelID];
+		if (!this.channel) {
+			throw new TypeError(`Undefined channel ID: ${channelID}`);
+		}
 		
 		this.serverID  = this.isDM ? null : this.channel.guild_id;
 		this.server    = this.isDM ? null : client.servers[this.serverID];

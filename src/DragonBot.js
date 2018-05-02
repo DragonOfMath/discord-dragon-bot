@@ -201,18 +201,24 @@ class DragonBot extends DebugClient {
 		if (userID == this.id) {
 			return;
 		}
-		// bot shouldn't respond to anyone but the owner if set to ignore
-		if (this._ignoreUsers && userID != this.ownerID) {
+		// bot shouldn't handle automated messages
+		if (WSMessage.d.webhook_id || WSMessage.d.application) {
 			return;
 		}
+		
 		// a mention at the start of the message will help prevent other bots from using the same message
 		var mention = md.mention(this.id);
 		if (message.startsWith(mention)) {
 			message = message.substring(mention.length).trim();
 		}
 		
-		this.run(new Context(this, userID, channelID, message, WSMessage), CommandParser.parse(message))
-		.catch(e => this.error(e));
+		try {
+			var context = new Context(this, userID, channelID, message, WSMessage);
+			var input = CommandParser.parse(message);
+			this.run(context, input).catch(e => this.error(e));
+		} catch (e) {
+			this.error(e);
+		}
 	}
 	/**
 		Run input with the given Context
@@ -222,12 +228,18 @@ class DragonBot extends DebugClient {
 	*/
 	run(context, input) {
 		try {
-			this.log(input.text || '<empty>',
-				'\n\tUser:   ',md.atUser(context.user),
-				'\n\tChannel:',md.atChannel(context.channel),
-				'\n\tServer: ',context.server.name);
-			var handler = new Handler(context, input);
+			this.log(`${context.server.name} > ${md.atChannel(context.channel)} > ${md.atUser(context.user)}: ${input.text||'<empty>'}`);
 			
+			// bot shouldn't respond to anyone but the owner if set to ignore them
+			if (this._ignoreUsers && !context.user.bot && context.userID != this.ownerID) {
+				return Promise.resolve(0);
+			}
+			// bot shouldn't respond to other bots if set to ignore them
+			if (this._ignoreBots && context.user.bot) {
+				return Promise.resolve(0);
+			}
+			
+			var handler = new Handler(context, input);
 			// create a copy of the args array with normalized values
 			handler.args = input.args.map(a => this.normalize(a,context));
 			handler.arg  = handler.args.map(String).join(' ');
@@ -249,7 +261,7 @@ class DragonBot extends DebugClient {
 				}
 				
 				handler.response.message = this.normalize(handler.response.message, handler.context);
-				this.log('Response:',handler.response);
+				this.log(handler.response);
 				
 				return (handler.response.file ?
 					this.upload(handler.channelID, handler.response.file, handler.response.filename, handler.response.message) :
@@ -270,9 +282,7 @@ class DragonBot extends DebugClient {
 				return this.send(handler.channelID, '<:fuck:351198367835095040> Oopsie woopsie! UwU we made a fucky wucky! A wittle fucko boingo!\n' + md.codeblock(e.toString()));
 			})
 			// if this command is part of a metacommand, add a delay to prevent rate-limiting
-			.then(() => {
-				return this.wait(Constants.DragonBot.RATE_LIMIT_DELAY);
-			})
+			.then(() => this.wait(Constants.DragonBot.RATE_LIMIT_DELAY))
 			.then(() => handler);
 		} catch (e) {
 			return Promise.reject(e);

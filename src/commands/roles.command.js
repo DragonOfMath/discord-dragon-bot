@@ -1,20 +1,30 @@
 const Resource = require('../Resource');
-const {Markdown:md,strcmp} = require('../Utils');
+const DiscordUtils = require('../DiscordUtils');
+const {Markdown:md} = require('../Utils');
 
-function resolveRoles(roles, server) {
-	roles = roles.map(a => {
-		var id = md.roleID(a) || findRoleID(server, a) || a;
-		var name = server.roles[id] && server.roles[id].name;
-		return {id,name};
-	});
-	var invalid = roles.filter(r => !r.name);
-	if (invalid.length > 0) {
-		throw 'Invalid Roles: ' + invalid.map(ir => md.code(ir.id)).join(', ');
+/**
+	Resolves the roles to their respective Role objects
+	@arg {Array} roleArgs - the IDs, role mentions, or names of the roles to resolve
+*/
+function resolveRoles(roleArgs, server) {
+	var validRoles = [];
+	var invalidRoles = [];
+	for (var id of roleArgs) {
+		id = md.roleID(id) || id;
+		var role = findRole(server, id);
+		if (role) {
+			validRoles.push(role);
+		} else {
+			invalidRoles.push(id);
+		}
 	}
-	return roles;
+	if (invalidRoles.length > 0) {
+		throw 'Invalid Roles: ' + invalidRoles.map(md.code).join(', ');
+	}
+	return validRoles;
 }
-function findRoleID(server, roleName) {
-	return Object.keys(server.roles).find(rid => strcmp(server.roles[rid].name, roleName));
+function findRole(server, id) {
+	var role = id in server.roles ? server.roles[id] : DiscordUtils.getRoleByName(server, id);
 }
 function listRoles(roleList) {
 	if (roleList.length) {
@@ -148,7 +158,7 @@ module.exports = {
 							return finish();
 						}
 						var [name,color] = role.split(':');
-						if (findRoleID(server,name)) {
+						if (findRole(server,name)) {
 							rec(name, 'Already exists.');
 							return makeRole();
 						}
@@ -193,14 +203,14 @@ module.exports = {
 				parameters: ['oldname','newname'],
 				permissions: {},
 				fn({client, server, serverID, args}) {
-					var roleID = findRoleID(server, args[0]);
-					if (!roleID) {
+					var role = findRole(server, args[0]);
+					if (!role) {
 						throw 'Invalid role ID.';
 					}
-					var oldName = server.roles[roleID].name;
+					var oldName = role.name;
 					var newName = args[1];
 					return client.editRole({
-						roleID,
+						roleID: role.id,
 						serverID,
 						name: newName
 					})
@@ -217,15 +227,15 @@ module.exports = {
 				parameters: ['role','color'],
 				permissions: {},
 				fn({client, server, serverID, args}) {
-					var roleID = findRoleID(server, args[0]);
-					if (!roleID) {
+					var role = findRole(server, args[0]);
+					if (!role) {
 						throw 'Invalid role ID.';
 					}
-					var roleName = server.roles[roleID].name;
-					var oldColor = server.roles[roleID].color;
+					var roleName = role.name;
+					var oldColor = role.color;
 					var newColor = args[1];
 					return client.editRole({
-						roleID,
+						roleID: role.id,
 						serverID,
 						color: newColor
 					})
@@ -283,7 +293,7 @@ module.exports = {
 				fn({client, server}) {
 					var roles = client.database.get('roles').filter((id,role) => {
 						var r = new Role(role);
-						return !!server.roles[id] && r.assign;
+						return id in server.roles && r.assign;
 					});
 					if (roles.length) {
 						return 'The following roles are self-assignable:\n' + roles.map(id => md.bold(server.roles[id].name)).join('\n');

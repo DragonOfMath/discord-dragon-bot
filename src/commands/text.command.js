@@ -1,4 +1,4 @@
-const {Markdown:md} = require('../Utils');
+const {Markdown:md,random} = require('../Utils');
 
 /*
 	Zalgorithm from https://github.com/Marak/zalgo.js/blob/master/zalgo.js
@@ -38,14 +38,11 @@ const SOUL = {
 		'̨','̴','̵','̶',
 		'͜','͝','͞',
 		'͟','͠','͢','̸',
-		'̷','͡',' ҉'
+		'̷','͡','҉'
     ]
 };
 const ALL = [].concat(SOUL.UP, SOUL.DOWN, SOUL.MID);
 
-function r(range) {
-  return Math.floor(Math.random()*range);
-}
 
 function zalgo(text, size = 'maxi') {
 	let result = '';
@@ -57,34 +54,34 @@ function zalgo(text, size = 'maxi') {
 		
 		switch(size) {
 			case 'mini':
-				counts.UP   = r(8);
-				counts.MID  = r(2);
-				counts.DOWN = r(8);
+				counts.UP   = random(8);
+				counts.MID  = random(2);
+				counts.DOWN = random(8);
 				break;
 			case 'maxi':
-				counts.UP   = r(16) + 3;
-				counts.MID  = r(4)  + 1;
-				counts.DOWN = r(64) + 3;
+				counts.UP   = random(16) + 3;
+				counts.MID  = random(4)  + 1;
+				counts.DOWN = random(64) + 3;
 				break;
 			case 'up':
-				counts.UP = r(64);
+				counts.UP = random(64);
 				break;
 			case 'down':
-				counts.DOWN = r(64);
+				counts.DOWN = random(64);
 				break;
 			case 'mid':
-				counts.MID = r(16);
+				counts.MID = random(16);
 				break;
 			default:
-				counts.UP   = r(8) + 1;
-				counts.MID  = r(6) / 2;
-				counts.DOWN = r(8) + 1;
+				counts.UP   = random(8) + 1;
+				counts.MID  = random(6) / 2;
+				counts.DOWN = random(8) + 1;
 				break;
 		}
 		
 		for (let dir in SOUL) {
 			while (counts[dir]--) {
-				result += SOUL[dir][r(SOUL[dir].length)];
+				result += random(SOUL[dir]);
 			}
 		}
 	}
@@ -141,7 +138,7 @@ function owoify(x) {
 		return replaceWith(s, 'f');
 	})
 	.replace(/n([aeiou])/g, 'ny$1').replace(/N([aeiou])/g, 'Ny$1').replace(/N([AEIOU])/g, 'NY$1')
-	 + ' ' + OwO[r(OwO.length)];
+	 + ' ' + random(OwO);
 }
 
 module.exports = {
@@ -217,9 +214,9 @@ module.exports = {
 		fn({client, arg}) {
 			return arg.split('').map(c => {
 				if (c == '!') {
-					return r(2) ? '1' : c;
+					return random('1', c);
 				} else {
-					return r(2) ? c.toUpperCase() : c.toLowerCase();
+					return random(c.toUpperCase(), c.toLowerCase());
 				}
 			}).join('');
 		}
