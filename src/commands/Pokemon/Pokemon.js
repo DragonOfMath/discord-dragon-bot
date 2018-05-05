@@ -89,10 +89,10 @@ class Pokemon extends Resource {
 		var base = 0;
 		switch (this.rarity) {
 			case 'legendary':
-				base = 100000;
+				base = 50000;
 				break;
 			case 'mythical':
-				base = 50000;
+				base = 25000;
 				break;
 			case 'rare':
 				base = 10000;
@@ -107,7 +107,7 @@ class Pokemon extends Resource {
 		return base;
 	}
 	get value() {
-		var mult = 1 + Math.log10(this.lvl);
+		var mult = 1 + this.lvl/10;
 		return Math.floor(this.baseValue * mult);
 	}
 	displayInfo() {

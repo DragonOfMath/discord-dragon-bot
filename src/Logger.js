@@ -81,7 +81,7 @@ class Logger {
 		return x[0];
 	}
 	notice(...x) {
-		if (this._level > LEVELS.Limited) console.log(FOREGROUND.Cyan + this.name, PIPE. CODE.Notice, PIPE + this._index, ...x, FONT.Reset);
+		if (this._level > LEVELS.Limited) console.log(FOREGROUND.Cyan + this.name, PIPE, CODE.Notice, PIPE + this._indent, ...x, FONT.Reset);
 		return x[0];
 	}
 	red(...x) {

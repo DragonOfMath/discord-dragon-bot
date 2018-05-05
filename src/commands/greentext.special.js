@@ -29,8 +29,8 @@ module.exports = {
 		users: ['172002275412279296'] // tatsu
 	},
 	resolver({message}) {
-		var gt = this.data.message = message.replace(/<.*>/gm, '').replace(/\s{2,}/g,'\n').match(/>*[^<>\n]+/g);
-		if (gt && gt.some(ln => ln.startsWith('>') && ln[1] != '>')) {
+		var gt = this.data.message = message.replace(/<.*>/gm, '').replace(/\s{2,}/g,'\n').match(/^>{1,3}\w[^<>\n]+/gm);
+		if (gt && gt.some(ln => ln.startsWith('>'))) {
 			return 'greentext';
 		}
 	},

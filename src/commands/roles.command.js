@@ -10,7 +10,6 @@ function resolveRoles(roleArgs, server) {
 	var validRoles = [];
 	var invalidRoles = [];
 	for (var id of roleArgs) {
-		id = md.roleID(id) || id;
 		var role = findRole(server, id);
 		if (role) {
 			validRoles.push(role);
@@ -24,7 +23,8 @@ function resolveRoles(roleArgs, server) {
 	return validRoles;
 }
 function findRole(server, id) {
-	var role = id in server.roles ? server.roles[id] : DiscordUtils.getRoleByName(server, id);
+	id = md.roleID(id) || id;
+	return (id in server.roles) ? server.roles[id] : DiscordUtils.getRoleByName(server, id);
 }
 function listRoles(roleList) {
 	if (roleList.length) {

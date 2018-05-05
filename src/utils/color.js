@@ -1,5 +1,5 @@
 class Color {
-	constructor(r,g,b) {
+	constructor(r,g,b,a) {
 		if (arguments.length == 1) {
 			if (typeof(r) === 'number') {
 				this.val = r;
@@ -7,11 +7,13 @@ class Color {
 				this.red   = r.r;
 				this.green = r.g;
 				this.blue  = r.b;
+				this.alpha = r.a === undefined ? 255 : r.a;
 			}
 		} else {
 			this.red   = r;
 			this.green = g;
 			this.blue  = b;
+			this.alpha = a === undefined ? 255 : a;
 		}
 	}
 	static get RED() {
@@ -47,11 +49,20 @@ class Color {
 	set blue(x) {
 		this.b = Color.truncate(x);
 	}
+	get alpha() {
+		return this.a;
+	}
+	set alpha(x) {
+		this.a = Color.truncate(x);
+	}
 	get rgba() {
-		return (this.val << 8) | 0xFF;
+		return (this.val << 8) | this.a;
+	}
+	get argb() {
+		return (this.a << 24) | this.val;
 	}
 	get val() {
-		return (this.r * 0x10000) + (this.g * 0x100) + this.b;
+		return (this.r << 16) | (this.g << 8) | this.b;
 	}
 	set val(x) {
 		this.red   = Math.floor(x/0x10000);
@@ -74,21 +85,21 @@ class Color {
 		return 0;
 	}
 	add(c) {
-		return new Color(this.r + c.r,this.g + c.g,this.b + c.b);
+		return new Color(this.r + c.r, this.g + c.g, this.b + c.b, this.a);
 	}
 	subtract(c) {
-		return new Color(this.r - c.r,this.g - c.g,this.b - c.b);
+		return new Color(this.r - c.r, this.g - c.g, this.b - c.b, this.a);
 	}
 	scale(c) {
-		return new Color(this.r * c,this.g * c,this.b * c);
+		return new Color(this.r * c, this.g * c, this.b * c, this.a);
 	}
 	scaleWrap(c) {
-		return new Color((this.r * c) % 0x100, (this.g * c) % 0x100, (this.b * c) % 0x100);
+		return new Color((this.r * c) % 0x100, (this.g * c) % 0x100, (this.b * c) % 0x100, this.a);
 	}
 	average() {
 		let colors = [...arguments];
 		let num = colors.length + 1;
-		let avgColor = new Color(this.r,this.g,this.b);
+		let avgColor = this.clone();
 		for (let c of colors) {
 			avgColor.r += c.r;
 			avgColor.g += c.g;
@@ -102,13 +113,17 @@ class Color {
 	interpolate(c,w) {
 		return new Color(this.r + w * (c.r - this.r),
 		                 this.g + w * (c.g - this.g),
-						 this.b + w * (c.b - this.b));
+						 this.b + w * (c.b - this.b),
+						 this.a);
 	}
 	reset() {
 		this.r = this.g = this.b = 0;
 	}
 	toString() {
 		return `R=${this.r},G=${this.g},B=${this.b}`;
+	}
+	clone() {
+		return new Color(this);
 	}
 }
 

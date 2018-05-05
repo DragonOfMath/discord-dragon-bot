@@ -1,5 +1,5 @@
 const Constants = require('./Constants');
-const {embedMessage,hasContent} = require('./DiscordUtils');
+const DiscordUtils = require('./DiscordUtils');
 const {Markdown:md,Format:fmt} = require('./Utils');
 
 function modlog(modID, userID, type, description) {
@@ -43,10 +43,6 @@ function validateTargetUser(client, server, userID, modID) {
 	}
 	return userID;
 }
-function fetchMessages(client, channelID, limit, before, after) {
-	limit = Math.min(Math.max(1, limit), 100);
-	return client.getMessages({channelID, limit, before, after});
-}
 function filterMessages(client, messages, flags) {
 	var blacklist = {
 		cmds:   flags.includes('-cmds')   || flags.includes('-c'),
@@ -69,7 +65,7 @@ function filterMessages(client, messages, flags) {
 		if (m.author.id == client.id && blacklist.bot && !whitelist.bot) {
 			return false;
 		}
-		if (hasContent(m)) {
+		if (DiscordUtils.hasContent(m)) {
 			if (blacklist.media && !whitelist.media) {
 				return false;
 			}
@@ -117,26 +113,25 @@ class Moderation {
 			throw 'No archive channel set.';
 		}
 		var lastMessageID = client.channels[channelID].last_message_id;
-		return fetchMessages(client, channelID, count, lastMessageID)
-		.then(messages => {
-			if (messages.length) {
-				return filterMessages(client, messages, flags);
-			} else {
-				throw 'No messages found.';
-			}
+		return client.getMessages({
+			channelID,
+			limit: count,
+			before: lastMessageID
 		})
+		.then(messages => filterMessages(client, messages, flags))
 		.then(messages => {
-			console.log(`Archiving ${messages.length} messages in ${channelID}...`);
+			if (!messages.length) return;
+			client.notice(`Archiving ${messages.length} messages in ${channelID}...`);
 			function loop() {
-				var message = messages.pop();
-				return client.send(archiveID,`From ${md.channel(channelID)}:`,embedMessage(message))
-				.then(() => client.delete(channelID, message.id))
-				.delay(1000)
+				var message = messages.pop(); // messages are in chronological order from newest to oldest
+				return client.send(archiveID,`From ${md.channel(channelID)}:`,DiscordUtils.embedMessage(message))
+				.then(() => client.deleteMessage({channelID, messageID: message.id}))
+				.delay(3000)
 				.then(() => {
 					if (messages.length > 0) {
 						return loop();
 					} else {
-						return console.log('Archiving done.');
+						return client.notice('Archiving done.');
 					}
 				});
 			}
@@ -144,47 +139,20 @@ class Moderation {
 		})
 		.then(() => `${fmt.plural(count,'message')} archived in ${md.channel(archiveID)}.`);
 	}
-	static cleanup(client, channelID, count, flags) {
-		var beforeMessageID = null;
-		function loop() {
-			return fetchMessages(client, channelID, count, beforeMessageID)
-			// filter messages by user-specified flags and count down from the number of messages
-			.then(messages => {
-				if (messages.length) {
-					count -= messages.length;
-					beforeMessageID = messages[messages.length-1].id;
-					return filterMessages(client, messages, flags);
-				} else {
-					throw 'No messages found.';
-				}
-			})
-			// delete remaining messages
-			.then(messages => {
-				var messageIDs = messages.map(m => m.id);
-				if (messageIDs.length) {
-					console.log(`Deleting ${messageIDs.length} messages in ${channelID}...`);
-					if (messages.length > 1) {
-						return client.deleteMessages({channelID, messageIDs});
-					} else {
-						return client.deleteMessage({channelID, messageID: messageIDs[0]});
-					}
-				} else {
-					console.error('No messages to delete.');
-				}
-			})
-			// prevent rate-limiting
-			.delay(3000)
-			// retrieve more messages until done
-			.then(() => {
-				if (count > 0) {
-					return loop();
-				} else {
-					return console.log('Cleanup done.');
-				}
-			});
-		}
-		
-		return loop();
+	static cleanup(client, channelID, limit, flags) {
+		// retrieve all messages
+		return client.getMessages({
+			channelID,
+			limit
+		})
+		// filter messages by user-specified flags and count down from the number of messages
+		.then(messages => filterMessages(client, messages, flags))
+		// delete messages
+		.then(messages => {
+			if (!messages.length) return;
+			client.notice(`Deleting ${messages.length} messages in ${channelID}...`);
+			return client.deleteMessages({channelID, messageIDs: messages});
+		});
 	}
 	static getModlogChannel(client, serverID) {
 		return this.get(client, serverID).modlogID;

@@ -36,6 +36,122 @@ function isImage(url) {
 	return /^http.+\.(jpg|jpeg|png)$/.test(url);
 }
 
+const PI = Math.PI;
+const TAU = 2 * PI;
+
+function radToDeg(r) {
+	return r * 180 / PI;
+}
+function degToRad(d) {
+	return d * PI / 180;
+}
+function resolvePercent(num, scale) {
+	if (String(num).endsWith('%')) {
+		num = Number(num.match(/\d+/));
+		num = Math.max(0, Math.min(num, 100));
+		num /= 100;
+		num *= scale;
+	}
+	return num;
+}
+function resolvePos(image, x, y, defaultX, defaultY) {
+	if (typeof(x) !== 'undefined') {
+		x = resolvePercent(x, image.bitmap.width);
+	} else {
+		x = defaultX;
+	}
+	if (typeof(y) !== 'undefined') {
+		y = resolvePercent(y, image.bitmap.height);
+	} else {
+		y = defaultY;
+	}
+	return {x,y};
+}
+function applyTransform(image, F) {
+	var w = image.bitmap.width;
+	var h = image.bitmap.height;
+	var d = Math.hypot(w,h); // diagonal
+	var clone = image.clone();
+	return clone.scan(0, 0, w, h, (x,y,i) => {
+		// transform x and y
+		var {x:tx,y:ty} = F(x,y);
+		// use the color at the new pixel
+		var hex = image.getPixelColor(tx|0, ty|0);
+		clone.setPixelColor(hex, x, y);
+	});
+}
+function applyDifferential(image, diff) {
+	var w = image.bitmap.width;
+	var h = image.bitmap.height;
+	var d = Math.hypot(w,h); // diagonal
+	var clone = image.clone();
+	return clone.scan(0, 0, w, h, (x,y,i) => {
+		// get the base pixel components
+		var hex = image.getPixelColor(x, y);
+		var color = Jimp.intToRGBA(hex), color2;
+		
+		// get the differential at the x and y
+		var {dx,dy} = diff(x,y);
+		
+		// find its scalar value
+		var dist = Math.hypot(dx, dy);
+		if (isFinite(dist)) {
+			// normalize the stepping values
+			dx /= dist;
+			dy /= dist;
+			
+			// calculate the starting point and the line length
+			var count = 1, step = 0, max = Math.min(dist, d);
+			
+			// start at one end of the slope line
+			var tx = x - dx * max / 2;
+			var ty = y - dy * max / 2;
+			
+			for (; step < max; ++step) {
+				if (tx < 0 || tx > w || ty < 0 || ty > h) {
+					// skip out of bounds
+				} else {
+					hex    = image.getPixelColor(tx|0, ty|0);
+					color2 = Jimp.intToRGBA(hex);
+					color.r += color2.r;
+					color.g += color2.g;
+					color.b += color2.b;
+					count++;
+				}
+				tx += dx;
+				ty += dy;
+			}
+			
+			color.r /= count;
+			color.g /= count;
+			color.b /= count;
+			
+			// set the clone's pixel color to the average of the colors traversed
+			hex = Jimp.rgbaToInt(color.r|0, color.g|0, color.b|0, color.a);
+			clone.setPixelColor(hex, x, y);
+		}
+	});
+}
+function iterate(x,y,p,limit) {
+	with (Math) {
+		var nx = x, ny = y, i = 0, r, t;
+		while (i < limit) {
+			// https://en.wikipedia.org/wiki/De_Moivre%27s_formula
+			r = nx * nx + ny * ny;
+			//if (r > 4) break;
+			r = exp(log(r) * p / 2);
+			t = atan2(ny,nx);
+			nx = r * cos(t * p) + x;
+			ny = r * sin(t * p) + y;
+			i++;
+		}
+		return {x: nx, y: ny};
+	}
+}
+function modulo(x,n) {
+	return ((x % n) + n) % n;
+}
+
 module.exports = {
 	'image': {
 		aliases: ['img', 'picture', 'pic'],
@@ -258,45 +374,174 @@ module.exports = {
 						return image.blur(value);
 					});
 				}
+			},
+			'motionblur': {
+				aliases: ['motion'],
+				info: 'Apply motion blur to an image.',
+				parameters: ['[imageURL]', '[strength]', '[direction]'],
+				fn({client, channelID, args}) {
+					return processImage(client, channelID, args, 'motionblur.jpg', function (image, strength, direction = random(360)) {
+						var w = image.bitmap.width;
+						var h = image.bitmap.height;
+						var min = Math.min(w,h);
+						var max = Math.max(w,h);
+						direction = degToRad(direction);
+						strength = strength === undefined ? random(min) : resolvePercent(strength, min);
+						var dx = strength * Math.cos(direction);
+						var dy = strength * Math.sin(direction);
+						return applyDifferential(image, (x,y) => {
+							return {dx,dy};
+						});
+					});
+				}
+			},
+			'circleblur': {
+				aliases: ['circle', 'spin'],
+				info: 'Apply rotational blur with the specified strength to an image.',
+				parameters: ['[imageURL]', '[strength]', '[xpos]', '[ypos]'],
+				fn({client, channelID, args}) {
+					return processImage(client, channelID, args, 'circleblur.jpg', function (image, strength, xpos, ypos) {
+						var w = image.bitmap.width;
+						var h = image.bitmap.height;
+						var min = Math.min(w,h);
+						var max = Math.max(w,h);
+						var {x:ox,y:oy} = resolvePos(image, xpos, ypos, Math.floor(w / 2), Math.floor(h / 2));
+						strength = strength === undefined ? random(min * PI / 4) : resolvePercent(strength, min * PI / 4);
+						return applyDifferential(image, (x,y) => {
+							return {
+								dx: strength * (oy - y) / h,
+								dy: strength * (x - ox) / w
+							};
+						});
+					});
+				}
+			},
+			'radialblur': {
+				aliases: ['intensify','intensifies'],
+				info: 'Apply radial blur with the specified center and strength to an image. Makes for a neat [intensifies] effect.',
+				parameters: ['[imageURL]', '[strength]', '[xpos]', '[ypos]'],
+				fn({client, channelID, args}) {
+					return processImage(client, channelID, args, 'radialblur.jpg', function (image, strength, xpos, ypos) {
+						var w = image.bitmap.width;
+						var h = image.bitmap.height;
+						var min = Math.min(w,h);
+						var max = Math.max(w,h);
+						var {x:ox,y:oy} = resolvePos(image, xpos, ypos, Math.floor(w / 2), Math.floor(h / 2));
+						strength = strength === undefined ? random(min) : resolvePercent(strength, min);
+						return applyDifferential(image, (x,y) => {
+							return {
+								dx: strength * (x - ox) / w,
+								dy: strength * (y - oy) / h
+							};
+						});
+					});
+				}
+			},
+			'bulge': {
+				aliases: ['fisheye','eyefish','bubble'],
+				info: 'Add a bulge at the specified center and strength to an image.',
+				parameters: ['[imageURL]', '[strength]', '[xpos]', '[ypos]'],
+				fn({client, channelID, args}) {
+					return processImage(client, channelID, args, 'bulge.jpg', function (image, strength, xpos, ypos) {
+						var w = image.bitmap.width;
+						var h = image.bitmap.height;
+						var min = Math.min(w,h);
+						var max = Math.max(w,h);
+						var {x:ox,y:oy} = resolvePos(image, xpos, ypos, Math.floor(w / 2), Math.floor(h / 2));
+						strength = strength === undefined ? random(min) : resolvePercent(strength, min);
+						return applyTransform(image, (x,y) => {
+							var dx = ox - x;
+							var dy = oy - y;
+							var dd = Math.hypot(dx, dy);
+							dd = Math.exp(-(dd*dd)/strength);
+							dx *= dd;
+							dy *= dd;
+							x += dx;
+							y += dy;
+							return {x,y};
+						});
+					});
+				}
+			},
+			'swirl': {
+				aliases: ['twist'],
+				info: 'Swirl an image with the specified strength, rotation, and radius.',
+				parameters: ['[imageURL]', '[strength]'],
+				fn({client, channelID, args}) {
+					return processImage(client, channelID, args, 'swirl.jpg', function (image, strength) {
+						var w = image.bitmap.width;
+						var h = image.bitmap.height;
+						var min = Math.min(w,h);
+						var max = Math.max(w,h);
+						var ox = Math.floor(w / 2);
+						var oy = Math.floor(h / 2);
+						strength = strength === undefined ? (5 * random()) : resolvePercent(strength, 5);
+						var swirlRadius = Math.log(2) * min / 5;
+						return applyTransform(image, (x,y) => {
+							var dx = x - ox;
+							var dy = y - oy;
+							var dd = Math.hypot(dx, dy);
+							var theta = Math.atan2(dy, dx);
+							theta += strength * PI * Math.exp(-dd/swirlRadius);
+							x = ox + dd * Math.cos(theta);
+							y = oy + dd * Math.sin(theta);
+							return {x,y};
+						});
+					});
+				}
+			},
+			'complex': {
+				aliases: ['fractal','wtf'],
+				info: 'Trace the image through iterations of the complex function `f(z) = z^p + c`.',
+				parameters: ['[imageURL]', '[power]', '[iterations]'],
+				fn({client, channelID, args}) {
+					return processImage(client, channelID, args, 'complex.jpg', function (image, power, iterations) {
+						var w = image.bitmap.width;
+						var h = image.bitmap.height;
+						var min = Math.min(w,h);
+						var max = Math.max(w,h);
+						var scale = 2 / min;
+						var ox = Math.floor(w / 2);
+						var oy = Math.floor(h / 2);
+						power = power === undefined ? (5 * random()) : resolvePercent(power, 5);
+						iterations = iterations === undefined ? 3 : resolvePercent(iterations, 20);
+						iterations = Math.max(1,Math.min(iterations, 20));
+						return applyTransform(image, (x,y) => {
+							// map the pixel plane to the complex plane
+							var dx = scale * (x - ox);
+							var dy = scale * (y - oy);
+							// run the iterative function
+							var {x:fx,y:fy} = iterate(dx, dy, power, iterations);
+							// map the complex plane back to the pixel plane and wrap
+							x = modulo(ox + fx / scale, w);
+							y = modulo(oy + fy / scale, h);
+							return {x,y};
+						});
+					});
+				}
 			}
 		}
 	}
 };
 
 const todo = {
-	'motionblur': {
-		info: 'Apply motion blur to an image.',
-		parameters: ['[imageURL]', '[direction]', '[strength]'],
+	'transform': {
+		info: 'Put an image through a transformation function.',
+		parameters: ['[imageURL]', '...function'],
 		fn({client, channelID, args}) {
-			return processImage(client, channelID, args, 'motionblur.jpg', function (image, direction = random(360), strength = random(10)) {
-				
+			return processImage(client, channelID, args, 'transform.jpg', function (image, ...fn) {
+				fn = new Function('x','y','with (Math) {return ' + fn.join(' ') + '}');
+				return applyTransform(image, fn);
 			});
 		}
 	},
-	'circleblur': {
-		info: 'Apply rotational blur with the specified strength to an image.',
-		parameters: ['[imageURL]', '[strength]'],
+	'differential': {
+		info: 'Blur an image with a differential function.',
+		parameters: ['[imageURL]', '...function'],
 		fn({client, channelID, args}) {
-			return processImage(client, channelID, args, 'circleblur.jpg', function (image, strength = random(10)) {
-				
-			});
-		}
-	},
-	'radialblur': {
-		info: 'Apply radial blur with the specified center and strength to an image.',
-		parameters: ['[imageURL]', '[xpos]', '[ypos]', '[strength]'],
-		fn({client, channelID, args}) {
-			return processImage(client, channelID, args, 'radialblur.jpg', function (image, xpos, ypos, strength = random(10)) {
-				
-			});
-		}
-	},
-	'bulge': {
-		info: 'Add a bulge at the specified center and strength to an image.',
-		parameters: ['[imageURL]', '[xpos]', '[ypos]', '[strength]'],
-		fn({client, channelID, args}) {
-			return processImage(client, channelID, args, 'bulge.jpg', function (image, xpos, ypos, strength = random(10)) {
-				
+			return processImage(client, channelID, args, 'differential.jpg', function (image, ...fn) {
+				fn = new Function('x','y','with (Math) {return ' + fn.join(' ') + '}');
+				return applyDifferential(image, fn);
 			});
 		}
 	},

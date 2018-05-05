@@ -61,6 +61,9 @@ class DiscordUtils {
 		}
 		return arr;
 	}
+	static resolve(o, ...ids) {
+		return o[ids.find(id => id in o)];
+	}
 	static getObjects(o) {
 		return o instanceof Array ? o : Object.keys(o).map(id => o[id]);
 	}
@@ -120,6 +123,9 @@ class DiscordUtils {
 	}
 	static getAllEmojis(servers) {
 		return this.getObjects(servers).map(this.getServerEmojis).reduce((a,x) => a.concat(x), []);
+	}
+	static search(objects, filter) {
+		return this.getObjects(objects).filter(filter);
 	}
 	static hasContent(m) {
 		return m.attachments.length > 0 || m.embeds.length > 0 || m.content.match(/https?:\/\//g);

@@ -50,7 +50,7 @@ class PromiseClient extends Discord.Client {
 			// intercept response errors
 			if (e.name && e.name == 'ResponseError') {
 				// https://discordapp.com/developers/docs/topics/opcodes-and-status-codes
-				console.log(e.response.message);
+				console.log(e);
 				switch (e.statusCode) {
 					case 429: // TOO MANY REQUESTS
 						// handle rate-limiting
@@ -140,27 +140,61 @@ class PromiseClient extends Discord.Client {
 			}
 		});
 	}
-	get(channelID, messageID) {
-		return this.getMessage({channelID, messageID});
-	}
-	getAll(channelID, limit = 50, before, after) {
-		return this.getMessages({channelID, limit, before, after});
-	}
-	getLast(channelID) {
-		var messageID = this.channels[channelID].last_message_id;
-		return this.get(channelID, messageID);
-	}
-	delete(channelID, messageID) {
-		return this.deleteMessage({channelID, messageID});
-	}
-	deleteAll(channelID, messageIDs) {
-		return this.deleteMessages({channelID, messageIDs});
-	}
 	addRole(serverID, userID, roleID) {
 		return this.addToRole({serverID, userID, roleID});
 	}
 	removeRole(serverID, userID, roleID) {
 		return this.removeFromRole({serverID, userID, roleID});
+	}
+	
+	getLastMessage(channelID) {
+		var messageID = this.channels[channelID].last_message_id;
+		return this.getMessage({channelID, messageID});
+	}
+	
+	/* Bulk message methods with limit workarounds */
+	getMessages({channelID, limit = 50, before, after}) {
+		var client = this;
+		var messages = [];
+		function loop() {
+			return client.await('getMessages', {
+				channelID,
+				limit: Math.max(2, Math.min(limit, 100)),
+				before,
+				after
+			})
+			.then(_messages => {
+				messages = messages.concat(_messages);
+				limit -= 100;
+				if (limit > 0) {
+					if (after) {
+						after = _messages[0].id;
+					} else {
+						before = _messages[_messages.length-1].id;
+					}
+					return client.wait(2000).then(loop);
+				} else {
+					return messages;
+				}
+			});
+		}
+		return loop();
+	}
+	deleteMessages({channelID, messageIDs: messages}) {
+		messages = messages.map(m => m.id || m);
+		if (messages.length == 1) {
+			return client.deleteMessage({channelID, messageID: messages[0]});
+		}
+		var client = this;
+		function loop() {
+			var messageIDs = messages.splice(0,100);
+			if (!messageIDs.length) {
+				return;
+			}
+			return client.await('deleteMessages', {channelID, messageIDs})
+			.delay(3000).then(loop);
+		}
+		return loop();
 	}
 }
 
@@ -177,10 +211,10 @@ const DCP = Discord.Client.prototype;
 	'uploadFile',
 	'sendMessage',
 	'getMessage',
-	'getMessages',
+//	'getMessages',
 	'editMessage',
 	'deleteMessage',
-	'deleteMessages',
+//	'deleteMessages',
 	'pinMessage',
 	'getPinnedMessages',
 	'deletePinnedMessage',

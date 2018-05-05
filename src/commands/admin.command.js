@@ -30,6 +30,7 @@ module.exports = {
 		permissions: {
 			type: 'private'
 		},
+		suppress: true,
 		fn({client, args}) {
 			var [name, status = 'online'] = args;
 			client.setPresence({game: {name}, type: 0, status});
@@ -137,6 +138,7 @@ module.exports = {
 		permissions: {
 			type: 'private'
 		},
+		suppress: true,
 		fn({client, args}) {
 			client._textToSpeech = typeof args[0] !== 'undefined' ? Boolean(args[0]) : !client._textToSpeech;
 			return 'Text-to-speech is now ' + (client._textToSpeech ? 'enabled' : 'disabled');
@@ -149,9 +151,109 @@ module.exports = {
 		permissions: {
 			type: 'private'
 		},
+		suppress: true,
+		suppress: true,
 		fn({client, args}) {
 			client._simulateTyping = typeof args[0] !== 'undefined' ? Boolean(args[0]) : !client._simulateTyping;
 			return 'Typing simulation is now ' + (client._simulateTyping ? 'enabled' : 'disabled');
+		}
+	},
+	'echo': {
+		aliases: ['print','display'],
+		category: 'Admin',
+		info: 'Display the arguments, which can be the output of an expression.',
+		parameters: ['...arguments'],
+		permissions: {
+			type: 'private'
+		},
+		suppress: true,
+		fn({client, args}) {
+			return md.codeblock(args.map(String).join(' '));
+		}
+	},
+	'logging': {
+		category: 'Admin',
+		title: 'Logging',
+		info: 'Sets the logging level of the bot.\n- 0 = Don\'t log anything\n- 1 = Dont\'t log errors and warnings\n- 2 = Normal logging\n- 3 = Log everything',
+		parameters: ['level'],
+		permissions: {
+			type: 'private'
+		},
+		suppress: true,
+		fn({client, args}) {
+			client._level = Math.max(0, Math.min(args[0], 3));
+			return 'Logging level set to ' + md.bold(['None','Limited','Normal','All'][client._level]);
+		}
+	},
+	'console': {
+		category: 'Admin',
+		title: 'Console',
+		info: 'Interface for printing information to the console window.',
+		permissions: {
+			type: 'private'
+		},
+		suppress: true,
+		analytics: false,
+		subcommands: {
+			'log': {
+				title: 'Console | Log',
+				info: 'General logging of information.',
+				parameters: ['...data'],
+				permissions: {
+					type: 'private'
+				},
+				analytics: false,
+				fn({client,args}) {
+					client.log(...args);
+				}
+			},
+			'info': {
+				title: 'Console | Info',
+				info: 'Information-level logging of information.',
+				parameter: ['...data'],
+				permissions: {
+					type: 'private'
+				},
+				analytics: false,
+				fn({client,args}) {
+					client.info(...args);
+				}
+			},
+			'warn': {
+				title: 'Console | Warn',
+				info: 'Warning-level logging of information.',
+				parameters: ['...data'],
+				permissions: {
+					type: 'private'
+				},
+				analytics: false,
+				fn({client,args}) {
+					client.warn(...args);
+				}
+			},
+			'error': {
+				title: 'Console | Error',
+				info: 'Error-level logging of information.',
+				parameters: ['...data'],
+				permissions: {
+					type: 'private'
+				},
+				analytics: false,
+				fn({client,args}) {
+					client.error(...args);
+				}
+			},
+			'clear': {
+				title: 'Console | Clear',
+				info: 'Clears the console.',
+				permissions: {
+					type: 'private'
+				},
+				analytics: false,
+				fn({client}) {
+					console.log('\n'.repeat(process.stdout.rows));
+				}
+			}
 		}
 	},
 	'memdump': {

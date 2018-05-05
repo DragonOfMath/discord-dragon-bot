@@ -63,10 +63,10 @@ class DragonBot extends DebugClient {
 		@arg {Snowflake} channelID - the channel ID in which to delete the bot's last message
 	*/
 	undo(channelID) {
-		return this.getAll(channelID, 25)
+		return this.getMessages({channelID,limit:25})
 		.then(messages => messages.find(m => m.author.id == this.id))
 		.then(message => {
-			if (message) return this.delete(channelID, message.id);
+			if (message) return this.deleteMessage({channelID, messageID: message.id});
 		});
 	}
 	/**
@@ -272,7 +272,10 @@ class DragonBot extends DebugClient {
 					// if the message expires, delete it after a set duration
 					if (handler.response.expires) {
 						return this.wait(Constants.DragonBot.TEMP_MSG_LIFETIME)
-						.then(() => this.delete(handler.channelID, message.id));
+						.then(() => this.deleteMessage({
+							channelID: handler.channelID,
+							messageID: message.id
+						}));
 					}
 				});
 			})
