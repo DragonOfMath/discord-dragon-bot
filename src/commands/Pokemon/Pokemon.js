@@ -407,7 +407,7 @@ class PokeShop {
 		return `You bought ${md.bold(fmt.plural(item.name,quantity))} for ${Bank.formatCredits(total)}!`;
 	}
 	static sell(pkmn, bank, itemname, quantity = 1) {
-		item = getItemDescriptor(itemname);
+		var item = getItemDescriptor(itemname);
 		if (!item) {
 			throw `Shop inventory does not have a "${itemname}"!`;
 		}

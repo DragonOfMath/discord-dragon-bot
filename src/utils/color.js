@@ -7,29 +7,14 @@ class Color {
 				this.red   = r.r;
 				this.green = r.g;
 				this.blue  = r.b;
-				this.alpha = r.a === undefined ? 255 : r.a;
+				this.alpha = r.a === undefined ? 0xFF : r.a;
 			}
 		} else {
 			this.red   = r;
 			this.green = g;
 			this.blue  = b;
-			this.alpha = a === undefined ? 255 : a;
+			this.alpha = a === undefined ? 0xFF : a;
 		}
-	}
-	static get RED() {
-		return 0xFF0000;
-	}
-	static get GREEN() {
-		return 0x00FF00;
-	}
-	static get BLUE() {
-		return 0x0000FF;
-	}
-	static get MAX() {
-		return 0xFFFFFF;
-	}
-	static truncate(x) {
-		return Math.max(0, Math.min(x | 0, 0xFF));
 	}
 	get red() {
 		return this.r;
@@ -49,6 +34,15 @@ class Color {
 	set blue(x) {
 		this.b = Color.truncate(x);
 	}
+	get yellow() {
+		return (this.r + this.g) / 2;
+	}
+	get cyan() {
+		return (this.g + this.b) / 2;
+	}
+	get magenta() {
+		return (this.b + this.r) / 2;
+	}
 	get alpha() {
 		return this.a;
 	}
@@ -56,13 +50,17 @@ class Color {
 		this.a = Color.truncate(x);
 	}
 	get rgba() {
-		return (this.val << 8) | this.a;
+		// bitwise operations are 32 bits only
+		// return (this.val << 8) | this.a;
+		return (this.val * 0x100) + this.a;
 	}
 	get argb() {
-		return (this.a << 24) | this.val;
+		//return (this.a << 24) | this.val;
+		return (this.a * 0x1000000) + this.val;
 	}
 	get val() {
-		return (this.r << 16) | (this.g << 8) | this.b;
+		//return (this.r << 16) | (this.g << 8) | this.b;
+		return (this.r * 0x10000) + (this.g * 0x100) + this.b;
 	}
 	set val(x) {
 		this.red   = Math.floor(x/0x10000);
@@ -74,10 +72,7 @@ class Color {
 		return new Color(average,average,average);
 	}
 	random(max = 0xFF) {
-		this.red   = max * Math.random();
-		this.green = max * Math.random();
-		this.blue  = max * Math.random();
-		return this;
+		return Color.random(max);
 	}
 	compare(c) {
 		if (this.val > c.val) return 1;
@@ -125,7 +120,70 @@ class Color {
 	clone() {
 		return new Color(this);
 	}
+	
+	static truncate(x) {
+		return Math.max(0, Math.min(x | 0, 0xFF));
+	}
+	static random(max = 0xFF) {
+		var red   = max * Math.random();
+		var green = max * Math.random();
+		var blue  = max * Math.random();
+		return new Color(red, green, blue);
+	}
+	// https://en.wikipedia.org/wiki/HSL_and_HSV#From_HSL
+	static hsl(hue, saturation, lightness) {
+		hue        = Math.max(Math.min(hue, 360), 0);
+		saturation = Math.max(Math.min(saturation, 1), 0);
+		lightness  = Math.max(Math.min(lightness, 1), 0);
+		
+		var h      = hue / 60;
+		var chroma = (1 - Math.abs(2 * lightness - 1)) * saturation;
+		var x      = chroma * (1 - Math.abs(h % 2 - 1));
+		
+		var red = 0, green = 0, blue = 0;
+		switch (Math.floor(h)) {
+			case 0:
+				red   = chroma;
+				green = x;
+				break;
+			case 1:
+				red   = x;
+				green = chroma;
+				break;
+			case 2:
+				green = chroma;
+				blue  = x;
+				break;
+			case 3:
+				green = x;
+				blue  = chroma;
+				break;
+			case 4:
+				red   = x;
+				blue  = chroma;
+				break;
+			case 5:
+				red   = chroma;
+				blue  = x;
+				break;
+		}
+		var m = lightness - chroma / 2;
+		red   = 0xFF * (red   + m);
+		green = 0xFF * (green + m);
+		blue  = 0xFF * (blue  + m);
+		
+		return new Color(red, green, blue);
+	}
 }
+
+Color.RED   = new Color(0xFF, 0, 0);
+Color.GREEN = new Color(0, 0xFF, 0);
+Color.BLUE  = new Color(0, 0, 0xFF);
+Color.YELLOW  = new Color(0xFF, 0xFF, 0);
+Color.CYAN    = new Color(0, 0xFF, 0xFF);
+Color.MAGENTA = new Color(0xFF, 0, 0xFF);
+Color.BLACK = new Color(0, 0, 0);
+Color.WHITE = new Color(0xFF, 0xFF, 0xFF);
 
 class ColorPalette {
 	constructor() {

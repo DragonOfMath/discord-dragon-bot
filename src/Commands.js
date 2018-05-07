@@ -149,7 +149,7 @@ class Commands extends TypeMapBase {
 				commands = commands.filter(cmd => !cmd.suppress);
 			}
 			var msg = commands.map(cmd => cmd.fullID).sort().join(', ');
-			msg = truncate(msg, 1980);
+			//msg = truncate(msg, 1980);
 			msg = 'Matches:\n' + md.codeblock(msg);
 			return handler.resolve(msg);
 		}

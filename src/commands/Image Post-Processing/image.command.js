@@ -1,16 +1,16 @@
-const {random,Jimp} = require('../../Utils');
+const {random,Jimp,Math,Color,Perlin2} = require('../../Utils');
 const brailleify = require('./brailleify');
-//const comedy = require('./comedy.json');
+
+const TEST_IMAGE_TYPES  = ['blank','grid','checkerboard','color','noise','random'];
+const TEST_IMAGE_COLORS = [Color.WHITE,Color.RED,Color.GREEN,Color.BLUE,Color.YELLOW,Color.CYAN,Color.MAGENTA];
 
 function processImage(client, channelID, args, filename, process) {
-	var mime = /\.png$/i.test(filename) ? Jimp.MIME_PNG : Jimp.MIME_JPEG;
 	var _args = args.slice();
 	return client.type(channelID)
 	.then(() => getImageInChannel(client, channelID, _args))
 	.then(Jimp.read)
 	.then(image => process.call(client, image, ..._args))
-	.then(image => image.getBufferAsync(mime))
-	.then(file  => ({file, filename}));
+	.then(getBufferAs(filename));
 }
 function getImageInChannel(client, channelID, args) {
 	var url = args[0];
@@ -32,23 +32,18 @@ function getImageInChannel(client, channelID, args) {
 		});
 	}
 }
+function getBufferAs(filename) {
+	var mime = /\.png$/i.test(filename) ? Jimp.MIME_PNG : Jimp.MIME_JPEG;
+	return (image) => (image.getBufferAsync(mime).then(file => ({file, filename})));
+}
 function isImage(url) {
-	return /^http.+\.(jpg|jpeg|png)$/.test(url);
+	return /^http.+\.(jpg|jpeg|png)$/i.test(url);
 }
 
-const PI = Math.PI;
-const TAU = 2 * PI;
-
-function radToDeg(r) {
-	return r * 180 / PI;
-}
-function degToRad(d) {
-	return d * PI / 180;
-}
 function resolvePercent(num, scale) {
 	if (String(num).endsWith('%')) {
 		num = Number(num.match(/\d+/));
-		num = Math.max(0, Math.min(num, 100));
+		num = Math.minmax(num, 0, 100);
 		num /= 100;
 		num *= scale;
 	}
@@ -132,24 +127,15 @@ function applyDifferential(image, diff) {
 		}
 	});
 }
-function iterate(x,y,p,limit) {
-	with (Math) {
-		var nx = x, ny = y, i = 0, r, t;
-		while (i < limit) {
-			// https://en.wikipedia.org/wiki/De_Moivre%27s_formula
-			r = nx * nx + ny * ny;
-			//if (r > 4) break;
-			r = exp(log(r) * p / 2);
-			t = atan2(ny,nx);
-			nx = r * cos(t * p) + x;
-			ny = r * sin(t * p) + y;
-			i++;
-		}
-		return {x: nx, y: ny};
+function iterate(cx,cy,p,limit) {
+	var x = cx, y = cy, i = 0;
+	while (i < limit) {
+		({real: x, imag: y} = Math.complexPow(x, y, p));
+		x += cx;
+		y += cy;
+		i++;
 	}
-}
-function modulo(x,n) {
-	return ((x % n) + n) % n;
+	return {x, y};
 }
 
 module.exports = {
@@ -158,7 +144,61 @@ module.exports = {
 		category: 'Misc',
 		title: 'Image Post-Processing',
 		info: 'A variety of image-manipulating commands.',
+		analytics: false,
 		subcommands: {
+			'test': {
+				aliases: ['testing', 'generate'],
+				info: 'Creates a testing image. Specify what preset to use and at what size.',
+				parameters: [`[<${TEST_IMAGE_TYPES.join('|')}>]`,'[size]'],
+				fn({client, args}) {
+					var [type = random(TEST_IMAGE_TYPES), size = 200] = args;
+					type = type.toLowerCase();
+					size = resolvePercent(size, 1000);
+					var WHITE = Color.WHITE.rgba;
+					var BLACK = Color.BLACK.rgba;
+					var image = new Jimp(size, size, WHITE);
+					var spacing = Math.floor(size / 10);
+					var algorithm;
+					switch (type) {
+						case 'blank':
+							algorithm = () => WHITE;
+							break;
+						case 'grid':
+							algorithm = (x,y,i) => {
+								return ((x && x % spacing == 0) || (y && y % spacing == 0)) ? BLACK : WHITE;
+							};
+							break;
+						case 'checkerboard':
+							algorithm = (x,y,i) => {
+								return (((Math.floor(x/spacing)+Math.floor(y/spacing)) % 2) == 1) ? BLACK : WHITE;
+							};
+							break;
+						case 'color':
+							algorithm = (x,y,i) => {
+								var tx = x / size;
+								var ty = y / size;
+								return Color.hsl(360 * tx, 2 * Math.random(), Math.abs(2 * ty - 1)).rgba;
+							};
+							break;
+						case 'noise':
+							var perlin = new Perlin2(spacing);
+							var color = random(TEST_IMAGE_COLORS);
+							algorithm = (x,y,i) => {
+								var n = perlin.noise(x/10, y/10);
+								n = (n + 1) / 2;
+								return color.scale(n).rgba;
+							};
+							break;
+						case 'random':
+							algorithm = () => Color.random().rgba;
+							break;
+					}
+					image.scan(0, 0, size, size, (x,y,i) => {
+						image.setPixelColor(algorithm(x,y,i), x, y);
+					});
+					return getBufferAs('test.jpg')(image);
+				}
+			},
 			'deepfry': {
 				aliases: ['needsmorefrying','needsmoredeepfrying'],
 				info: 'Deep-fry an image.',
@@ -180,6 +220,7 @@ module.exports = {
 				parameters: ['[imageURL]', '[compression]'],
 				fn({client, args, channelID}) {
 					return processImage(client, channelID, args, 'needsmorejpeg.jpg', function (image, compression = random(1,20)) {
+						compression = Math.minmax(compression, 1, 100);
 						return image.posterize(random(20,70)).quality(compression);
 					});
 				}
@@ -285,7 +326,7 @@ module.exports = {
 				info: 'Applies sepia filter to an image.',
 				parameters: ['[imageURL]'],
 				fn({client, channelID, args}) {
-					return processImage(client, channelID, args, 'emboss.jpg', function (image) {
+					return processImage(client, channelID, args, 'sepia.jpg', function (image) {
 						return image.sepia();
 					});
 				}
@@ -300,6 +341,7 @@ module.exports = {
 				}
 			},
 			'saturation': {
+				aliases: ['saturate', 'sat'],
 				info: 'Adjust the saturation of an image.',
 				parameters: ['[imageURL]', '[value]'],
 				fn({client, channelID, args}) {
@@ -309,10 +351,12 @@ module.exports = {
 				}
 			},
 			'brightness': {
+				aliases: ['lightness', 'brighten', 'lighten'],
 				info: 'Adjust the brightness of an image.',
 				parameters: ['[imageURL]', '[value]'],
 				fn({client, channelID, args}) {
-					return processImage(client, channelID, args, 'contrast.jpg', function (image, value = 2*random()-1) {
+					return processImage(client, channelID, args, 'brightness.jpg', function (image, value = 2*random()-1) {
+						value = Math.minmax(value, -1, 1);
 						return image.brightness(value);
 					});
 				}
@@ -322,6 +366,7 @@ module.exports = {
 				parameters: ['[imageURL]', '[value]'],
 				fn({client, channelID, args}) {
 					return processImage(client, channelID, args, 'contrast.jpg', function (image, value = 2*random()-1) {
+						value = Math.minmax(value, -1, 1);
 						return image.contrast(value);
 					});
 				}
@@ -331,28 +376,40 @@ module.exports = {
 				parameters: ['[imageURL]', '[colors]'],
 				fn({client, channelID, args}) {
 					return processImage(client, channelID, args, 'posterize.jpg', function (image, value = random(5,25)) {
+						value = Math.minmax(value, 1, 255);
 						return image.posterize(value);
 					});
 				}
 			},
 			'resize': {
 				info: 'Resize or refit an image to new dimensions.',
-				parameters: ['[imageURL]', 'width', 'height', '[fit]'],
+				parameters: ['[imageURL]', '[width]', '[height]', '[fit]'],
 				fn({client, channelID, args}) {
-					return processImage(client, channelID, args, 'resize.jpg', function (image, width, height, fit = false) {
+					return processImage(client, channelID, args, 'resize.jpg', function (image, width = 'auto', height = 'auto', fit = false) {
 						if (fit) {
 							return image.scaleToFit(width, height);
 						} else {
-							return image.resize(width == 'auto' ? Jimp.AUTO : width, height == 'auto' ? Jimp.AUTO : height);
+							if (width == 'auto') {
+								width = Jimp.AUTO;
+							} else {
+								width = Math.minmax(width, 1, 2000);
+							}
+							if (height == 'auto') {
+								height = Jimp.AUTO;
+							} else {
+								height = Math.minmax(height, 1, 2000);
+							}
+							return image.resize(width, height);
 						}
 					});
 				}
 			},
 			'rescale': {
 				info: 'Rescale an image by a factor.',
-				parameters: ['[imageURL]', 'scale'],
+				parameters: ['[imageURL]', '[scale]'],
 				fn({client, channelID, args}) {
-					return processImage(client, channelID, args, 'rescale.jpg', function (image, scale) {
+					return processImage(client, channelID, args, 'rescale.jpg', function (image, scale = 0.8) {
+						scale = Math.minmax(scale, 0.1, 10);
 						return image.scale(scale);
 					});
 				}
@@ -362,6 +419,7 @@ module.exports = {
 				parameters: ['[imageURL]', '[degrees]'],
 				fn({client, channelID, args}) {
 					return processImage(client, channelID, args, 'rotate.jpg', function (image, degrees = 90) {
+						degrees = Math.modulo(degrees, 360);
 						return image.rotate(degrees);
 					});
 				}
@@ -371,6 +429,7 @@ module.exports = {
 				parameters: ['[imageURL]', '[radius]'],
 				fn({client, channelID, args}) {
 					return processImage(client, channelID, args, 'blur.jpg', function (image, value = random(5,25)) {
+						value = Math.minmax(value, 1, 100);
 						return image.blur(value);
 					});
 				}
@@ -385,7 +444,7 @@ module.exports = {
 						var h = image.bitmap.height;
 						var min = Math.min(w,h);
 						var max = Math.max(w,h);
-						direction = degToRad(direction);
+						direction = Math.degToRad(Math.modulo(direction,360));
 						strength = strength === undefined ? random(min) : resolvePercent(strength, min);
 						var dx = strength * Math.cos(direction);
 						var dy = strength * Math.sin(direction);
@@ -405,8 +464,9 @@ module.exports = {
 						var h = image.bitmap.height;
 						var min = Math.min(w,h);
 						var max = Math.max(w,h);
+						var rad = min * Math.PI / 8;
 						var {x:ox,y:oy} = resolvePos(image, xpos, ypos, Math.floor(w / 2), Math.floor(h / 2));
-						strength = strength === undefined ? random(min * PI / 4) : resolvePercent(strength, min * PI / 4);
+						strength = strength === undefined ? random(2,rad) : resolvePercent(strength, rad);
 						return applyDifferential(image, (x,y) => {
 							return {
 								dx: strength * (oy - y) / h,
@@ -426,8 +486,9 @@ module.exports = {
 						var h = image.bitmap.height;
 						var min = Math.min(w,h);
 						var max = Math.max(w,h);
+						var scale = 20;
 						var {x:ox,y:oy} = resolvePos(image, xpos, ypos, Math.floor(w / 2), Math.floor(h / 2));
-						strength = strength === undefined ? random(min) : resolvePercent(strength, min);
+						strength = strength === undefined ? random(3,scale) : resolvePercent(strength, scale);
 						return applyDifferential(image, (x,y) => {
 							return {
 								dx: strength * (x - ox) / w,
@@ -453,7 +514,7 @@ module.exports = {
 							var dx = ox - x;
 							var dy = oy - y;
 							var dd = Math.hypot(dx, dy);
-							dd = Math.exp(-(dd*dd)/strength);
+							dd = Math.exp(-(dd*dd)/(strength*strength));
 							dx *= dd;
 							dy *= dd;
 							x += dx;
@@ -482,7 +543,7 @@ module.exports = {
 							var dy = y - oy;
 							var dd = Math.hypot(dx, dy);
 							var theta = Math.atan2(dy, dx);
-							theta += strength * PI * Math.exp(-dd/swirlRadius);
+							theta += strength * Math.PI * Math.exp(-dd/swirlRadius);
 							x = ox + dd * Math.cos(theta);
 							y = oy + dd * Math.sin(theta);
 							return {x,y};
@@ -503,136 +564,23 @@ module.exports = {
 						var scale = 2 / min;
 						var ox = Math.floor(w / 2);
 						var oy = Math.floor(h / 2);
-						power = power === undefined ? (5 * random()) : resolvePercent(power, 5);
-						iterations = iterations === undefined ? 3 : resolvePercent(iterations, 20);
-						iterations = Math.max(1,Math.min(iterations, 20));
+						power = power === undefined ? (random(-8,8)||2) : resolvePercent(power, 8);
+						iterations = iterations === undefined ? 2 : resolvePercent(iterations, 20);
+						iterations = Math.minmax(iterations, 1, 20);
 						return applyTransform(image, (x,y) => {
 							// map the pixel plane to the complex plane
 							var dx = scale * (x - ox);
 							var dy = scale * (y - oy);
 							// run the iterative function
-							var {x:fx,y:fy} = iterate(dx, dy, power, iterations);
+							({x,y} = iterate(dx, dy, power, iterations));
 							// map the complex plane back to the pixel plane and wrap
-							x = modulo(ox + fx / scale, w);
-							y = modulo(oy + fy / scale, h);
+							x = Math.modulo(ox + x / scale, w);
+							y = Math.modulo(oy + y / scale, h);
 							return {x,y};
 						});
 					});
 				}
 			}
-		}
-	}
-};
-
-const todo = {
-	'transform': {
-		info: 'Put an image through a transformation function.',
-		parameters: ['[imageURL]', '...function'],
-		fn({client, channelID, args}) {
-			return processImage(client, channelID, args, 'transform.jpg', function (image, ...fn) {
-				fn = new Function('x','y','with (Math) {return ' + fn.join(' ') + '}');
-				return applyTransform(image, fn);
-			});
-		}
-	},
-	'differential': {
-		info: 'Blur an image with a differential function.',
-		parameters: ['[imageURL]', '...function'],
-		fn({client, channelID, args}) {
-			return processImage(client, channelID, args, 'differential.jpg', function (image, ...fn) {
-				fn = new Function('x','y','with (Math) {return ' + fn.join(' ') + '}');
-				return applyDifferential(image, fn);
-			});
-		}
-	},
-	'ifunny': {
-		aliases: ['ifunnyco'],
-		info: 'Add the ifunny.co watermark to an image.',
-		parameters: ['[imageURL]'],
-		fn({client, channelID, args}) {
-			return processImage(client, channelID, args, 'ifunny.jpg', function (image) {
-				
-			});
-		}
-	},
-	'9gag': {
-		aliases: ['9g'],
-		info: 'Add the 9gag watermark to an image.',
-		parameters: ['[imageURL]'],
-		fn({client, channelID, args}) {
-			return processImage(client, channelID, args, '9gag.jpg', function (image) {
-				
-			});
-		}
-	},
-	'funwaa': {
-		aliases: ['gumwaa'],
-		info: 'Add the Funwaa:tm: watermark to an image.',
-		parameters: ['[imageURL]'],
-		fn({client, channelID, args}) {
-			return processImage(client, channelID, args, 'funwaa.jpg', function (image) {
-				
-			});
-		}
-	},
-	'owned': {
-		aliases: ['smartphowned'],
-		info: 'Add the smartphOWNED.com:tm: watermark to an image.',
-		parameters: ['[imageURL]'],
-		fn({client, channelID, args}) {
-			return processImage(client, channelID, args, 'owned.jpg', function (image) {
-				
-			});
-		}
-	},
-	'coolbro': {
-		aliases: ['thisissosad','sarcasticbro'],
-		info: 'Add the Cool Bro:tm: comedy punchline killer. Choose an expression and add an optional caption too!',
-		parameters: ['[imageURL]', '[<thisissosad|owned>]', '[caption]'],
-		fn({client, channelID, args}) {
-			return processImage(client, channelID, args, 'coolbro.jpg', function (image, expression, caption) {
-				
-			});
-		}
-	},
-	'weedbro': {
-		aliases: ['weeddude'],
-		info: 'Add the Weed Bro:tm: comedy punchline killer. Choose an expression and add an optional caption too!',
-		parameters: ['[imageURL]', '[<head|body|bigeyes>]', '[caption]'],
-		fn({client, channelID, args}) {
-			return processImage(client, channelID, args, 'weedbro.jpg', function (image, expression, caption) {
-				
-			});
-		}
-	},
-	'wtfguy': {
-		aliases: ['wtfguyofficial'],
-		info: 'Add the WTFGuyOfficial:tm: comedy punchline killer. Choose an expression and add an optional caption too!',
-		parameters: ['[imageURL]', '[<megusta|lol|alone>]', '[caption]'],
-		fn({client, channelID, args}) {
-			return processImage(client, channelID, args, 'wtfguy.jpg', function (image, expression, caption) {
-				
-			});
-		}
-	},
-	'memeface': {
-		aliases: ['trollface','okayface','lolface'],
-		info: 'Add a meme face to the image.',
-		parameters: ['[imageURL]', '[caption]'],
-		fn({client, channelID, args}) {
-			return processImage(client, channelID, args, 'memeface.jpg', function (image, caption) {
-				
-			});
-		}
-	},
-	'whodidthis': {
-		aliases: ['wdt'],
-		info: 'Add annoying emojis to an image. Choose top, bottom, or both, and add an optional caption to really ruin the humor!',
-		parameters: ['[imageURL]', '[<top|bottom|both>]', '[caption]'],
-		fn({client, channelID, args}) {
-			return processImage(client, channelID, args, 'whodidthis.jpg', function (image, expression, caption) {
-				
-			});
 		}
 	}
 };

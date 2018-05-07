@@ -564,10 +564,11 @@ module.exports = {
 					}
 					keywords = keywords.join(' ');
 					
-					var users = DiscordUtils.getServerUsers(client.users, server.members);
+					var users = DiscordUtils.getServerUsers(client.users, server);
 					var matches = DiscordUtils.search(users, user => {
 						var member = server.members[user.id];
-						return user.discriminator == disc || substrcmp(user.username, keywords) || (nick && substrcmp(member.nick, keywords));
+						var nick = member.nick;
+						return user.discriminator == disc || substrcmp(user.username, keywords) || (nick && substrcmp(nick, keywords));
 					});
 					return list(matches, 1, md.mention);
 				}

@@ -3,6 +3,10 @@ const Promise = require('bluebird');
 
 const {DiscordEmbed} = require('./Utils');
 
+const MAX_MESSAGE_LENGTH = 2000;
+const MAX_MESSAGE_CHUNKS = 5;
+const TYPING_POLL_TIME   = 5000;
+const MESSAGE_POLL_TIME  = 3000;
 const MY_NAME = new RegExp(__dirname.split('\\').slice(1,3).join('\\\\'), 'gi');
 
 /**
@@ -15,6 +19,7 @@ class PromiseClient extends Discord.Client {
 		this._enableEmbedding = true;
 		this._textToSpeech    = false;
 		this._simulateTyping  = false;
+		this._messageChunks   = true;
 	}
 	
 	/* Utility methods */
@@ -76,6 +81,7 @@ class PromiseClient extends Discord.Client {
 		if (!payload.message && !payload.embed) {
 			return Promise.resolve('Nothing to send.');
 		}
+		payload.to = channelID;
 		
 		// remove my name if it EVER shows up
 		payload.replaceAll(MY_NAME, 'X');
@@ -84,18 +90,55 @@ class PromiseClient extends Discord.Client {
 			payload.message = payload.toString();
 			delete payload.embed;
 		}
-		
 		if (this._textToSpeech) {
 			payload.tts = true;
 		}
-		
 		if (this._simulateTyping) {
 			payload.typing = true;
 		}
-	
-		// check that the data is of acceptable size
-		if (payload.checkPayloadLength()) {
-			payload.to = channelID;
+		if (this._messageChunks && payload.message.length > 2000) {
+			// chunkify the message
+			var chunks = [], chunk = '';
+			for (var line of payload.message.split('\n')) {
+				if (line.length > MAX_MESSAGE_LENGTH) {
+					throw new Error('Message chunk is too large: ' + line.length);
+				}
+				if (chunk.length + line.length < MAX_MESSAGE_LENGTH) {
+					chunk += '\n' + line;
+				} else {
+					chunks.push(chunk.trim());
+					chunk = line;
+				}
+			}
+			if (chunk) {
+				chunks.push(chunk.trim());
+			}
+			if (chunks.length > MAX_MESSAGE_CHUNKS) {
+				throw new Error('Message is too large to send in 5 chunks of 2000 characters or less: ' + message.length);
+			}
+			// temporarily store the embed so that it is sent with the last chunk only
+			var embed = payload.embed;
+			payload.embed = null;
+			var client = this;
+			function sendChunk() {
+				payload.message = chunks.shift();
+				if (!chunks.length) {
+					payload.embed = embed;
+					payload.checkPayloadLength();
+				}
+				return client.sendMessage(payload)
+				.then(response => {
+					if (chunks.length > 0) {
+						return sendChunk();
+					} else {
+						return response;
+					}
+				});
+			}
+			return sendChunk();
+			
+		} else if (payload.checkPayloadLength()) {
+			// send the message as normal
 			return this.sendMessage(payload);
 		}
 	}
@@ -125,7 +168,7 @@ class PromiseClient extends Discord.Client {
 		if (typeof(file) !== 'string' && typeof(filename) !== 'string') {
 			throw new Error('File buffer requires filename.');
 		}
-		if (typeof(message) === 'string' && message.length > 2000) {
+		if (typeof(message) === 'string' && message.length > MAX_MESSAGE_LENGTH) {
 			throw new Error('Message length exceeds Discord\'s limit: ' + message.length);
 		}
 		
@@ -135,8 +178,8 @@ class PromiseClient extends Discord.Client {
 		return this.await('simulateTyping', channelID)
 		.then(() => {
 			if (time > 0) {
-				return this.wait(Math.min(time, 5000))
-				.then(() => this.type(channelID, time - 5000));
+				return this.wait(Math.min(time, TYPING_POLL_TIME))
+				.then(() => this.type(channelID, time - TYPING_POLL_TIME));
 			}
 		});
 	}
@@ -172,7 +215,7 @@ class PromiseClient extends Discord.Client {
 					} else {
 						before = _messages[_messages.length-1].id;
 					}
-					return client.wait(2000).then(loop);
+					return client.wait(MESSAGE_POLL_TIME).then(loop);
 				} else {
 					return messages;
 				}
@@ -192,7 +235,7 @@ class PromiseClient extends Discord.Client {
 				return;
 			}
 			return client.await('deleteMessages', {channelID, messageIDs})
-			.delay(3000).then(loop);
+			.delay(MESSAGE_POLL_TIME).then(loop);
 		}
 		return loop();
 	}
