@@ -1,5 +1,5 @@
 function tableify(columns = [], rows = [], callback) {
-	if (!columns.length || columns.length % 3 !== 0 || columns.length > 24) {
+	if ((columns.length > 3 && columns.length % 3 !== 0) || columns.length > 24) {
 		throw '# of columns must be a multiple of 3 and not be more than 24.';
 	}
 	var fields = columns.map(name => ({

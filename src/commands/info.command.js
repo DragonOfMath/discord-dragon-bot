@@ -316,7 +316,7 @@ module.exports = {
 					if (inviteCode) inviteCode = inviteCode[1];
 					else inviteCode = args[0];
 					return client.queryInvite(inviteCode)
-					.then(DiscordUtils.embedInvite)
+					.then(response => DiscordUtils.embedInvite(response))
 					.catch(e => {
 						client.error(e);
 						return 'Invalid Invite Code: ' + inviteCode;

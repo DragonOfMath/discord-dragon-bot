@@ -149,7 +149,7 @@ module.exports = {
 					var roles = args.slice();
 					var rolesCreated = [];
 					
-					function rec(name,reason) {
+					function rec(role,reason) {
 						rolesCreated.push({role,reason});
 					}
 					function makeRole() {

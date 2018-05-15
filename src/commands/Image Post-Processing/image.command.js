@@ -70,8 +70,23 @@ function applyTransform(image, F) {
 	return clone.scan(0, 0, w, h, (x,y,i) => {
 		// transform x and y
 		var {x:tx,y:ty} = F(x,y);
-		// use the color at the new pixel
-		var hex = image.getPixelColor(tx|0, ty|0);
+		var x0 = tx | 0, y0 = ty | 0, x1 = x0 + 1, y1 = y0 + 1;
+		var hex;
+		if (x0 < tx || y0 < ty) {
+			var colors = [
+				image.getPixelColor(x0, y0),
+				image.getPixelColor(x1, y0),
+				image.getPixelColor(x0, y1),
+				image.getPixelColor(x1, y1)
+			].map(i => Jimp.intToRGBA(i));
+			// anti-aliasing
+			hex = Color.interpolate(
+				Color.interpolate(colors[0], colors[1], tx - x0),
+				Color.interpolate(colors[2], colors[3], tx - x0),
+			ty - y0).rgba;
+		} else {
+			hex = image.getPixelColor(x0, y0);
+		}
 		clone.setPixelColor(hex, x, y);
 	});
 }
@@ -174,10 +189,11 @@ module.exports = {
 							};
 							break;
 						case 'color':
+							var saturation = 2 * Math.random();
 							algorithm = (x,y,i) => {
 								var tx = x / size;
 								var ty = y / size;
-								return Color.hsl(360 * tx, 2 * Math.random(), Math.abs(2 * ty - 1)).rgba;
+								return Color.hsl(360 * tx, saturation, Math.abs(2 * ty - 1)).rgba;
 							};
 							break;
 						case 'noise':

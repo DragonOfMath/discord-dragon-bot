@@ -92,7 +92,7 @@ class CommandParser {
 		@arg {String} text
 	*/
 	static tokenize(text) {
-		var tokens = [], token = '', letter, next, quote = false, forceString = false, esc = false, scope = 0;
+		var tokens = [], token = '', letter, next, next2, quote = false, forceString = false, esc = false, scope = 0;
 		
 		function addToken() {
 			if (token) {
@@ -100,6 +100,7 @@ class CommandParser {
 				tokens.push(token);
 			}
 			token = '';
+			quote = false;
 			forceString = false;
 		}
 		function match(i,sub) {
@@ -122,6 +123,7 @@ class CommandParser {
 		for (var i = 0, j; i < text.length; ++i) {
 			letter = text[i];
 			next   = text[i+1];
+			next2  = text[i+2];
 			
 			// escape literal character
 			if (esc) {
@@ -153,6 +155,15 @@ class CommandParser {
 					i = lookahead(i+2,'*/') + 1;
 					var comment = text.substring(j,i+1);
 					//tokens.push(comment);
+					continue;
+					
+				// block quote
+				} else if (letter+next+next2 == '```') {
+					addToken();
+					j = lookahead(i+3,'\n');
+					i = lookahead(j+1,'```') + 2;
+					var code = text.substring(j+1,i-2);
+					tokens.push(code);
 					continue;
 					
 				// whitespace

@@ -557,8 +557,8 @@ class PokemonGame {
 		if (fromUserID == toUserID) {
 			throw 'Recipient needs to be someone else.';
 		}
-		let src = this.get(fromUserID);
-		let tgt = this.get(toUserID);
+		let src = this.get(client, fromUserID);
+		let tgt = this.get(client, toUserID);
 		
 		let pkmnTraded = src.tradePokemon(tgt, pokeID);
 		

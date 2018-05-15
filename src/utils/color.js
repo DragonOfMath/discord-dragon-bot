@@ -68,7 +68,7 @@ class Color {
 		this.blue  = x % 0x100;
 	}
 	get greyscale() {
-		let average = (this.r + this.g + this.b) / 3;
+		var average = (this.r + this.g + this.b) / 3;
 		return new Color(average,average,average);
 	}
 	random(max = 0xFF) {
@@ -92,24 +92,10 @@ class Color {
 		return new Color((this.r * c) % 0x100, (this.g * c) % 0x100, (this.b * c) % 0x100, this.a);
 	}
 	average() {
-		let colors = [...arguments];
-		let num = colors.length + 1;
-		let avgColor = this.clone();
-		for (let c of colors) {
-			avgColor.r += c.r;
-			avgColor.g += c.g;
-			avgColor.b += c.b;
-		}
-		avgColor.red   = avgColor.r / num;
-		avgColor.green = avgColor.g / num;
-		avgColor.blue  = avgColor.b / num;
-		return avgColor;
+		return Color.average(this, ...arguments);
 	}
 	interpolate(c,w) {
-		return new Color(this.r + w * (c.r - this.r),
-		                 this.g + w * (c.g - this.g),
-						 this.b + w * (c.b - this.b),
-						 this.a);
+		return Color.interpolate(this, c, w);
 	}
 	reset() {
 		this.r = this.g = this.b = 0;
@@ -123,6 +109,27 @@ class Color {
 	
 	static truncate(x) {
 		return Math.max(0, Math.min(x | 0, 0xFF));
+	}
+	static average(...colors) {
+		var num = colors.length;
+		var avgColor = new Color();
+		for (var c of colors) {
+			avgColor.r += c.r;
+			avgColor.g += c.g;
+			avgColor.b += c.b;
+			avgColor.a += c.a;
+		}
+		avgColor.red   = avgColor.r / num;
+		avgColor.green = avgColor.g / num;
+		avgColor.blue  = avgColor.b / num;
+		avgColor.alpha = avgColor.a / num;
+		return avgColor;
+	}
+	static interpolate(c1, c2, w) {
+		return new Color(c1.r + w * (c2.r - c1.r),
+		                 c1.g + w * (c2.g - c1.g),
+						 c1.b + w * (c2.b - c1.b),
+						 c1.a + w * (c2.a - c1.a));
 	}
 	static random(max = 0xFF) {
 		var red   = max * Math.random();
