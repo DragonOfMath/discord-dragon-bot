@@ -43,6 +43,20 @@ class DragonBot extends DebugClient {
 		this.on('guildMemberRemove', this.goodbyeUser);
 	}
 	/**
+		Getter for all server roles
+	*/
+	get roles() {
+		var roles = {};
+		for (var id in this.servers) {
+			var server = this.servers[id];
+			for (var rid in server.roles) {
+				if (rid === id) continue; // @everyone
+				roles[rid] = server.roles[rid];
+			}
+		}
+		return roles;
+	}
+	/**
 		Sets the text appearing under the bot's name in the list of users.
 		@arg {String} name - string that follows "Playing"
 	*/

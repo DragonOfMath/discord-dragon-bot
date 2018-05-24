@@ -64,7 +64,7 @@ class Database extends Logger(TypeMapBase) {
 		}
 		this.info('Deleting table',table);
 		
-		let temp = this.get(table);
+		var temp = this.get(table);
 		if (!keepFile) {
 			temp.destroy();
 		}
@@ -76,13 +76,27 @@ class Database extends Logger(TypeMapBase) {
 		Create a backup folder copy of the tables
 	*/
 	backup() {
-		var backupDir = this.dir + '_backup';
+		var backupDir = this.root + '_backup';
 		if (!FilePromise.existsSync(backupDir)) {
 			FilePromise.makeDirSync(backupDir);
 		}
 		for (var table of this.tables) {
 			var filepath = FilePromise.join(backupDir, table.filename);
 			table.save(filepath);
+		}
+	}
+	
+	/**
+		Reverts to the database backup folder
+	*/
+	revert() {
+		var backupDir = this.root + '_backup';
+		if (!FilePromise.existsSync(backupDir)) {
+			throw 'Backup does not exist!';
+		}
+		for (var table of this.tables) {
+			var filepath = FilePromise.join(backupDir, table.filename);
+			table.load(filepath);
 		}
 	}
 }

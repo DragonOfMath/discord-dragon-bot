@@ -260,13 +260,13 @@ class Table extends TypeMapBase {
 		for (var id of this.records) {
 			if (!reference[id]) {
 				this.delete(id);
-				this.removed.push(id);
+				removed.push(id);
 			}
 		}
 		if (removed.length) {
 			this.save();
-			console.log('Removed',removed.length,'records from',this.name);
 		}
+		return removed;
 	}
 }
 

@@ -269,18 +269,5 @@ module.exports = {
 			client.snapshot('debug');
 			return 'Snapshot of memory saved.';
 		}
-	},
-	'backup': {
-		category: 'Admin',
-		title: 'Database Backup',
-		info: 'Creates a backup of the database.',
-		permissions: {
-			type: 'private'
-		},
-		suppress: true,
-		fn({client}) {
-			client.database.backup();
-			return 'Database backup saved.';
-		}
 	}
 };
