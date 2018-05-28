@@ -28,6 +28,12 @@ module.exports = {
 			if (this.data.hash && !this.data.id) {
 				return 'getPostFromHash';
 			}
+			
+			this.data.id = message.match(e621.poolRegex);
+			if (this.data.id) {
+				this.data.id = this.data.id[1];
+				return 'getPoolInfo';
+			}
 		} catch (e) {}
 	},
 	events: {
@@ -53,6 +59,16 @@ module.exports = {
 			.then(embed => {
 				return {
 					message: md.mention(userID) + ' here\'s the source for that image',
+					embed
+				};
+			})
+			.catch(console.error);
+		},
+		getPoolInfo({client, userID}) {
+			return e621.getPool(this.data.id)
+			.then(embed => {
+				return {
+					message: md.mention(userID) + ' here\'s more info about that pool',
 					embed
 				};
 			})

@@ -16,12 +16,58 @@ module.exports = {
 		analytics: false,
 		suppress: true,
 		subcommands: {
+			'tables': {
+				title: 'Database | List Tables',
+				info: 'List the table names in the database.',
+				fn({client}) {
+					return client.database.keys.join(', ');
+				}
+			},
+			'records': {
+				title: 'Database | List Records',
+				info: 'List the records in the given table.',
+				parameters: ['table'],
+				fn({client, args}) {
+					var table = args[0];
+					var records = client.database.get(table).records;
+					if (records.length > 100) {
+						return 'Too many records to display.';
+					} else {
+						return records.join(', ');
+					}
+				}
+			},
+			'fields': {
+				title: 'Database | List Fields',
+				info: 'List the fields in the given record and table.',
+				parameters: ['table','record'],
+				fn({client, args}) {
+					var [table, record] = args;
+					record = String(record).match(/\d+/) || record;
+					var data = client.database.get(table).get(record);
+					var fields = [];
+					function addFields(path, o, depth) {
+						if (depth < 1) return;
+						for (var f in o) {
+							var value = o[f];
+							if (path) f = path + '.' + f;
+							fields.push(f);
+							if (typeof(value) === 'object') {
+								addFields(f, value, depth - 1);
+							}
+						}
+					}
+					addFields('', data, 2);
+					return fields.join(', ');
+				}
+			},
 			'Get': {
 				title: 'Database | Get Item',
 				info: 'Retrieve a field from the specified table and record. The field can be nested.',
 				parameters: ['table','record','field'],
 				fn({client, args}) {
 					var [table, record, fields] = args;
+					record = String(record).match(/\d+/) || record;
 					fields = fields.split('.');
 					var data = client.database.get(table).get(record);
 					var value = chain(data, fields);
@@ -34,6 +80,7 @@ module.exports = {
 				parameters: ['table','record','field','value'],
 				fn({client, args}) {
 					var [table, record, fields, value] = args;
+					record = String(record).match(/\d+/) || record;
 					fields = fields.split('.');
 					value = JSON.parse(value);
 					client.database.get(table).modify(record, data => {
@@ -53,6 +100,7 @@ module.exports = {
 				parameters: ['table','record','[field]'],
 				fn({client, args}) {
 					var [table, record, fields] = args;
+					record = String(record).match(/\d+/) || record;
 					if (fields) {
 						fields = fields.split('.');
 						client.database.get(table).modify(record, data => {

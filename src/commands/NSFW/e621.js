@@ -15,7 +15,9 @@ const STATUS_COLOR = {
 };
 
 const E621_URL = 'https://e621.net/post/index.json?tags='; // additional params: limit, page
+const E621_POOL_URL = 'https://e621.net/pool/show.json?id=';
 const POST_REGEX = /https?:\/\/e621\.net\/post\/show\/(\d+)/;
+const POOL_REGEX = /https?:\/\/e621\.net\/pool\/show\/(\d+)/;
 const DIRECT_REGEX = /e621.net\/.*\/([0-9a-f]{32})/;
 const HASH_REGEX = /[0-9a-f]{32}/;
 const POST_ID_REGEX = /#(\d+)/;
@@ -23,6 +25,9 @@ const POST_ID_REGEX = /#(\d+)/;
 module.exports = class E621 {
 	static get postRegex() {
 		return POST_REGEX;
+	}
+	static get poolRegex() {
+		return POOL_REGEX;
 	}
 	static get directRegex() {
 		return DIRECT_REGEX;
@@ -84,11 +89,10 @@ module.exports = class E621 {
 			console.error(e);
 			return e;
 		}
-		
 	}
 	static embed(post, title = 'e621') {
 		let {
-			id, score, fav_count, 
+			id, score, fav_count, created_at,
 			file_url,  width, height,
 			sample_url, sample_width, sample_height,
 			preview_url, preview_width, preview_height, 
@@ -105,6 +109,7 @@ module.exports = class E621 {
 			description: 'No description available',
 			fields: [],
 			footer: {
+				timestamp: new Date(created_at.s * 1000),
 				text: 'Sources: ' + ((sources instanceof Array && sources.length) ? sources.join(' | ') : 'N/A')
 			}
 		};
@@ -186,6 +191,99 @@ module.exports = class E621 {
 		
 		embed.description = t.join(' | ');
 		
+		return embed;
+	}
+	static getPool(id) {
+		if (!id) throw 'Invalid pool ID.';
+		return fetch(E621_POOL_URL+id)
+		.then(response => {
+			if (typeof(response) === 'object') {
+				return response;
+			} else {
+				return JSON.parse(response);
+			}
+		})
+		.then(this.embedPool);
+	}
+	static embedPool(pool) {
+		let {
+			id, name, description, created_at, updated_at, post_count, posts
+		} = pool;
+		let firstPost = posts[0], lastPost = posts[posts.length-1];
+		
+		// correct the pool name
+		name = name.replace(/_/g, ' ');
+		
+		// process posts
+		let artist = [], sources = posts[0].sources, totalScore = 0, totalFaves = 0, overallRating = 's';
+		for (var post of posts) {
+			if (post.artist && post.artist.length) {
+				for (var a of post.artist) {
+					if (!artist.includes(a)) artist.push(a);
+				}
+			}
+			// only find sources which are common to all posts (this gets rid of individual sources)
+			if (post.sources && post.sources.length) {
+				sources = sources.filter(s => post.sources.includes(s));
+			}
+			totalScore += post.score;
+			totalFaves += post.fav_count;
+			if (post.rating == 'e' || (post.rating == 'q' && overallRating == 's')) {
+				overallRating = post.rating;
+			}
+		}
+		
+		var embed = {
+			title: `Pool #${id} - ${name}`,
+			url: `https://e621.net/pool/show/${id}/`,
+			image: {
+				url: firstPost.sample_url,
+				width: firstPost.sample_width,
+				height: firstPost.sample_height
+			},
+			fields: [
+				{
+					name: `Posts (${post_count})`,
+					value: posts.slice(0, 10).map(post => `[#${post.id}](https://e621.net/post/show/${post.id})`).join(', '),
+					inline: true
+				}
+			],
+			footer: {
+				timestamp: new Date(created_at.s * 1000),
+				text: 'Sources: ' + (sources.join(' | ') || 'None found?')
+			}
+		};
+		if (posts.length > 10) {
+			embed.fields[0].value += `, + ${post_count - 10} more...`;
+		}
+		
+		var t = [];
+		t.push(`${totalScore<0?'\uD83D\uDC4E':'\uD83D\uDC4D'} ${totalScore}`);
+		t.push(`\u2764 ${totalFaves}`);
+		switch (overallRating) {
+			case 'e':
+				t.push('\uD83C\uDF46 **Explicit**');
+				embed.color = STATUS_COLOR.EXPLICIT;
+				break;
+			case 'q':
+				t.push('\u26A0 Questionable');
+				embed.color = STATUS_COLOR.QUESTIONABLE;
+				break;
+			case 's':
+				t.push('\uD83D\uDC4C Safe');
+				embed.color = STATUS_COLOR.SAFE;
+				break;
+		}
+		if (artist && artist.length) {
+			t.push('by '+artist.map(x => `[${x}](https://e621.net/post?tags=${x})`).join(', '));
+		} else {
+			t.push(`by [unknown artist](https://e621.net/post?tags=unknown_artist)`);
+		}
+
+		embed.description = t.join(' | ');
+		if (description) {
+			embed.description += '\n\n' + description;
+		}
 		return embed;
 	}
 }
