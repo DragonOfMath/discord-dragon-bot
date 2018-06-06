@@ -1,3 +1,32 @@
+function forEachAsync(callback, start = 0, end = this.length) {
+	var iterable = this;
+	function _next(i) {
+		return Promise.resolve(callback(iterable[i], i))
+		.then(() => {
+			if (i+1 < end) {
+				return _next(i+1);
+			}
+		});
+	}
+	return _next(start);
+}
+function mapAsync(callback, start = 0, end = this.length) {
+	var iterable = this;
+	var mapped = [];
+	function _next(i) {
+		return Promise.resolve(callback(iterable[i], i))
+		.then(value => {
+			if (typeof(value) !== 'undefined') mapped.push(value);
+			if (i+1 < end) {
+				return _next(i+1);
+			} else {
+				return mapped;
+			}
+		});
+	}
+	return _next(start);
+}
+
 class Array2D extends Array {
 	constructor(rows = 0, columns = 0) {
 		super(rows);
@@ -63,4 +92,8 @@ class Array2D extends Array {
 	}
 }
 
-module.exports = {Array2D};
+module.exports = {
+	forEachAsync,
+	mapAsync,
+	Array2D
+};

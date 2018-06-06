@@ -1,95 +1,11 @@
-const {random,fetch} = require('../../Utils');
-const Subreddits = require('./reddit.json');
+const {random} = require('../../Utils');
+const {Reddit,RedditSubscription} = require('./Reddit');
 
-function truncate(x, maxlen) {
-	if (x.length < maxlen) {
-		return x;
-	} else {
-		return x.substring(0, maxlen - 3) + '...';
+function noPostsFound(posts) {
+	if (posts.length == 0) {
+		throw 'No posts found. Try a different sub?';
 	}
-}
-
-function embed(post) {
-	if (typeof(post.subreddit) === 'undefined') {
-		console.error(post);
-	}
-	var e = {
-		title: `[/r/${post.subreddit||'[deleted]'}] ${post.over_18 ? '[NSFW]' : ''} ${truncate(post.title, 180)} - by ${('/u/'+post.author)||'[deleted]'}`,
-		description: '',
-		color: 0xd25a32,
-		footer: {
-			text: new Date(post.created * 1000).toLocaleString()
-		}
-	};
-	if (post.score) {
-		e.description += `${post.score<0?':arrow_down:':':arrow_up:'} ${post.score}`;
-	}
-	if (post.gilded) {
-		e.description += ' | <:redditgold:303781934813675520> ' + post.gilded;
-	}
-	if (post.num_comments) {
-		e.description += ' | :speech_balloon: ' + post.num_comments;
-	}
-	if (/^http/.test(post.url)) {
-		e.url = post.url;
-	}
-	if (post.permalink) {
-		post.permalink = `https://www.reddit.com${post.permalink}`;
-		if (post.permalink != post.url) {
-			e.description += ` | [Permalink](${post.permalink})`;
-		}
-	}
-	if (post.spoiler) {
-		e.description += '\n\n' + '**Spoiler alert!** This post contains spoilers, so please click the permalink.';
-	} else {
-		if (post.is_self) {
-			e.description += '\n\n' + truncate(post.selftext, 1800);
-		} else if (post.domain == 'v.redd.it' || post.domain == 'gfycat.com' || post.url.endsWith('.gifv') || post.domain == 'youtube.com' || post.domain == 'youtu.be') {
-			e.description += '\n\n' + '**Cannot embed video.** :confused:';
-			e.video = {
-				url: post.url
-			};
-		} else if (post.domain && post.domain.includes('reddit.com')) {
-			e.description += '\n\n' + '**Cannot embed X-post.** :confused:';
-		} else {
-			// stupid imgur embed fix
-			if (post.domain == 'imgur.com') {
-				// stupid imgur album embed workaround
-				if (post.url.includes('/a/') || post.url.includes('/gallery/')) {
-					var images = post.preview.images;
-					e.description += '\n\n' + `This Imgur album contains **${images.length}** image(s). Click the permalink to view the full album.`;
-					post.url = images[0].source.url;
-				} else {
-					post.url = 'https://i.imgur.com/' + post.url.split('/').pop() + '.jpg'; // .png, .jpg, doesn't matter
-				}
-			}
-			e.image = {
-				url: post.url
-			};
-		}
-	}
-	return e;
-}
-
-function Reddit(sr, filter = '', t = '', limit = 100) {
-	if (!sr) sr = random(Subreddits);
-	var url = `https://www.reddit.com/r/${sr}/${filter}.json?limit=${limit}`;
-	if (['hour','day','week','month','year','all'].includes(t)) url += `&t=${t}`;
-	else url += '&t=week';
-	return fetch(url)
-	.then(response => {
-		if (typeof(response) === 'object') {
-			return response;
-		} else {
-			return JSON.parse(response);
-		}
-	})
-	.then(response => {
-		if (response.data.children.length == 0) {
-			throw 'No posts found. Try a different sub?';
-		}
-		return random(response.data.children).data;
-	}).then(embed);
+	return posts;
 }
 
 module.exports = {
@@ -99,7 +15,10 @@ module.exports = {
 		info: 'Retrieve a random reddit post from a sub of your choice or one at random.',
 		parameters: ['[subreddit]'],
 		fn({client, arg, channel}) {
-			return Reddit(arg);
+			return Reddit.getSubreddit(arg)
+			.then(noPostsFound)
+			.then(random)
+			.then(post => Reddit.embed(post));
 		},
 		subcommands: {
 			'new': {
@@ -107,7 +26,12 @@ module.exports = {
 				info: 'Get the newest posts of a subreddit.',
 				parameters: ['[subreddit]'],
 				fn({client, arg, channel}) {
-					return Reddit(arg, 'new');
+					return Reddit.getSubreddit(arg, {
+						type: 'new'
+					})
+					.then(noPostsFound)
+					.then(random)
+					.then(post => Reddit.embed(post));
 				}
 			},
 			'rising': {
@@ -115,7 +39,12 @@ module.exports = {
 				info: 'Get the rising posts of a subreddit.',
 				parameters: ['[subreddit]'],
 				fn({client, arg, channel}) {
-					return Reddit(arg, 'rising');
+					return Reddit.getSubreddit(arg, {
+						type: 'rising'
+					})
+					.then(noPostsFound)
+					.then(random)
+					.then(post => Reddit.embed(post));
 				}
 			},
 			'top': {
@@ -123,15 +52,127 @@ module.exports = {
 				info: 'Get the top posts of a subreddit from the last __day__, __week__, __month__, __year__, or from __all__ time.',
 				parameters: ['[subreddit]', '[filter]'],
 				fn({client, args, channel}) {
-					return Reddit(args[0], 'top', args[1]);
+					return Reddit.getSubreddit(args[0], {
+						type: 'top',
+						time: args[1]
+					})
+					.then(noPostsFound)
+					.then(random)
+					.then(post => Reddit.embed(post));
 				}
 			},
 			'controversial': {
 				title: 'Reddit | Controversial',
 				info: 'Get the controversial posts of a subreddit from the last __day__, __week__, __month__, __year__, or from __all__ time.',
 				parameters: ['[subreddit]', '[filter]'],
-				fn({client, args, channel}) {
-					return Reddit(args[0], 'controversial', args[1]);
+				fn({client, args}) {
+					return Reddit.getSubreddit(args[0], {
+						type: 'controversial',
+						time: args[1]
+					})
+					.then(noPostsFound)
+					.then(random)
+					.then(post => Reddit.embed(post));
+				}
+			},
+			'gilded': {
+				aliases: ['golden'],
+				title: 'Reddit | Gilded',
+				info: 'Get gilded posts of a subreddit from the last __day__, __week__, __month__, __year__, or from __all__ time.',
+				parameters: ['[subreddit]', '[filter]'],
+				fn({client, args}) {
+					return Reddit.getSubreddit(args[0], {
+						type: 'gilded',
+						time: args[1]
+					})
+					.then(noPostsFound)
+					.then(random)
+					.then(post => Reddit.embed(post));
+				}
+			},
+			'subbed': {
+				aliases: ['listsubs','listsubscriptions','listsubbed','subbed'],
+				title: 'Reddit | Subscribed Subreddits',
+				info: 'List subreddits this channel is currently subscribed to.',
+				fn({client, channelID, serverID}) {
+					var channel = client.database.get('channels').get(channelID);
+					var sub = new RedditSubscription(channel.reddit);
+					return sub.toString() || 'This channel is not subscribed to any subreddits.';
+				}
+			},
+			'sub': {
+				aliases: ['subscribe', 'add'],
+				title: 'Reddit | Subscribe',
+				info: 'Subscribe to new posts from a subreddit and see them posted in this channel periodically.',
+				parameters: ['...subreddits'],
+				fn({client, args, channelID, serverID}) {
+					client.database.get('channels').modify(channelID, channel => {
+						channel.reddit = new RedditSubscription(channel.reddit);
+						channel.reddit.subscribe(...args);
+						return channel;
+					}).save();
+					return 'This channel is now subscribed to:\n' + args.map(r => '/r/'+r).join('\n');
+				}
+			},
+			'unsub': {
+				aliases: ['unsubscribe', 'remove'],
+				title: 'Reddit | Unsubscribe',
+				info: 'Unsubscribe from a subreddit this channel is subscribed to.',
+				parameters: ['...subreddits'],
+				fn({client, args, channelID}) {
+					client.database.get('channels').modify(channelID, channel => {
+						channel.reddit = new RedditSubscription(channel.reddit);
+						channel.reddit.unsubscribe(...args);
+						return channel;
+					}).save();
+					return 'This channel is now unsubscribed from:\n' + args.map(r => '/r/'+r).join('\n');
+				}
+			},
+			'enable': {
+				aliases: ['disable','toggle'],
+				title: 'Reddit | Enable/Disable Subscription Service',
+				info: 'Toggle the use of the subscription service for this channel.',
+				fn({client, channelID}) {
+					var active = false;
+					client.database.get('channels').modify(channelID, channel => {
+						channel.reddit = new RedditSubscription(channel.reddit);
+						active = channel.reddit.active = !channel.reddit.active;
+						return channel;
+					}).save();
+					return `Subscription service for this channel is now **${active?'enabled':'disabled'}**.`;
+				}
+			},
+			'polling': {
+				aliases: ['pollinterval','polltime'],
+				title: 'Reddit | Set Subscription Polling Interval',
+				info: 'Sets the polling time in seconds for retrieving new posts. Lower means shorter waiting but higher traffic.',
+				parameters: ['time'],
+				fn({client, args, channelID}) {
+					var t = Number(args[0]) * 1000;
+					client.database.get('channels').modify(channelID, channel => {
+						channel.reddit = new RedditSubscription(channel.reddit);
+						channel.reddit.pollInterval = t;
+						return channel;
+					}).save();
+					return `Polling interval set to **${t/1000} seconds**.`;
+				}
+			},
+			'options': {
+				aliases: ['subopts'],
+				title: 'Reddit | Set Subscription Options',
+				info: 'Set subscription options for this channel, which include what type of posts to get, in what time span, and how many posts to poll for.',
+				parameters: ['type','[timespan]','[limit]'],
+				fn({client, args, channelID}) {
+					var [type, time = 'all', limit = 200] = args;
+					limit = Number(limit);
+					client.database.get('channels').modify(channelID, channel => {
+						channel.reddit = new RedditSubscription(channel.reddit);
+						channel.reddit.options.type  = type;
+						channel.reddit.options.time  = time;
+						channel.reddit.options.limit = limit;
+						return channel;
+					}).save();
+					return 'Options saved.';
 				}
 			}
 		}

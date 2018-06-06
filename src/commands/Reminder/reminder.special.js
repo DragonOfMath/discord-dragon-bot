@@ -1,4 +1,4 @@
-const Reminder = require('./Reminder.js');
+const Reminder = require('./Reminder');
 
 module.exports = {
 	id: 'reminder-scheduler',
@@ -9,26 +9,21 @@ module.exports = {
 	},
 	events: {
 		tick(client) {
-			var reminders = client.database.get('client').get(client.id).reminders || [];
+			var clientTable = client.database.get('client');
+			var reminders = clientTable.get(client.id).reminders;
 			var changed = false;
 			var now = Date.now();
 			for (var r = 0; r < reminders.length;) {
-				var rem = new Reminder(reminders[r]);
+				var rem = reminders[r];
 				if (now > rem.when) {
 					console.log('Fulfilled',rem);
-					client.sendMessage({
-						to: rem.who,
-						message: '**Reminder!** ' + rem.what
-					});
+					client.send(rem.who, '**Reminder!** ' + rem.what);
 					reminders.splice(r, 1);
 					changed = true;
 				} else ++r;
 			}
 			if (changed) {
-				client.database.get('client').modify(client.id, DATA => {
-					DATA.reminders = reminders;
-					return DATA;
-				}).save();
+				clientTable.save();
 			}
 		}
 	}

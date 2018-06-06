@@ -14,8 +14,9 @@ const STATUS_COLOR = {
 	FLAGGED:      0x000000
 };
 
-const E621_URL = 'https://e621.net/post/index.json?tags='; // additional params: limit, page
-const E621_POOL_URL = 'https://e621.net/pool/show.json?id=';
+const E621_URL      = 'https://e621.net/post/index.json'; // params: tags, limit, page
+const E621_POST_URL = 'https://e621.net/post/show.json'; // params: id
+const E621_POOL_URL = 'https://e621.net/pool/show.json'; // params: id
 const POST_REGEX = /https?:\/\/e621\.net\/post\/show\/(\d+)/;
 const POOL_REGEX = /https?:\/\/e621\.net\/pool\/show\/(\d+)/;
 const DIRECT_REGEX = /e621.net\/.*\/([0-9a-f]{32})/;
@@ -41,13 +42,15 @@ module.exports = class E621 {
 	static getHash(link) {
 		return link.match(HASH_REGEX);
 	}
+	static get(id) {
+		return fetch(E621_POST_URL, {
+			qs: {id}
+		});
+	}
 	static search(tags = [], blacklist = []) {
-		return fetch(E621_URL + this.sanitizeTags(tags).join(' '))
-		.then(response => {
-			if (typeof(response) === 'object') {
-				return response;
-			} else {
-				return JSON.parse(response);
+		return fetch(E621_URL, {
+			qs: {
+				tags: this.sanitizeTags(tags).join(' ')
 			}
 		})
 		.then(posts => {
@@ -72,22 +75,15 @@ module.exports = class E621 {
 			return posts;
 		});
 	}
-	static searchRandom(tags = [], blacklist = []) {
-		return this.search([...tags, 'order:random'], blacklist);
-	}
-	static searchTop(tags = [], blacklist = []) {
-		return this.search([...tags, 'order:score'], blacklist);
-	}
 	static reverseSearch(url) {
 		try {
 			let hash = this.getHash(url);
 			if (!hash) {
 				throw 'Invalid MD5 hash.';
 			}
-			return this.search([`md5:${hash[0]}`]).then(posts => this.embed(posts[0], 'Reverse Search'));
+			return this.search([`md5:${hash[0]}`]);
 		} catch (e) {
-			console.error(e);
-			return e;
+			return Promise.reject(e);
 		}
 	}
 	static embed(post, title = 'e621') {
@@ -194,16 +190,9 @@ module.exports = class E621 {
 		return embed;
 	}
 	static getPool(id) {
-		if (!id) throw 'Invalid pool ID.';
-		return fetch(E621_POOL_URL+id)
-		.then(response => {
-			if (typeof(response) === 'object') {
-				return response;
-			} else {
-				return JSON.parse(response);
-			}
-		})
-		.then(this.embedPool);
+		return fetch(E621_POOL_URL, {
+			qs: {id}
+		});
 	}
 	static embedPool(pool) {
 		let {

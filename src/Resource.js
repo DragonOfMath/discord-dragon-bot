@@ -29,6 +29,8 @@ class Resource {
 			if (typeof(this._template[k]) === 'function') {
 				norm[k] = null;
 				continue;
+			} else if (typeof(this._template[k]) === 'object') {
+				norm[k] = Object.assign({}, this._template[k]);
 			} else {
 				norm[k] = this._template[k];
 			}
