@@ -17,6 +17,9 @@ class Markdown {
 	static codeblock(x, lang = 'js') {
 		return `\`\`\`${lang}\n${x}\n\`\`\``;
 	}
+	static link(text, url) {
+		return `[${text}](${url})`;
+	}
 	static mention(u) {
 		if (isNaN(+u.id) && isNaN(+u)) {
 			return u;

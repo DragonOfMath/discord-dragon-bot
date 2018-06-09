@@ -35,8 +35,7 @@ module.exports = {
 			var change = false;
 			forEachAsync.call(channelTable.entries(), ([channelID, channel]) => {
 				var r = channel.reddit;
-				if (!r || !r.active) return;
-				if (Object.keys(r.subs).length && now - r.lastPollTime > r.pollInterval) {
+				if (r && r.active && Object.keys(r.subs).length && now - r.lastPollTime > r.pollInterval) {
 					channel.reddit = new RedditSubscription(r);
 					channel.reddit.lastPollTime = now;
 					change = true;
@@ -48,10 +47,14 @@ module.exports = {
 							client.log('Posting subscription to ' + post.subreddit + ' in ' + channelID);
 							var message = channel.reddit.options.type + ' post from /r/' + post.subreddit;
 							var embed = Reddit.quickEmbed(post);
-							return client.send(channelID, message, embed);
+							embed.footer.text += ' ▪ ' + message;
+							return client.send(channelID, '', embed);
 						}
 					});
 				}
+			})
+			.catch(e => {
+				client.error(e);
 			})
 			.then(() => {
 				if (change) channelTable.save();

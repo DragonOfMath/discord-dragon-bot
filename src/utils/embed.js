@@ -198,4 +198,92 @@ class DiscordEmbed {
 	}
 }
 
-module.exports = {DiscordEmbed};
+function tableify(columns = [], rows = [], callback) {
+	if ((columns.length > 3 && columns.length % 3 !== 0) || columns.length > 24) {
+		throw '# of columns must be a multiple of 3 and not be more than 24.';
+	}
+	var fields = columns.map(name => ({
+		name,
+		value: '',
+		inline: true
+	}));
+	var row, item, r;
+	for (item of rows) {
+		row = callback(item);
+		for (r = 0; r < row.length; r++) {
+			fields[r].value += String(row[r]) + '\n';
+		}
+	}
+	return {fields};
+}
+
+function paginate(items, page, itemsPerPage, callback) {
+	itemsPerPage = +itemsPerPage || 20;
+	
+	var totalItems = items.length || Object.keys(items).length;
+	var maxPages = Math.ceil(totalItems / itemsPerPage);
+	
+	if (typeof(page) !== 'number') {
+		page = Number(page);
+	}
+	if (isNaN(page) || page < 0) {
+		page = 1;
+	} else {
+		page = Math.max(1, Math.min(page, maxPages));
+	}
+	
+	var start = (page - 1) * itemsPerPage;
+	var end   = Math.min(start + itemsPerPage, totalItems) - 1;
+	
+	var embed = {};
+	
+	if (items.length > 0) {
+		embed.fields = [];
+		embed.footer = {
+			text: `Page ${page} of ${maxPages} | Showing ${start+1}-${end+1} of ${totalItems} Total`
+		};
+		for (var idx = start, temp; idx <= end; idx++) {
+			temp = callback(items, idx, items[idx]);
+			if (typeof(temp) === 'string') {
+				temp = {
+					name: `#${idx+1}`,
+					value: temp
+				};
+			}
+			embed.fields.push(temp);
+		}
+	} else {
+		embed.description = 'No items to show.';
+	}
+	
+	return embed;
+}
+
+function bufferize(items, delimiter = '\n') {
+	var e = {fields: []};
+	var start = 0, idx, end, item, buffer = '';
+	for (idx = start; idx < items.length; idx++) {
+		if (buffer) buffer += delimiter;
+		item = items[idx];
+		if (buffer.length + item.length > 1000) {
+			end = idx;
+			e.fields.push({
+				name: `${start+1}-${end}`,
+				value: buffer
+			});
+			start = end;
+			buffer = '';
+		}
+		buffer += item;
+	}
+	if (buffer) {
+		end = idx;
+		e.fields.push({
+			name: `${start+1}-${end}`,
+			value: buffer
+		});
+	}
+	return e;
+}
+
+module.exports = {DiscordEmbed,paginate,tableify,bufferize};

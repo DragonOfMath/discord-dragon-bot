@@ -596,6 +596,48 @@ module.exports = {
 						});
 					});
 				}
+			},
+			'stereogram': {
+				aliases: ['magiceye','autostereogram'],
+				info: 'Generate an autostereogram using an image as a depth field. Normally generates for cross-eyed viewing, but you can specify if you want it to generate for wall-eyed viewing.',
+				parameters: ['[imageURL]', '[strength]', '[walleyed]'],
+				fn({client, channelID, args}) {
+					return processImage(client, channelID, args, 'stereogram.jpg', function (image, strength, walleyed) {
+						var w   = image.bitmap.width,
+							h   = image.bitmap.height,
+							p   = 5 + 2 * ~~Math.log2(w/h), // partitions
+							pw  = Math.max(~~(w / p), 50),  // partition width
+							mid = ~~(w / 2);
+						if (w < 100 || w/h < 1) throw 'Image must be at least 100 pixels width and more wide than tall.';
+						strength = strength === undefined ? 8 : Math.max(1,strength)
+						;
+						// set the image to greyscale to simulate a depth map
+						image = image.greyscale().normalize();
+						
+						// create a random dot pattern, but also make characteristic "blotches"
+						var pattern = new Jimp(pw, h);
+						pattern.scan(0, 0, pw, h, function (x, y, idx) {
+							pattern.setPixelColor(Color.random().rgba, x, y);
+						})
+						.blur(random(5,15))
+						.normalize()
+						.emboss()
+						.contrast(random(0.1,0.5));
+						
+						// generate the stereogram by shifting regions in the pattern by the corresponding depth map values
+						var stereogram = new Jimp(w, h);
+						stereogram.scan(0, 0, w, h, function (x, y, idx) {
+							var color = image.getPixelColor(x, y);
+							var depth = (Jimp.intToRGBA(color).r / 255);
+							var shift = ~~(((mid - x) / pw) * depth * strength);
+							if (walleyed) shift *= -1;
+							color = pattern.getPixelColor((x + shift) % pw, y);
+							stereogram.setPixelColor(color, x, y);
+						});
+						
+						return stereogram;
+					});
+				}
 			}
 		}
 	}

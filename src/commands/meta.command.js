@@ -23,6 +23,7 @@ module.exports = {
 		fn(data) {
 			const {client, args, context} = data;
 			var [condition, ifTrue, ifFalse] = args;
+			client.log('If condition:',condition);
 			if (condition) {
 				return client.run(context, ifTrue)
 				.then(_data => {propagate(data,_data)});
@@ -42,15 +43,20 @@ module.exports = {
 		fn(data) {
 			// note: input contains the original, unevaluated arguments
 			const {client, args, context, input} = data;
-			var [condition, command] = args;
+			const [condition, command] = args;
+			client.log('While condition:',condition);
 			if (condition) {
 				return client.run(context, command)
 				.then(_data => {
 					if (_data.error) {
 						propagate(data, _data);
 						return 'While loop canceled.';
-					} else return client.run(context, input);
+					} else {
+						return client.run(context, input);
+					}
 				});
+			} else {
+				client.log('While loop finished.');
 			}
 		}
 	},
@@ -64,8 +70,10 @@ module.exports = {
 		},
 		fn(data) {
 			const {client, args, context} = data;
+			const len = args.length;
 			function loop(ptr) {
-				if (ptr < args.length) {
+				client.log('Batch pointer:',ptr+1,'/',len);
+				if (ptr < len) {
 					return client.run(context, args[ptr])
 					.then(_data => {
 						if (_data.error) {
@@ -74,6 +82,7 @@ module.exports = {
 						} else return loop(ptr+1);
 					});
 				} else {
+					client.log('Batch finished.');
 					//return 'Batch finished.';
 				}
 			}
@@ -90,20 +99,23 @@ module.exports = {
 		},
 		fn(data) {
 			const {client, args, context} = data;
+			const [maxCount,command] = args;
 			function loop(counter) {
-				if (counter > 0) {
-					return client.run(context, args[1])
+				client.log('Loop counter:',counter+1,'/',maxCount);
+				if (counter < maxCount) {
+					return client.run(context, command)
 					.then(_data => {
 						if (_data.error) {
 							propagate(data, _data);
 							return 'Loop run canceled. (counter: `' + counter + '`)';
-						} else return loop(counter-1);
+						} else return loop(counter+1);
 					});
 				} else {
+					client.log('Loop finished.');
 					//return 'Loop finished.';
 				}
 			}
-			return loop(args[0]);
+			return loop(0);
 		}
 	},
 	'delay': {
@@ -116,10 +128,13 @@ module.exports = {
 		},
 		fn(data) {
 			const {client, args, context} = data;
-			return client.wait(args[0])
+			const [delay,command] = args;
+			client.log('Wait:',delay+'ms');
+			return client.wait(delay)
 			.then(() => {
-				if (args[1]) {
-					return client.run(context, args[1])
+				client.log('Wait finished.');
+				if (command) {
+					return client.run(context, command)
 					.then(_data => {propagate(data,_data)});
 				}
 			});
@@ -136,19 +151,24 @@ module.exports = {
 			const {client, args, context} = data;
 			const [repetition, delay, command] = args;
 			function loop(counter) {
-				if (counter > 0) {
+				client.log('Interval counter:',counter+1,'/',repetition);
+				if (counter < repetition) {
 					return client.run(context, command)
 					.then(_data => {
 						if (_data.error) {
 							propagate(data, _data);
 							return 'Interval run canceled. (counter: `' + counter + '`)';
-						} else return client.wait(delay).then(() => loop(counter-1));
+						} else {
+							client.log('Wait:',delay+'ms');
+							return client.wait(delay).then(() => loop(counter+1));
+						}
 					});
 				} else {
+					client.log('Interval loop finished.');
 					//return 'Interval finished.';
 				}
 			}
-			return loop(repetition);
+			return loop(0);
 		}
 	},
 	'cancel': {
@@ -160,7 +180,7 @@ module.exports = {
 			type: 'public'
 		},
 		fn({client, args}) {
-			throw args[0] || 'Cancellation thrown.';
+			throw args[0] || 'MetaCancelError';
 		}
 	},
 	'try': {
@@ -175,7 +195,10 @@ module.exports = {
 			const {client, args, context} = data;
 			return client.run(context, args[0])
 			.then(_data => {
-				if (_data.error) return `(Error caught: ${_data.error})`;
+				if (_data.error) {
+					client.log('Error propagation successfully stopped.');
+					return `(Error caught: ${_data.error})`;
+				}
 			});
 		}
 	},
@@ -189,7 +212,9 @@ module.exports = {
 		fn(data) {
 			const {client, args, context} = data;
 			client.run(context, args[0])
-			.then(_data => {propagate(data,_data)});
+			.then(_data => {
+				propagate(data,_data);
+			});
 		}
 	}
 };

@@ -32,4 +32,15 @@ function quote(text) {
 	return '"' + escape(text) + '"';
 }
 
-module.exports = {strcmp,substrcmp,truncate,escape,quote};
+/**
+	Returns the string inside an HTML tag
+*/
+function innerHTML(html) {
+	try {
+		return html.match(/<[^<>]+>(.+)<\/[^<>]+>$/)[1].trim();
+	} catch (e) {
+		return html;
+	}
+}
+
+module.exports = {strcmp,substrcmp,truncate,escape,quote,innerHTML};
