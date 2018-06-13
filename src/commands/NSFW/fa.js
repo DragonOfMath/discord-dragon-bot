@@ -24,10 +24,7 @@ const Endpoints = {
 			Commissions: Endpoints.join('user', username, 'commissions'),
 			Gallery:     Endpoints.join('user', username, 'gallery'),
 			Scraps:      Endpoints.join('user', username, 'scraps'),
-			Favorites:   Endpoints.join('user', username, 'favorites'),
-			Folder(folder) {
-				return Endpoints.join('user', username, folder);
-			}
+			Favorites:   Endpoints.join('user', username, 'favorites')
 		};
 	},
 	Journal(id) {
@@ -77,10 +74,15 @@ class FAExport {
 		if (page > 1) options.qs.page = page;
 		return fetch(Endpoints.User(username).Gallery, options);
 	}
-	static getFolder(username, folder, page = 1) {
+	static getScraps(username, page = 1) {
 		var options = {qs: {full:1}};
 		if (page > 1) options.qs.page = page;
-		return fetch(Endpoints.User(username).Folder(folder), options);
+		return fetch(Endpoints.User(username).Scraps, options);
+	}
+	static getFavorites(username, page = 1) {
+		var options = {qs: {full:1}};
+		if (page > 1) optios.qs.page = page;
+		return fetch(Endpoints.User(username).Favorites, options);
 	}
 	static getSubmission(id) {
 		return fetch(Endpoints.Submission(id).ID);
@@ -212,7 +214,7 @@ class FurAffinity {
 		tidbits.push(':eye: ' + submission.views);
 		tidbits.push(':heart: ' + submission.favorites);
 		tidbits.push(':speech_balloon: ' + submission.comments);
-		if (/.png|.jpe?g|.gif/.test(submission.download)) {
+		if (/.png|.jpe?g|.gif$/.test(submission.download)) {
 			tidbits.push(':frame_photo: ' + submission.resolution);
 			e.image = {
 				url: submission.download
@@ -228,7 +230,6 @@ class FurAffinity {
 		return e;
 	}
 	static embedJournal(journal) {
-		console.log(journal);
 		var e = {
 			title: `"${journal.title}" by ${journal.name}`,
 			url: journal.link,

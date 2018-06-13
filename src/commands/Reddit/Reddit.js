@@ -9,7 +9,7 @@ const DEFAULT_INTERVAL = 60000;
 
 const VIDEO_DOMAINS = ['v.redd.it','gfycat.com','youtube.com','youtu.be'];
 const VIDEO_FORMATS = ['.gifv','.mp4','.webm'];
-const IMAGE_DOMAINS = ['i.redd.it','imgur.com','i.imgur.com'];
+const IMAGE_DOMAINS = ['i.redd.it','i.reddituploads.com','imgur.com','i.imgur.com'];
 const IMAGE_FORMATS = ['.png','.jpg','.jpeg','.gif'];
 
 class Reddit {
@@ -113,7 +113,7 @@ class Reddit {
 			
 		} else {
 			// nothing else works
-			e.description += post.url;
+			e.description += '\n\n' + post.url;
 		}
 		return e;
 	}
@@ -123,9 +123,8 @@ class Reddit {
 			url: post.permalink ? REDDIT + post.permalink : post.url,
 			description: '',
 			color: COLOR,
-			footer: {
-				text: new Date(post.created * 1000).toLocaleString()
-			}
+			timestamp: new Date(post.created * 1000),
+			footer: {text: ''}
 		};
 		if (post.is_self) {
 			e.description = truncate(post.selftext, 1800);
@@ -198,26 +197,26 @@ class RedditSubscription extends Resource {
 			if (!posts.length) return undefined;
 			
 			// group the posts by subreddit
-			var subredditPools = {};
+			var subreddits = {};
 			for (var post of posts) {
 				var sub = post.subreddit;
-				subredditPools[sub] = subredditPools[sub] || [];
-				subredditPools[sub].push(post);
+				subreddits[sub] = subreddits[sub] || [];
+				subreddits[sub].push(post);
 			}
 			
 			// find the next post of each subreddit pool
-			posts = [];
-			for (var sub in subredditPools) {
-				var pool = subredditPools[sub];
+			var selectedPosts = [];
+			for (var sub in subreddits) {
 				var cache = this.subs[sub.toLowerCase()];
-				var idx = pool.findIndex(post => post.id == cache);
-				idx = idx > -1 ? idx - 1 : pool.length - 1;
-				if (idx > -1) {
-					posts.push(pool[idx]);
+				var pool  = subreddits[sub].filter(post => !cache || post.id > cache);
+				var next  = pool.pop();
+				if (next && next.id != cache) {
+					//console.log(`Next post from ${sub}: ${next.id} (previous: ${cache})`);
+					selectedPosts.push(next);
 				}
 			}
 			
-			return posts;
+			return selectedPosts;
 		});
 	}
 	toString() {

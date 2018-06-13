@@ -45,9 +45,8 @@ module.exports = {
 							var post = random(posts);
 							channel.reddit.updatePostCache(post);
 							client.log('Posting subscription to ' + post.subreddit + ' in ' + channelID);
-							var message = channel.reddit.options.type + ' post from /r/' + post.subreddit;
 							var embed = Reddit.quickEmbed(post);
-							embed.footer.text += ' ▪ ' + message;
+							embed.footer.text = channel.reddit.options.type + ' post from /r/' + post.subreddit;
 							return client.send(channelID, '', embed);
 						}
 					});

@@ -40,7 +40,7 @@ module.exports = class E621 {
 		return tags.map(x => x.replace(/ /g,'_').toLowerCase().trim());
 	}
 	static getHash(link) {
-		return link.match(HASH_REGEX);
+		return String(link).match(HASH_REGEX);
 	}
 	static get(id) {
 		return fetch(E621_POST_URL, {
@@ -81,7 +81,8 @@ module.exports = class E621 {
 			if (!hash) {
 				throw 'Invalid MD5 hash.';
 			}
-			return this.search([`md5:${hash[0]}`]);
+			return this.search([`md5:${hash[0]}`])
+			.then(posts => posts[0]);
 		} catch (e) {
 			return Promise.reject(e);
 		}

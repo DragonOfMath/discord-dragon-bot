@@ -155,13 +155,13 @@ class Commands extends TypeMapBase {
 		}
 	}
 	toHelpEmbed(client, showSuppressedCommands) {
-		var cmds = this.keys;
+		var cmds = this.keys.sort();
 		if (!showSuppressedCommands) {
 			cmds = cmds.filter(cmd => !this[cmd].suppress);
 		}
 		return {
 			title: 'Commands',
-			description: `\`${cmds.join(', ')}\``,
+			description: `\`${cmds.join(' ')}\``,
 			fields: [
 				{
 					name: 'Using Commands',

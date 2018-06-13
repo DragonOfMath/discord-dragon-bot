@@ -333,6 +333,32 @@ module.exports = {
 					permissions.save();
 					return 'Settings saved.' + showErrors(suppressedErrors);
 				}
+			},
+			'Create': {
+				aliases: ['new'],
+				info: 'Create a new temporary command. Surround the code in a code block for proper parsing. By default, unlimited arguments may be passed and all known context members are defined.',
+				parameters: ['name','code'],
+				permissions: {
+					type: 'private'
+				},
+				suppress: true,
+				fn({client, args}) {
+					var [cmd,code] = args;
+					var fn = new Function('data','with (data) {\n' + code + '\n}');
+					if (client.commands.has(cmd)) {
+						throw 'Command already exists: ' + cmd;
+					} else if (cmd in client.commands) {
+						throw 'Cannot override property: ' + cmd;
+					} else {
+						client.commands.set(cmd, cmd, {
+							info: 'This is a temporary command.',
+							suppress: false,
+							analytics: false,
+							fn
+						});
+						return 'Created temporary command: ' + cmd;
+					}
+				}
 			}
 		}
 	}

@@ -52,8 +52,10 @@ class Handler {
 			if (typeof(x) === 'string') {
 				this.response.message = x;
 			} else if (typeof(x) === 'object') {
-				if (x.constructor.name == 'Promise') {
+				if (x.constructor.name === 'Promise') {
 					return x.then(y => this.resolve(y));
+				} else if (x.constructor.name === 'Handler') {
+					// skip
 				} else if (x.message || x.embed || x.file) {
 					this.response = x;
 				} else if (x.title || x.description || x.fields || x.color || x.image || x.video) {

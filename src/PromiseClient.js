@@ -209,7 +209,7 @@ class PromiseClient extends Discord.Client {
 			.then(_messages => {
 				messages = messages.concat(_messages);
 				limit -= 100;
-				if (limit > 0) {
+				if (_messages.length > 0 && limit > 0) {
 					if (after) {
 						after = _messages[0].id;
 					} else {

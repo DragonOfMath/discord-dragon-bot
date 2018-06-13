@@ -21,9 +21,7 @@ module.exports = {
 				info: 'When given only the direct link to an image on e621, it can be tough locating the source. This command will help to locate a post with only its hash, usually given in the filename.',
 				parameters: ['hash|imagelink'],
 				fn({client, args, userID, channelID}) {
-					var hash = e621.getHash(args[0]);
-					
-					return e621.reverseSearch(hash)
+					return e621.reverseSearch(args[0])
 					.then(post => e621.embed(post, 'Reverse Search'));
 				}
 			},

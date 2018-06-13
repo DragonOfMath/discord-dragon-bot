@@ -69,7 +69,8 @@ class DragonBot extends DebugClient {
 	stop() {
 		super.stop();
 		this.presenceText = 'Bye! \uD83D\uDC4B';
-		this.wait(Constants.DragonBot.DISCONNECT_DELAY).then(()=>this.disconnect());
+		this.wait(Constants.DragonBot.DISCONNECT_DELAY)
+		.then(() => this.disconnect());
 	}
 	/**
 		Deletes the bot's most recent message in the channel,
@@ -77,10 +78,32 @@ class DragonBot extends DebugClient {
 		@arg {Snowflake} channelID - the channel ID in which to delete the bot's last message
 	*/
 	undo(channelID) {
-		return this.getMessages({channelID,limit:25})
+		return this.getMessages({
+			channelID,
+			limit: Constants.DragonBot.LAST_COMMAND_LIMIT
+		})
 		.then(messages => messages.find(m => m.author.id == this.id))
 		.then(message => {
 			if (message) return this.deleteMessage({channelID, messageID: message.id});
+		});
+	}
+	/**
+		Finds a user's last command in the given channel and run it again
+	*/
+	redo(channelID, userID) {
+		return this.getMessages({
+			channelID,
+			limit: Constants.DragonBot.LAST_COMMAND_LIMIT,
+			before: this.channels[channelID].last_message_id
+		})
+		.then(messages => messages.find(m => {
+			return (!userID || m.author.id == userID) &&
+				(m.content.startsWith(this.PREFIX) &&
+					!['redo','undo'].includes(m.content.substring(1).toLowerCase()));
+		}))
+		.then(m => {
+			if (!m) return 'Command not found.';
+			return this._handle(null, userID, channelID, m);
 		});
 	}
 	/**
@@ -216,22 +239,30 @@ class DragonBot extends DebugClient {
 			return;
 		}
 		// bot shouldn't handle automated messages
-		if (WSMessage.d.webhook_id || WSMessage.d.application) {
+		if (WSMessage && (WSMessage.d.webhook_id || WSMessage.d.application)) {
 			return;
 		}
-		
-		// a mention at the start of the message will help prevent other bots from using the same message
-		var mention = md.mention(this.id);
-		if (message.startsWith(mention)) {
-			message = message.substring(mention.length).trim();
+		// bot shouldn't respond to empty messages
+		if (!message) {
+			return;
 		}
 		
 		try {
 			var context = new Context(this, userID, channelID, message, WSMessage);
-			var input = CommandParser.parse(message);
-			this.run(context, input).catch(e => this.error(e));
+			
+			// a mention at the start of the message will help prevent other bots from using the same message
+			var mention = md.mention(this.id);
+			if (typeof(context.message) === 'string') {
+				if (context.message.startsWith(mention)) {
+					context.message = context.message.substring(mention.length).trim();
+				}
+			}
+			
+			var input = CommandParser.parse(context.message);
+			return this.run(context, input).catch(e => this.error(e));
 		} catch (e) {
 			this.error(e);
+			return Promise.reject(e);
 		}
 	}
 	/**
@@ -242,7 +273,11 @@ class DragonBot extends DebugClient {
 	*/
 	run(context, input) {
 		try {
-			this.log(`${context.server.name} > ${md.atChannel(context.channel)} > ${md.atUser(context.user)}: ${input.text||'<empty>'}`);
+			if (context.server) {
+				this.log(`${context.server.name} > ${md.atChannel(context.channel)} > ${md.atUser(context.user)}: ${input.text||'<empty>'}`);
+			} else {
+				this.log(`Direct Messages > ${md.atUser(context.user)}: ${input.text||'<empty>'}`);
+			}
 			
 			// bot shouldn't respond to anyone but the owner if set to ignore them
 			if (this._ignoreUsers && !context.user.bot && context.userID != this.ownerID) {

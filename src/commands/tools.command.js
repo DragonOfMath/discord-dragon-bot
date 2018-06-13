@@ -88,8 +88,21 @@ module.exports = {
 		permissions: {
 			type: 'public'
 		},
-		fn({client, channelID, messageID}) {
-			client.undo(channelID);
+		fn({client, channelID}) {
+			return client.undo(channelID);
+		}
+	},
+	'redo': {
+		aliases: ['f5'],
+		category: 'Misc',
+		info: 'Re-runs the last command you or a specific user gave, except for `redo` and `undo`.',
+		parameters: ['[user]'],
+		permissions: {
+			type: 'public'
+		},
+		fn({client, channelID, userID, args}) {
+			if (args[0]) userID = md.userID(args[0]) || userID;
+			return client.redo(channelID, userID);
 		}
 	}
 };
