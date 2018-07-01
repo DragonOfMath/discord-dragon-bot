@@ -33,6 +33,19 @@ function quote(text) {
 }
 
 /**
+	checks if the substring at the given index matches
+	(alternatively, if text is an array, does a simple comparison)
+*/
+function includesAt(text, sub, idx) {
+	if (typeof(text) === 'string') {
+		return text.substr(idx, sub.length) == sub;
+	} else {
+		return text[idx] == sub;
+	}
+}
+
+
+/**
 	Returns the string inside an HTML tag
 */
 function innerHTML(html) {
@@ -43,4 +56,52 @@ function innerHTML(html) {
 	}
 }
 
-module.exports = {strcmp,substrcmp,truncate,escape,quote,innerHTML};
+/**
+	Replaces entities such as &amp; with &
+*/
+const HTML_ENTITY = /&#?(.+);/g;
+const ENTITY_MAP = {
+	'lt': '<',
+	'gt': '>',
+	'amp': '&',
+	'quot': '"',
+	'apos': '\'',
+	'cent': '¢',
+	'pound': '£',
+	'yen': '¥',
+	'euro': '€',
+	'copy': '©',
+	'reg': '®'
+};
+function unescapeHTMLEntities(text) {
+	return text.replace(HTML_ENTITY, function (html, code) {
+		return ENTITY_MAP[code] || String.fromCharCode(code) || code;
+	});
+}
+
+/**
+	Checks if a string is all uppercase
+*/
+function isUpperCase(text) {
+	return text === text.toUpperCase();
+}
+
+/**
+	Checks if a string is all lowercase
+*/
+function isLowerCase(text) {
+	return text === text.toLowerCase();
+}
+
+module.exports = {
+	strcmp,
+	substrcmp,
+	truncate,
+	escape,
+	quote,
+	includesAt,
+	innerHTML,
+	unescapeHTMLEntities,
+	isUpperCase,
+	isLowerCase
+};

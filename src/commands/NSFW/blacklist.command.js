@@ -8,6 +8,7 @@ module.exports = {
 		category: 'NSFW',
 		title: 'e621 Tag Blacklist',
 		info: 'Manage the tag blacklist for e621 content. Tags are separated by spaces; tags that *would* have spaces in them, use an underscore `_` instead (e.g. `sonic_(series)`.',
+		permissions: 'privileged',
 		subcommands: {
 			'replace': {
 				aliases: ['set'],

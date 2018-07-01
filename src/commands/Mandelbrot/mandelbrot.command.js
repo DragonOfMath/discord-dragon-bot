@@ -32,6 +32,7 @@ module.exports = {
 		title: 'Mandelbrot Viewer',
 		info: 'Renders the current view of the Mandelbrot Set. Optionally, you may specify the width and height of the render (max 2000x2000).',
 		parameters: ['[width]','[height]'],
+		permissions: 'inclusive',
 		fn({client, args, channelID}) {
 			var [width,height] = args.map(Number);
 			mandelbrot.width  = width  ? Math.max(100, Math.min(width,  2000)) : 600;
@@ -356,6 +357,7 @@ module.exports = {
 		category: 'Fun',
 		title: 'Mandelbrot Shader',
 		info: 'Displays the shader settings for rendering the Mandelbrot Set.',
+		permissions: 'inclusive',
 		fn() {
 			return style.toEmbedObject();
 		},

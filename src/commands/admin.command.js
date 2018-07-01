@@ -11,9 +11,7 @@ module.exports = {
 		title: 'Run JavaScript',
 		info: 'Run JavaScript code within the bot.',
 		parameters: ['...code'],
-		permissions: {
-			type: 'private'
-		},
+		permissions: 'private',
 		suppress: true,
 		fn({client,context,input,arg}) {
 			with (context) {
@@ -27,9 +25,7 @@ module.exports = {
 		title: 'Presence',
 		info: 'Sets the bot\'s current presence.',
 		parameters: ['game','[status]'],
-		permissions: {
-			type: 'private'
-		},
+		permissions: 'private',
 		suppress: true,
 		fn({client, args}) {
 			var [name, status = 'online'] = args;
@@ -40,11 +36,9 @@ module.exports = {
 		aliases: ['stopbot','quit','abort','exit','ctrlq'],
 		category: 'Admin',
 		title: 'Stop Bot',
-		info: 'Stops execution of the bot (Optional flag arguments: `-noidle`, `-nodc`, `-nosave`, `-nomsg`)',
+		info: 'Stops execution of the bot.',
 		parameters: ['[...flags]'],
-		permissions: {
-			type: 'private'
-		},
+		permissions: 'private',
 		suppress: true,
 		fn({client, args}) {
 			return client.stop(args);
@@ -55,9 +49,7 @@ module.exports = {
 		category: 'Admin',
 		info: 'Send a message through the bot to another dimension.',
 		parameters: ['target','...message'],
-		permissions: {
-			type: 'private'
-		},
+		permissions: 'private',
 		suppress: true,
 		fn({client, args}) {
 			let [channelID, ...message] = args;
@@ -73,22 +65,19 @@ module.exports = {
 		category: 'Admin',
 		info: 'Adds a temporary alias for a command.',
 		parameters: ['...command:alias'],
-		permissions: {
-			type: 'private'
-		},
+		permissions: 'private',
 		suppress: true,
 		fn({client, args}) {
 			var pairs = args.map(a => a.split(Constants.Symbols.KEY));
 			var result = [];
 			for (var [cmd,alias] of pairs) {
 				var cmds = client.commands.get(cmd);
-				if (cmds.length == 1) {
-					cmd = cmds[0];
-					cmd.addAlias(alias);
-					result.push(`\`${alias}\` => \`${cmd.fullID}\``);
-				} else {
+				if (cmds.length != 1) {
 					throw `\`${cmd}\` is an invalid command identifier.`;
 				}
+				cmd = cmds[0];
+				cmd.addAlias(alias);
+				result.push(`\`${alias}\` => \`${cmd.fullID}\``);
 			}
 			return result.join('\n');
 		}
@@ -98,9 +87,7 @@ module.exports = {
 		title: 'Ignoring',
 		info: 'Toggles ignoring other users and bots (the owner is not affected).',
 		parameters: ['<users|bots|none>'],
-		permissions: {
-			type: 'private'
-		},
+		permissions: 'private',
 		suppress: true,
 		fn({client, args, channelID}) {
 			switch (args[0]) {
@@ -121,9 +108,7 @@ module.exports = {
 		category: 'Admin',
 		info: 'Toggles the use of embeds in messages.',
 		parameters: ['[boolean]'],
-		permissions: {
-			type: 'private'
-		},
+		permissions: 'private',
 		suppress: true,
 		fn({client, args}) {
 			client._enableEmbedding = typeof args[0] !== 'undefined' ? Boolean(args[0]) : !client._enableEmbedding;
@@ -135,9 +120,7 @@ module.exports = {
 		category: 'Admin',
 		info: 'Toggles the use of text-to-speech in messages.',
 		parameters: ['[boolean]'],
-		permissions: {
-			type: 'private'
-		},
+		permissions: 'private',
 		suppress: true,
 		fn({client, args}) {
 			client._textToSpeech = typeof args[0] !== 'undefined' ? Boolean(args[0]) : !client._textToSpeech;
@@ -148,10 +131,7 @@ module.exports = {
 		category: 'Admin',
 		info: 'Toggles typing simulation before each message.',
 		parameters: ['[boolean]'],
-		permissions: {
-			type: 'private'
-		},
-		suppress: true,
+		permissions: 'private',
 		suppress: true,
 		fn({client, args}) {
 			client._simulateTyping = typeof args[0] !== 'undefined' ? Boolean(args[0]) : !client._simulateTyping;
@@ -163,9 +143,7 @@ module.exports = {
 		category: 'Admin',
 		info: 'Display the arguments, which can be the output of an expression.',
 		parameters: ['...arguments'],
-		permissions: {
-			type: 'private'
-		},
+		permissions: 'private',
 		suppress: true,
 		fn({client, args}) {
 			return md.codeblock(args.map(String).join(' '));
@@ -176,34 +154,28 @@ module.exports = {
 		title: 'Logging',
 		info: 'Sets the logging level of the bot.\n- 0 = Don\'t log anything\n- 1 = Dont\'t log errors and warnings\n- 2 = Normal logging\n- 3 = Log everything',
 		parameters: ['level'],
-		permissions: {
-			type: 'private'
-		},
+		permissions: 'private',
 		suppress: true,
 		fn({client, args}) {
 			client._level = Math.max(0, Math.min(args[0], 3));
-			return 'Logging level set to ' + md.bold(['None','Limited','Normal','All'][client._level]);
+			return 'Logging level set to ' + md.bold(Constants.DragonBot.LOGGING[client._level]);
 		}
 	},
 	'console': {
 		category: 'Admin',
 		title: 'Console',
 		info: 'Interface for printing information to the console window.',
-		permissions: {
-			type: 'private'
-		},
+		permissions: 'private',
 		suppress: true,
 		analytics: false,
 		subcommands: {
 			'log': {
+				//aliases: ['info','notice','warn','error'],
 				title: 'Console | Log',
 				info: 'General logging of information.',
 				parameters: ['...data'],
-				permissions: {
-					type: 'private'
-				},
 				analytics: false,
-				fn({client,args}) {
+				fn({client,cmds,args}) {
 					client.log(...args);
 				}
 			},
@@ -211,21 +183,24 @@ module.exports = {
 				title: 'Console | Info',
 				info: 'Information-level logging of information.',
 				parameter: ['...data'],
-				permissions: {
-					type: 'private'
-				},
 				analytics: false,
 				fn({client,args}) {
 					client.info(...args);
+				}
+			},
+			'notice': {
+				title: 'Console | Notice',
+				info: 'Notice-level logging of information.',
+				parameters: ['...data'],
+				analytics: false,
+				fn({client,args}) {
+					client.notice(...args);
 				}
 			},
 			'warn': {
 				title: 'Console | Warn',
 				info: 'Warning-level logging of information.',
 				parameters: ['...data'],
-				permissions: {
-					type: 'private'
-				},
 				analytics: false,
 				fn({client,args}) {
 					client.warn(...args);
@@ -235,9 +210,6 @@ module.exports = {
 				title: 'Console | Error',
 				info: 'Error-level logging of information.',
 				parameters: ['...data'],
-				permissions: {
-					type: 'private'
-				},
 				analytics: false,
 				fn({client,args}) {
 					client.error(...args);
@@ -246,12 +218,9 @@ module.exports = {
 			'clear': {
 				title: 'Console | Clear',
 				info: 'Clears the console.',
-				permissions: {
-					type: 'private'
-				},
 				analytics: false,
 				fn({client}) {
-					console.log('\n'.repeat(process.stdout.rows));
+					console.log('\n'.repeat(100));
 				}
 			}
 		}
@@ -261,13 +230,25 @@ module.exports = {
 		category: 'Admin',
 		title: 'Memory Snapshot',
 		info: 'Takes a snapshot of the internal client data.',
-		permissions: {
-			type: 'private'
-		},
+		permissions: 'private',
 		suppress: true,
 		fn({client}) {
 			client.snapshot('debug');
 			return 'Snapshot of memory saved.';
 		}
-	}
+	}/*,
+	'prefix': {
+		category: 'Admin',
+		title: 'Change Prefix',
+		info: 'Set the bot\'s prefix in the server.',
+		permissions: 'privileged',
+		parameters: ['char'],
+		fn({client, serverID, args}) {
+			client.database.get('servers').modify(serverID, server => {
+				server.prefix = args[0];
+				return server;
+			}).save();
+			return 'Server prefix set to ' + md.code(args[0]);
+		}
+	}*/
 };

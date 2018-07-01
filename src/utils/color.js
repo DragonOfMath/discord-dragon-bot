@@ -97,6 +97,10 @@ class Color {
 	interpolate(c,w) {
 		return Color.interpolate(this, c, w);
 	}
+	distance(c) {
+		var diff = this.subtract(c);
+		return Math.sqrt((diff.r * diff.r) + (diff.g * diff.g) + (diff.b * diff.b) + (diff.a * diff.a)) / 255;
+	}
 	reset() {
 		this.r = this.g = this.b = 0;
 	}
@@ -107,6 +111,9 @@ class Color {
 		return new Color(this);
 	}
 	
+	static from(obj) {
+		return new Color(obj);
+	}
 	static truncate(x) {
 		return Math.max(0, Math.min(x | 0, 0xFF));
 	}

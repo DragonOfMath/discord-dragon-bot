@@ -92,9 +92,12 @@ class Blackjack extends Session {
 			data: {},
 			permissions: {
 				type: 'inclusive',
-				channels: [context.channelID],
-				users:    [context.userID],
-				servers:  [context.serverID]
+				servers: {
+					[context.serverID]: {
+						users: [context.userID],
+						channels: [context.channelID]
+					}
+				}
 			},
 			resolver({client, message, userID}) {
 				var choice = message.toLowerCase();

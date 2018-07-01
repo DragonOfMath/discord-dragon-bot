@@ -1,16 +1,82 @@
-const Grant = require('./Grant');
-const {Markdown:md}  = require('./Utils');
+const Resource  = require('./Resource');
+const Grant     = require('./Grant');
+const Constants = require('./Constants').Permissions;
+const {Markdown:md,union,diff} = require('./Utils');
 
-const PUBLIC    = 'public';    // no permissions
-const WHITELIST = 'inclusive'; // whitelisted users
-const BLACKLIST = 'exclusive'; // not blacklisted users
-const PRIVATE   = 'private' ;  // bot owner only
+/** 
+	@class ServerPermissions
+	@extends Resource
+	Defines a datatype for server-specific permissions
+*/
+class ServerPermissions extends Resource {
+	constructor(serverData) {
+		super(Constants.TEMPLATE, serverData);
+	}
+	get usersAsMarkdown() {
+		return this.users.map(md.mention).join(', ');
+	}
+	get rolesAsMarkdown() {
+		return this.roles.map(md.role).join(', ');
+	}
+	get channelsAsMarkdown() {
+		return this.channels.map(md.channel).join(', ');
+	}
+	
+	getUserNames(client) {
+		return this.users.map(u => client.users[u].name).join(', ');
+	}
+	getRoleNames(server) {
+		return this.roles.map(r => server.roles[r].name).join(', ');
+	}
+	getChannelNames(server) {
+		return this.channels.map(c => server.channels[c].name).join(', ');
+	}
+	
+	toString(client, server) {
+		return '**Users**: ' + (this.getUserNames(client) || 'everyone')
+		+ '\n**Roles**: '    + (this.getRoleNames(server) || 'all roles')
+		+ '\n**Channels**: ' + (this.getChannelNames(server) || 'all channels');
+	}
+	embed(client, server) {
+		return {
+			title: server.name + ' - Permissions',
+			fields: [
+				{
+					name: 'Users',
+					value: this.usersAsMarkdown || 'everyone'
+				},
+				{
+					name: 'Roles',
+					value: this.rolesAsMarkdown || 'all roles'
+				},
+				{
+					name: 'Channels',
+					value: this.channelsAsMarkdown || 'all channels'
+				}
+			]
+		};
+	}
+	add(data) {
+		for (var t of Constants.TARGETS) {
+			this[t] = union(this[t], data[t]);
+		}
+		return this;
+	}
+	remove(data) {
+		for (var t of Constants.TARGETS) {
+			this[t] = diff(this[t], data[t]);
+		}
+		return this;
+	}
+}
 
-const TYPES = [PUBLIC,WHITELIST,BLACKLIST,PRIVATE];
-const TARGETS = ['users','roles','channels','servers'];
-
-const PUBLIC_STRING = 'Public: usable by everyone, everywhere.';
-const PRIVATE_STRING = 'Private: only the bot owner may use this.';
+function makeAccessor(obj, prop, value) {
+	return Object.defineProperty(obj, prop, {
+		get: function () {return value},
+		configurable: true,
+		enumerable: false
+	});
+}
 
 /**
 	Permissions class
@@ -18,194 +84,141 @@ const PRIVATE_STRING = 'Private: only the bot owner may use this.';
 	If permission is not granted, it will return the reason why.
 */
 class Permissions {
-	/**
-		Permissions class constructor
-		Ensures the given conditions are consistent; if not, it throws an error message
-		@arg {Array<String>} [users] - array of usernames that something is exclusive to/excluded from
-		 * Empty implies everyone can use
-		@arg {Array<String>} [roles] - array of role names that something is exclusive to/excluded from
-		 * Empty implies any role can use
-		@arg {Array<String>} [channels] - array of channel names that something is exclusive to
-		 * Empty implies it is usable everywhere
-	*/
-	constructor({ type = WHITELIST, users = [], roles = [], channels = [], servers = [] }, binding) {
-		if (TYPES.indexOf(type) > -1) {
-			this.type = type;
+	constructor(data, binding) {
+		this.servers = {};
+		if (typeof(data) === 'object') {
+			this.type = data.type;
+			this.copy(data);
+		} else if (typeof(data) === 'string') {
+			this.type = data;
 		} else {
-			throw 'Invalid type: ' + type;
+			this.type = Constants.TYPES.WHITELIST;
 		}
-		if (this.isPublic || this.isPrivate) {
-			if (users.length > 0 || roles.length > 0 || channels.length || servers.length)
-				throw 'Public/Private permissions cannot have blacklisted or whitelisted items.';
+		if (!this.constructor.resolveType(this.type)) {
+			throw 'Invalid type: ' + this.type;
 		}
 		
-		this.users    = users;
-		this.roles    = roles;
-		this.channels = channels;
-		this.servers  = servers;
-		
-		if (binding) {
-			this.binding = binding;
-		}
+		if (binding) this.binding = binding;
 	}
 	set binding(b) {
-		Object.defineProperty(this, '_obj', {
-			value: b,
-			writable: false
-		});
+		makeAccessor(this, '_obj', b);
 	}
 	get binding() {
 		return this._obj;
 	}
 	get id() {
-		let o = this._obj;
-		return o.fullID || o.id || '(This)';
+		return (this._obj && (this._obj.fullID || this._obj.id)) || '(This)';
 	}
+	get inherited() {
+		var p = this;
+		while (p.binding && p.binding.permissions && p.isInherited) {
+			p = this.binding.supercommand.permissions;
+		}
+		return p;
+	}
+	
 	get isInclusive() {
-		return this.type == WHITELIST;
+		return this.type == Constants.TYPES.WHITELIST;
 	}
 	get isExclusive() {
-		return this.type == BLACKLIST;
+		return this.type == Constants.TYPES.BLACKLIST;
 	}
 	get isPublic() {
-		return this.type == PUBLIC;
+		return this.type == Constants.TYPES.PUBLIC;
 	}
 	get isPrivate() {
-		return this.type == PRIVATE;
+		return this.type == Constants.TYPES.PRIVATE;
 	}
-	/**
-		Inherit Permissions method
-		Merges the items of the parameter with the current instance, then validates
-		@arg {Permissions|Object} permissions
-	*/
-	inherit(permissions) {
-		if (!(permissions instanceof Permissions)) {
-			permissions = new Permissions(permissions);
-		}
-		
-		this.checkForConflict(permissions);
-		
-		for (let t of TARGETS) {
-			this[t] = this.merge(this[t], permissions[t]);
-		}
+	get isPrivileged() {
+		return this.type == Constants.TYPES.PRIVILEGED;
 	}
-	checkForConflict(permissions) {
-		let conflictStr = `${this.type == permissions.type ? 'Redundancy' : 'Paradox'}`
-		let conflictType = `${this.type} vs ${permissions.type}`
-		for (let u of this.users) {
-		if (permissions.users.indexOf(u) > -1)
-				throw `${conflictStr}: ${conflictType} for User #${u}`
-		}
-		for (let r of this.roles) {
-			if (permissions.roles.indexOf(r) > -1)
-				throw `${conflictStr}: ${conflictType} for Role #${r}`
-		}
-		for (let c of this.channels) {
-			if (permissions.channels.indexOf(c) > -1)
-				throw `${conflictStr}: ${conflictType} for Channel #${c}`
-		}
-		for (let s of this.servers) {
-			if (permissions.servers.indexOf(s) > -1)
-				throw `${conflictStr}: ${conflictType} for Server #${s}`
-		}
+	get isInherited() {
+		return this.type === Constants.TYPES.INHERIT;
 	}
-	/**
-		Combine 'a' with 'b' such that 'b' contains no elements already found in 'a'
-	*/
-	merge(a, b) {
-		if (b && b.length) {
-			return a.concat(b.filter(x => a.indexOf(x) < 0));
+	
+	get(id) {
+		return id in this.servers ? this.servers[id] : new ServerPermissions();
+	}
+	set(id, data) {
+		if (id in this.servers) {
+			this.servers[id].copy(data);
 		} else {
-			return a;
+			this.servers[id] = new ServerPermissions(data);
 		}
 	}
+	
 	/**
-		Filter 'a' such that it contains no elements in 'b'
+		Checks with the current server permissions for the given context.
 	*/
-	separate(a, b) {
-		if (b && b.length) {
-			return a.filter(x => b.indexOf(x) < 0);
-		} else {
-			return a;
+	check({client, context}) {
+		// check inheritance
+		if (this.isInherited) {
+			if (this.binding.supercommand) {
+				return this.inherited.check({client, context});
+			} else {
+				throw 'Permissions cannot be inherited from nothing.';
+			}
 		}
-	}
-	/**
-		Checks that the arguments, user, and channel are permissed.
-		@arg {Array<String>} args - Contains the arguments passed, or an empty array if otherwise
-		@arg {String} uid - User ID
-		@arg {String} cid - Channel ID
-	*/
-	check({client, user, channel, server, isDM}) {
-		//this.log();
 		
 		// check bot ownership permission
 		if (this.isPrivate) {
-			if (user && user.id == client.ownerID) {
+			if (context.user && context.user.id == client.ownerID) {
 				return Grant.granted();
 			} else {
-				return Grant.denied(PRIVATE_STRING);
+				return Grant.denied(Constants.STRINGS.PRIVATE);
 			}
 		}
 		
-		// check unconditional permission
-		if (this.isPublic) {
+		// check privileged user permission
+		if (this.isPrivileged) {
+			if (context.server && context.member) {
+				if (Permissions.memberHasPermission(context.server, context.member, Constants.PRIVILEGED_PERMISSION)) {
+					return Grant.granted();
+				} else {
+					return Grant.denied(`${md.mention(context.user)} does not have privileged permission.`);
+				}
+			} else {
+				return Grant.denied(`This command may only be used by users with Manage Guild.`);
+			}
+		}
+		
+		// check unconditional, if the message is from a DM, or if the server has no permission settings
+		if (this.isPublic || context.isDM || !(context.server && context.server.id in this.servers)) {
 			return Grant.granted();
 		}
 		
-		var users, roles, channels;
-		if (isDM) {
-			// DMs can be tricky...
-			users = this.users;
-			roles = [];
-			channels = this.channels;
-		} else {
-			// check server right away
-			if (server && this.servers.length > 0) {
-				let hasServer = this.servers.includes(server.id);
-				if (this.isExclusive && hasServer) {
-					return Grant.denied(`This server is blacklisted.`);
-				} else if (this.isInclusive && !hasServer) {
-					return Grant.denied(`This server is not whitelisted.`);
-				}
-			}
-			
-			users = this.users.filter(u => !!server.members[u]);
-			roles = this.roles.filter(r => !!server.roles[r]);
-			channels = this.channels.filter(c => !!server.channels[c]);
-		}
+		// get permissions for the server
+		var sp = this.servers[context.server.id];
 		
 		// check users
-		if (user && users.length > 0) {
-			let hasUser = users.includes(user.id);
+		if (context.user && sp.users.length > 0) {
+			var hasUser = sp.users.includes(context.user.id);
 			if (this.isExclusive && hasUser) {
-				return Grant.denied(`${md.mention(user.id)} is blacklisted from using that command.`);
+				return Grant.denied(`${md.mention(context.user)} is blacklisted from using that command.`);
 			} else if (this.isInclusive && !hasUser) {
-				return Grant.denied(`${md.mention(user.id)} is not whitelisted to use that command.`);
+				return Grant.denied(`${md.mention(context.user)} is not whitelisted to use that command.`);
 			}
 		}
-		
 		// check roles
-		if (user && roles.length > 0) {
-			let userRoles = server.members[user.id].roles;
-			let hasRole = roles.some(r => userRoles.includes(r));
+		if (context.roles && sp.roles.length > 0) {
+			var hasRole = sp.roles.some(r => context.member.roles.some(role => role.id == r));
 			if (this.isExclusive && hasRole) {
-				return Grant.denied(`One or more of ${md.mention(user.id)}'s roles is blacklisted: ${roles.map(r => server.roles[r].name).join(', ')}`);
+				return Grant.denied(`One or more of ${md.mention(context.user)}'s roles is blacklisted: ${sp.getRoleNames(context.server)}`);
 			} else if (this.isInclusive && !hasRole) {
-				return Grant.denied(`None of ${md.mention(user.id)}'s roles are whitelisted: ${roles.map(r => server.roles[r].name).join(', ')}`);
+				return Grant.denied(`None of ${md.mention(context.user)}'s roles are whitelisted: ${sp.getRoleNames(context.server)}`);
 			}
 		}
-		
 		// check channels
-		if (channel && channels.length > 0) {
-			let hasChannel = channels.includes(channel.id);
+		if (context.channel && sp.channels.length > 0) {
+			var hasChannel = sp.channels.includes(context.channel.id);
 			if (this.isExclusive && hasChannel) {
-				return Grant.denied(`This ${isDM?'DM channel':'channel'} is blacklisted: ${channels.map(md.channel).join(' ')}`);
+				return Grant.denied(`This channel is blacklisted: ${sp.channelsAsMarkdown}`);
 			} else if (this.isInclusive && !hasChannel) {
-				return Grant.denied(`This ${isDM?'DM channel':'channel'} is not whitelisted: ${channels.map(md.channel).join(' ')}`);
+				return Grant.denied(`This channel is not whitelisted: ${sp.channelsAsMarkdown}`);
 			}
 		}
 		
-		// user is granted full permission to use the command
+		// granted full permission to use the command
 		return Grant.granted();
 	}
 	/**
@@ -215,181 +228,139 @@ class Permissions {
 	*/
 	toString(client, server) {
 		if (this.isPrivate) {
-			return PRIVATE_STRING;
+			return Constants.STRINGS.PRIVATE;
 		}
 		
 		if (this.isPublic) {
-			return PUBLIC_STRING;
+			return Constants.STRINGS.PUBLIC;
 		}
 		
-		if (!server) {
-			return 'Permissions can only be viewed on a server.';
+		if (this.isPrivileged) {
+			return Constants.STRINGS.PRIVILEGED;
 		}
 		
-		let channels = this.channels.filter(c => !!server.channels[c]);
-		let roles = this.roles.filter(r => !!server.roles[r]);
-		let users = this.users.filter(u => !!server.members[u]);
-		
-		var temp = '';
-		if (this.servers.length > 0 && this.servers.indexOf(server.id) > -1) {
-			temp += `${this.isExclusive?'Excluded from':'Exclusive to'} ${md.bold(server.name)}` + '\n';
+		if (this.isInherited) {
+			var p = this.inherited;
+			return p.toString(client, server) + `\n(inherited from ${p.id})`;
 		}
 		
-		if (channels.length > 0) {
-			temp += `${this.isExclusive?'Excluded':'Allowed only'} in these channels: ${channels.map(md.channel).join(' ')}` + '\n';
+		var str;
+		if (this.isExclusive) {
+			str = Constants.STRINGS.BLACKLIST;
+		} else {
+			str = Constants.STRINGS.WHITELIST;
 		}
-		
-		if (roles.length > 0) {
-			temp += `${this.isExclusive?'Excludes':'Requires one of'} these roles: ${roles.map(md.role).join(' ')}` + '\n';
+		if (server) {
+			str += '\n' + this.get(server.id).toString(client, server);
+		} else {
+			str += '\n' + 'Permissions can only be viewed on a server.';
 		}
-		
-		if (users.length > 0) {
-			temp += `${this.isExclusive?'Excluded from':'Exclusive to'} these users: ${users.map(md.mention).join(' ')}` + '\n';
-		}
-		
-		if (!temp) {
-			temp = 'No permission settings';
-		}
-		
-		return temp;
+		return str;
 	}
-	toDebugEmbed(client) {
+	embed(client, server) {
 		if (this.isPrivate) {
-			return PRIVATE_STRING;
+			return Constants.STRINGS.PRIVATE;
 		}
 		if (this.isPublic) {
-			return PUBLIC_STRING;
+			return Constants.STRINGS.PUBLIC;
+		}
+		if (this.isPrivileged) {
+			return Constants.STRINGS.PRIVILEGED;
+		}
+		if (this.isInherited) {
+			var p = this.inherited;
+			var e = p.embed(client, server);
+			e.footer = {text:`(inherited from ${p.id})`};
+			return e;
 		}
 		
-		function findServerWithChannel(channel) {
-			channel = client.channels[channel] || channel;
-			return client.servers[channel.guild_id] || null;
-		}
-		
-		function findServerWithRole(role) {
-			for (let sid in client.servers) {
-				if (!!client.servers[sid].roles[role]) {
-					return client.servers[sid];
-				}
-			}
-			return null;
-		}
-		
-		var temp = {
-			title: `Permissions`,
+		var e = {
+			title: 'Permissions',
 			fields: []
 		};
-		try {
-			if (this.servers.length > 0) {
-				temp.fields.push({
-					name: 'Servers',
-					value: this.servers.map(s => client.servers[s].name).join('\n')
-				});
-			}
-		} catch (e) {
-			console.error(e);
+		for (var id in this.servers) {
+			var server = client.servers[id];
+			e.fields.push({
+				name: server.name,
+				value: this.servers[id].toString(client, server)
+			});
 		}
-		
-		try {
-			if (this.channels.length > 0) {
-				temp.fields.push({
-					name: 'Channels',
-					value: this.channels.map(c => client.channels[c]).map(c => `${client.servers[c.guild_id].name}#${c.name}`).join('\n')
-				});
-			}
-		} catch (e) {
-			console.error(e);
+		if (e.fields.length == 0) {
+			e.description = 'No permission settings.';
 		}
-		
-		try {
-			let servers = this.roles.map(findServerWithRole);
-			if (this.roles.length > 0) {
-				temp.fields.push({
-					name: 'Roles',
-					value: this.roles.map((r,i) => `${servers[i].name}@${servers[i].roles[r].name}`).join('\n')
-				});
-			}
-		} catch (e) {
-			console.error(e);
-		}
-		
-		try {
-			if (this.users.length > 0) {
-				temp.fields.push({
-					name: 'Users',
-					value: this.users.map(u => client.users[u].username).join('\n')
-				});
-			}
-		} catch (e) {
-			console.error(e);
-		}
-		
-		if (!temp) {
-			temp = 'No permission settings';
-		}
-		
-		return temp;
+		return e;
 	}
-	allow(p) {
+	allow(data) {
 		switch (this.type) {
-			case PUBLIC:
-			case PRIVATE:
+			case Constants.TYPES.INHERIT:
+			case Constants.TYPES.PUBLIC:
+			case Constants.TYPES.PRIVATE:
+			case Constants.TYPES.PRIVILGED:
 				throw `${this.id} has ${this.type} accessibility.`;
-			case WHITELIST:
-				for (let t of TARGETS) {
-					this[t] = this.merge(this[t], p[t]);
+			case Constants.TYPES.WHITELIST:
+				for (var id in data.servers) {
+					this.servers[id] = this.get(id).add(data.servers[id]);
 				}
 				break;
-			case BLACKLIST:
-				for (let t of TARGETS) {
-					this[t] = this.separate(this[t], p[t]);
+			case Constants.TYPES.BLACKLIST:
+				for (var id in data.servers) {
+					this.servers[id] = this.get(id).remove(data.servers[id]);
 				}
 				break;
 		}
 		return this;
 	}
-	deny(p) {
+	deny(data) {
 		switch (this.type) {
-			case PUBLIC:
-			case PRIVATE:
+			case Constants.TYPES.INHERIT:
+			case Constants.TYPES.PUBLIC:
+			case Constants.TYPES.PRIVATE:
+			case Constants.TYPES.PRIVILGED:
 				throw `${this.id} has ${this.type} accessibility.`;
-			case WHITELIST:
-				for (let t of TARGETS) {
-					this[t] = this.separate(this[t], p[t]);
+			case Constants.TYPES.WHITELIST:
+				for (var id in data.servers) {
+					this.servers[id] = this.get(id).remove(data.servers[id]);
 				}
 				break;
-			case BLACKLIST:
-				for (let t of TARGETS) {
-					this[t] = this.merge(this[t], p[t]);
-				}
-				break;
-		}
-		return this;
-	}
-	clear(p) {
-		switch (this.type) {
-			case PUBLIC:
-			case PRIVATE:
-				throw `${this.id} has ${this.type} accessibility.`;
-			case WHITELIST:
-			case BLACKLIST:
-				for (let t of TARGETS) {
-					this[t] = this.separate(this[t], p[t]);
+			case Constants.TYPES.BLACKLIST:
+				for (var id in data.servers) {
+					this.servers[id] = this.get(id).add(data.servers[id]);
 				}
 				break;
 		}
 		return this;
 	}
-	copy(p) {
+	clear(data) {
 		switch (this.type) {
-			case PUBLIC:
-			case PRIVATE:
+			case Constants.TYPES.INHERIT:
+			case Constants.TYPES.PUBLIC:
+			case Constants.TYPES.PRIVATE:
+			case Constants.TYPES.PRIVILGED:
 				throw `${this.id} has ${this.type} accessibility.`;
-			case WHITELIST:
-			case BLACKLIST:
-				this.type = p.type;
-				for (let t of TARGETS) {
-					this[t] = p[t].slice();
+			case Constants.TYPES.WHITELIST:
+			case Constants.TYPES.BLACKLIST:
+				for (var id in data.servers) {
+					delete this.servers[id];
+				}
+				break;
+		}
+		return this;
+	}
+	copy(data) {
+		switch (this.type) {
+			case Constants.TYPES.INHERIT:
+			case Constants.TYPES.PUBLIC:
+			case Constants.TYPES.PRIVATE:
+			case Constants.TYPES.PRIVILGED:
+				throw `${this.id} has ${this.type} accessibility.`;
+			case Constants.TYPES.WHITELIST:
+			case Constants.TYPES.BLACKLIST:
+			default:
+				for (var id in this.servers) {
+					delete this.servers[id];
+				}
+				if (data.servers) for (var id in data.servers) {
+					this.servers[id] = new ServerPermissions(data.servers[id]);
 				}
 				break;
 		}
@@ -397,40 +368,38 @@ class Permissions {
 	}
 	invert() {
 		switch (this.type) {
-			case PUBLIC:
-			case PRIVATE:
+			case Constants.TYPES.INHERIT:
+			case Constants.TYPES.PUBLIC:
+			case Constants.TYPES.PRIVATE:
+			case Constants.TYPES.PRIVILGED:
 				throw `${this.id} has ${this.type} accessibility.`;
-			case WHITELIST:
-				this.type = BLACKLIST;
-			case BLACKLIST:
-				this.type = WHITELIST;
+			case Constants.TYPES.WHITELIST:
+				this.type = Constants.TYPES.BLACKLIST;
+				break;
+			case Constants.TYPES.BLACKLIST:
+				this.type = Constants.TYPES.WHITELIST;
 				break;
 		}
 		return this;
 	}
-	changeType(type) {
-		if (TYPES.indexOf(type) == -1) {
-			throw 'Invalid access type: ' + type;
+	
+	static resolveType(type) {
+		for (var key in Constants.TYPES) {
+			if (key == type || Constants.TYPES[key] == type)
+				return key;
 		}
-		if (type == this.type) {
-			throw `${this.id} already uses ${this.type} accessibility.`;
-		}
-		this.type     = type;
-		this.users    = [];
-		this.roles    = [];
-		this.channels = [];
-		this.servers  = [];
-		return this;
 	}
-	log() {
-		console.log('\nPermissions:');
-		console.log('-----------------------');
-		console.log('Type:',this.type);
-		console.log('Users:',this.users);
-		console.log('Roles:',this.roles);
-		console.log('Channels:',this.channels);
-		console.log('Servers:',this.servers);
-		console.log('-----------------------');
+	static getPermissionValue(flag) {
+		flag = flag.toUpperCase();
+		if (!(flag in Constants.FLAGS)) {
+			throw 'Invalid permission ID: ' + flag;
+		}
+		return 1 << Constants.FLAGS[flag];
+	}
+	static memberHasPermission(server, member, flag) {
+		if (member.id == server.owner_id) return true;
+		var bitValue = this.getPermissionValue(flag);
+		return member.roles.some(r => server.roles[r].permissions & bitValue === bitValue);
 	}
 }
 

@@ -8,48 +8,47 @@
 */
 class Resource {
 	constructor(template = {}, data = {}) {
+		// cache template
 		this.makeProp('_template', template);
-		this.instanceFromTemplate();
-		this.init(data);
-	}
-	/**
-		Assign the key/values of an object to this instance.
-	*/
-	copy(o = {}) {
-		Object.assign(this, o);
-	}
-	/**
-		Instantiate the resource by copying the template to itself.
-		Ignore functions as those will be used for generating attributes
-		from data.
-	*/
-	instanceFromTemplate() {
-		var norm = {};
-		for (var k in this._template) {
-			if (typeof(this._template[k]) === 'function') {
-				norm[k] = null;
-				continue;
-			} else if (typeof(this._template[k]) === 'object') {
-				norm[k] = Object.assign({}, this._template[k]);
-			} else {
-				norm[k] = this._template[k];
+		
+		/**
+			Instantiate the resource by copying the template to itself.
+			Ignore functions as those will be used for generating attributes
+			from data next.
+		*/
+		var norm = (function copy(o, c = {}) {
+			if (typeof(o) === 'object') for (var k in o) {
+				var v = o[k];
+				switch (typeof(v)) {
+					case 'function':
+						c[k] = null;
+						break;
+					case 'object':
+						if (Array.isArray(v)) {
+							c[k] = v.slice();
+						} else {
+							c[k] = copy(v);
+						}
+						break;
+					default:
+						c[k] = v;
+				}
 			}
-		}
-		this.copy(norm);
-	}
-	/**
-		Initialize the resource by applying the data through the template.
-		* First, the template's properties are applied to guarantee certain
-		keys are properly initialized.
-		* Second, the data's remaining properties, which the template did
-		not have, are applied.
-	*/
-	init(data = {}) {
-		var norm = {};
-		for (var k in this._template) {
+			return c;
+		})(this._template);
+		//console.log(norm);
+		/**
+			Apply the data through the template.
+			* Template functions return normalized values
+			* Template objects merge with the init data
+			* Remaining properties are merged with the normalized object
+		*/
+		for (var k in norm) {
 			if (typeof(this._template[k]) === 'function') {
 				norm[k] = this._template[k](data[k], data, this);
-			} else if (typeof(data[k]) !== 'undefined') {
+			} else if (typeof(v) === 'object') {
+				norm[k] = Object.assign(norm[k], data[k]);
+			} else if (k in data) {
 				norm[k] = data[k];
 			}
 		}
@@ -58,7 +57,10 @@ class Resource {
 				norm[k] = data[k];
 			}
 		}
-		this.copy(norm);
+		/**
+			Assign the key/values of an object to this instance.
+		*/
+		Object.assign(this, norm);
 	}
 	/**
 		Create a non-enumerable property.

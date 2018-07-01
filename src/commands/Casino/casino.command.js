@@ -70,6 +70,7 @@ module.exports = {
 		category: 'Fun',
 		title: 'Casino Minigames',
 		info: 'Assortment of fun and risky minigames. Place your bets and win big!',
+		permissions: 'inclusive',
 		subcommands: {
 			'dice': {
 				title: 'Casino | Dice Roll:game_die:',
@@ -112,6 +113,7 @@ module.exports = {
 		title: 'Slots:slot_machine:',
 		info: '3-column slot machine game!',
 		parameters: ['[bet]'],
+		permissions: 'inclusive',
 		fn({client, userID, channelID, args}) {
 			var user = Bank.get(client, userID);
 			if (user.investing) {
@@ -159,29 +161,29 @@ module.exports = {
 				}
 			}
 		}
-	},
+	},/*
 	'videoslots': {
 		aliases: ['vslots'],
 		category: 'Fun',
 		title: 'Video Slots:tv::slot_machine:',
 		info: 'Video slots, a more advanced version of slots, with 5 columns instead of 3 and multiple ways of winning on a single screen!',
 		parameters: ['[bet]'],
+		permissions: 'inclusive',
 		fn({client, context, args}) {
 			return 'Not ready yet, sorry!';
-			/*
 			var user = Bank.get(client, context.userID);
 			if (user.investing) {
 				throw 'You can\'t gamble when your account is investing.';
 			}
 			var gamble = new Gamble(args[0], user.credits);
-			*/
 		}
-	},
+	},*/
 	'blackjack': {
 		category: 'Fun',
 		title: 'Blackjack:hearts::diamonds::clubs::spades:',
 		info: 'Classic Blackjack card game. Have the highest hand without going over 21 to win. For a more thorough explanation, see the Wikipedia page https://en.wikipedia.org/wiki/Blackjack',
 		parameters: ['[bet]'],
+		permissions: 'inclusive',
 		fn({client, context, args}) {
 			var user = Bank.get(client, context.userID);
 			if (user.investing) {

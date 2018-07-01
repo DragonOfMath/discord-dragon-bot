@@ -10,9 +10,7 @@ module.exports = {
 		category: 'Admin',
 		title: 'Database',
 		info: 'Interface for database commands.',
-		permissions: {
-			type: 'private'
-		},
+		permissions: 'private',
 		analytics: false,
 		suppress: true,
 		subcommands: {

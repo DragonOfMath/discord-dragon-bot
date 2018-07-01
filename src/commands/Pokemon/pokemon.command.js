@@ -15,6 +15,7 @@ module.exports = {
 		category: 'Fun',
 		title: PokemonGame.header,
 		info: `Catches a random Pokémon. Cooldown: ${PokemonGame.catchCooldownTime}`,
+		permissions: 'inclusive',
 		fn({client, userID, serverID}) {
 			return PokemonGame.catchPokemon(client, userID);
 		},
@@ -114,9 +115,7 @@ module.exports = {
 				title: PokemonGame.header + ' | Refresh Cooldown',
 				info: 'Skip cooldown for catching, scavenging, and training.',
 				parameters: ['[user]'],
-				permissions: {
-					type: 'private'
-				},
+				permissions: 'private',
 				suppress: true,
 				fn({client, args, userID}) {
 					userID = resolveTargetUser(args, userID);
@@ -128,9 +127,7 @@ module.exports = {
 				title: PokemonGame.header + ' | Reset',
 				info: 'Reset Pokémon data.',
 				parameters: ['[user]'],
-				permissions: {
-					type: 'private'
-				},
+				permissions: 'private',
 				suppress: true,
 				fn({client, args, userID}) {
 					userID = resolveTargetUser(args, userID);

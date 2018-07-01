@@ -8,18 +8,14 @@ module.exports = {
 		aliases: ['nop', 'nope', 'nothing'],
 		category: 'Meta',
 		info: 'Does nothing.',
-		permissions: {
-			type: 'public'
-		},
+		permissions: 'public',
 		fn() {}
 	},
 	'if': {
 		category: 'Meta',
 		info: 'If `condition` evaluates to *true*, it runs `trueCommand`; else, it runs `falseCommand` (if there is one).',
 		parameters: ['condition', '{trueCommand}', '[{falseCommand}]'],
-		permissions: {
-			type: 'public'
-		},
+		permissions: 'public',
 		fn(data) {
 			const {client, args, context} = data;
 			var [condition, ifTrue, ifFalse] = args;
@@ -37,9 +33,7 @@ module.exports = {
 		category: 'Meta',
 		info: 'Repeats a command while `condition` evaluates to *true*.',
 		parameters: ['condition', '{command}'],
-		permissions: {
-			type: 'public'
-		},
+		permissions: 'public',
 		fn(data) {
 			// note: input contains the original, unevaluated arguments
 			const {client, args, context, input} = data;
@@ -65,14 +59,12 @@ module.exports = {
 		category: 'Meta',
 		info: 'Runs a batch of commands sequentially (with a delay to prevent rate-limiting). If an error is raised, it will stop mid-execution.',
 		parameters: ['{...commands}'],
-		permissions: {
-			type: 'public'
-		},
+		permissions: 'public',
 		fn(data) {
 			const {client, args, context} = data;
 			const len = args.length;
 			function loop(ptr) {
-				client.log('Batch pointer:',ptr+1,'/',len);
+				client.log('Batch pointer:',ptr,'/',len);
 				if (ptr < len) {
 					return client.run(context, args[ptr])
 					.then(_data => {
@@ -94,14 +86,12 @@ module.exports = {
 		category: 'Meta',
 		info: 'Runs a command a specified number of times or until an error occurs.',
 		parameters: ['count', '{command}'],
-		permissions: {
-			type: 'public'
-		},
+		permissions: 'public',
 		fn(data) {
 			const {client, args, context} = data;
 			const [maxCount,command] = args;
 			function loop(counter) {
-				client.log('Loop counter:',counter+1,'/',maxCount);
+				client.log('Loop counter:',counter,'/',maxCount);
 				if (counter < maxCount) {
 					return client.run(context, command)
 					.then(_data => {
@@ -123,9 +113,7 @@ module.exports = {
 		category: 'Meta',
 		info: 'Wait a specified delay of time (in milliseconds), then run a command if provided.',
 		parameters: ['delay', '[{command}]'],
-		permissions: {
-			type: 'public'
-		},
+		permissions: 'public',
 		fn(data) {
 			const {client, args, context} = data;
 			const [delay,command] = args;
@@ -144,14 +132,12 @@ module.exports = {
 		category: 'Meta',
 		info: 'Repeat a command with delay.',
 		parameters: ['repetition', 'delay', '{command}'],
-		permissions: {
-			type: 'public'
-		},
+		permissions: 'public',
 		fn(data) {
 			const {client, args, context} = data;
 			const [repetition, delay, command] = args;
 			function loop(counter) {
-				client.log('Interval counter:',counter+1,'/',repetition);
+				client.log('Interval counter:',counter,'/',repetition);
 				if (counter < repetition) {
 					return client.run(context, command)
 					.then(_data => {
@@ -176,9 +162,7 @@ module.exports = {
 		category: 'Meta',
 		info: 'Intentionally throw an error, useful for stopping execution of metacommands.',
 		parameters: ['[message]'],
-		permissions: {
-			type: 'public'
-		},
+		permissions: 'public',
 		fn({client, args}) {
 			throw args[0] || 'MetaCancelError';
 		}
@@ -188,9 +172,7 @@ module.exports = {
 		category: 'Meta',
 		info: 'Runs a command, and if it throws an error, continues rather than propagate the error.',
 		parameters: ['{command}'],
-		permissions: {
-			type: 'public'
-		},
+		permissions: 'public',
 		fn(data) {
 			const {client, args, context} = data;
 			return client.run(context, args[0])
@@ -206,9 +188,7 @@ module.exports = {
 		category: 'Meta',
 		info: 'Run a command asynchronously.',
 		parameters: ['{command}'],
-		permissions: {
-			type: 'public'
-		},
+		permissions: 'public',
 		fn(data) {
 			const {client, args, context} = data;
 			client.run(context, args[0])

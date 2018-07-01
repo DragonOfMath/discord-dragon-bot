@@ -28,14 +28,14 @@ class Markdown {
 		}
 	}
 	static channel(c) {
-		if (isNaN(+c)) {
+		if (isNaN(+c.id) && isNaN(+c)) {
 			return c;
 		} else {
 			return `<#${c.id||c}>`;
 		}
 	}
 	static role(r) {
-		if (isNaN(+r)) {
+		if (isNaN(+r.id) && isNaN(+r)) {
 			return r;
 		} else {
 			return `<@&${r.id||r}>`;

@@ -10,9 +10,7 @@ module.exports = {
 	data: {
 		m: []
 	},
-	permissions: {
-		type: 'public'
-	},
+	permissions: 'public',
 	resolver({message}) {
 		var matches = message.match(/^\/?([ru]\/[\w\d_]+)$/);
 		if (matches) {

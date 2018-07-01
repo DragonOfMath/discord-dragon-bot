@@ -7,6 +7,7 @@ module.exports = {
 		title: 'FurAffinity',
 		info: 'Search FurAffinity. Options you may set include: `page`, `perpage`, `order_by`, `order_direction`, `range`, `mode`, `rating`, and `type`.',
 		parameters: ['...query', '[...option:value]'],
+		permissions: 'inclusive',
 		fn({client, args}) {
 			var query = [];
 			var options = {

@@ -37,10 +37,10 @@ const USER_TEMPLATE = {
 
 class Pokemon extends Resource {
 	constructor(p) {
-		super(PKMN_TEMPLATE);
 		if (typeof(p) === 'object') {
-			this.init(p);
+			super(PKMN_TEMPLATE, p);
 		} else {
+			super(PKMN_TEMPLATE, {});
 			this.name = p;
 			this.species = p;
 		}

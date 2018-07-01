@@ -7,6 +7,7 @@ module.exports = {
 		category: 'NSFW',
 		info: 'Search something on e621.net, maximum of 5 tags. (The `order:random` specifier will be automatically added)',
 		parameters: ['tag1','[tag2]','[tag3]','[tag4]','[tag5]'],
+		permissions: 'inclusive',
 		fn({client, args, userID, channelID, serverID}) {
 			var title = args.join(', ');
 			var blacklist = client.database.get('servers').get(serverID).blacklist || [];

@@ -45,12 +45,11 @@ const ALL = [].concat(SOUL.UP, SOUL.DOWN, SOUL.MID);
 
 
 function zalgo(text, size = 'maxi') {
-	let result = '';
-	let counts;
+	var result = '';
+	var counts = {UP: 0, DOWN: 0, MID: 0};
 	for (var letter of text) {
-		if (ALL.indexOf(letter) > -1) continue;
+		if (ALL.includes(letter)) continue; // avoid zalgo compounding
 		result += letter;
-		counts = {UP: 0, DOWN: 0, MID: 0};
 		
 		switch(size) {
 			case 'mini':
@@ -65,12 +64,18 @@ function zalgo(text, size = 'maxi') {
 				break;
 			case 'up':
 				counts.UP = random(64);
+				counts.MID  = 0;
+				counts.DOWN = 0;
 				break;
 			case 'down':
+				counts.UP   = 0;
+				counts.MID  = 0;
 				counts.DOWN = random(64);
 				break;
 			case 'mid':
+				counts.UP   = 0;
 				counts.MID = random(16);
+				counts.DOWN = 0;
 				break;
 			default:
 				counts.UP   = random(8) + 1;
@@ -79,7 +84,7 @@ function zalgo(text, size = 'maxi') {
 				break;
 		}
 		
-		for (let dir in SOUL) {
+		for (var dir in SOUL) {
 			while (counts[dir]--) {
 				result += random(SOUL[dir]);
 			}
@@ -141,12 +146,54 @@ function owoify(x) {
 	 + ' ' + random(OwO);
 }
 
+const LEET = {
+	'a': ['@'],
+	'A': ['4'],
+	'B': ['8'],
+	'c': [':copyright:'],
+	'C': [':copyright:'],
+	'e': ['3'],
+	'E': ['3'],
+	'F': ['|='],
+	'g': ['9'],
+	'H': ['|-|','#'],
+	'i': ['!'],
+	'I': ['|'],
+	'J': ['_)'],
+	'k': ['|<','|{'],
+	'K': ['|<','|{'],
+	'l': ['1'],
+	'L': ['1','|_'],
+	'M': ['|\\/|','(\\/)'],
+	'N': ['|\\|'],
+	'o': ['0'],
+	'O': ['0'],
+	'p': ['|*'],
+	'P': ['|*'],
+	'q': ['*|'],
+	's': ['5','$'],
+	'S': ['5','$'],
+	't': ['+','7'],
+	'T': ['7'],
+	'U': ['(_)'],
+	'v': ['\\/'],
+	'V': ['\\/'],
+	'w': ['\\/\\/','vv'],
+	'W': ['\\/\\/','VV'],
+	'x': ['><'],
+	'X': ['><']
+};
+function leet(x) {
+	return x.split('').map(c => c in LEET ? random(LEET[c]) : c).join('');
+}
+
 module.exports = {
 	'b': {
 		aliases: ['bemoji', '\uD83C\uDD71'],
 		category: 'Fun',
 		info: 'Adds :b: emojis to your text fam.',
 		parameters: ['...text'],
+		permissions: 'inclusive',
 		fn({arg, userID}) {
 			let consonants = 'bvpdrmcsfh'.split('');
 			let vowels = 'aeiou'.split('');
@@ -167,6 +214,7 @@ module.exports = {
 		category: 'Fun',
 		info: 'Turns your text into :regional_indicator_a: emojis.',
 		parameters: ['...text'],
+		permissions: 'inclusive',
 		fn({arg, userID}) {
 			let letters = 'abcdefghijklmnopqrstuvwxyz'.split('');
 			return arg.split('').map(letter => {
@@ -184,6 +232,7 @@ module.exports = {
 		category: 'Fun',
 		info: ':clap:Can:clap:you:clap:feel:clap:the:clap:memes:clap:tonight?:clap:',
 		parameters: ['...text'],
+		permissions: 'inclusive',
 		fn({args}) {
 			return ':clap:' + args.join(':clap:') + ':clap:';
 		}
@@ -193,6 +242,7 @@ module.exports = {
 		category: 'Fun',
 		info: '```css\n>Turns your text into greentext\n```',
 		parameters: ['...text'],
+		permissions: 'inclusive',
 		fn({arg}) {
 			return '```css\n' + arg.split('\n').map(x => '>' + x).join('\n') + '\n```';
 		}
@@ -202,6 +252,7 @@ module.exports = {
 		category: 'Fun',
 		info: 'HE COMES',
 		parameters: ['...text'],
+		permissions: 'inclusive',
 		fn({client, arg}) {
 			return zalgo(arg);
 		}
@@ -211,6 +262,7 @@ module.exports = {
 		category: 'Fun',
 		info: 'SuPer WacKY aND zAnY tExT!1!',
 		parameters: ['...text'],
+		permissions: 'inclusive',
 		fn({client, arg}) {
 			return arg.split('').map(c => {
 				if (c == '!') {
@@ -226,6 +278,7 @@ module.exports = {
 		category: 'Fun',
 		info: 'H-hewwo?! ',
 		parameters: ['...text'],
+		permissions: 'inclusive',
 		fn({client, arg}) {
 			return owoify(arg);
 		}
@@ -235,6 +288,7 @@ module.exports = {
 		category: 'Fun',
 		info: 'Use a custom emoji found on any server this bot is in.',
 		parameters: ['...emojiNames'],
+		permissions: 'inclusive',
 		fn({client, args}) {
 			var emojis = [];
 			nextArg: for (var a of args) {
@@ -253,6 +307,26 @@ module.exports = {
 				emojis.push(md.emoji(a));
 			}
 			return emojis.join(' ');
+		}
+	},
+	'leet': {
+		aliases: ['l33t','1337'],
+		category: 'Fun',
+		info: 'Change your text into leetspeak. -> Ch4ng3 y0ur +3x+ !n+0 13375p34k.',
+		parameters: ['...text'],
+		permissions: 'inclusive',
+		fn({client, arg}) {
+			return leet(arg);
+		}
+	},
+	'reverse': {
+		aliases: ['esrever','backwards'],
+		category: 'Fun',
+		info: 'Reverses your text.',
+		parameters: ['...text'],
+		permissions: 'inclusive',
+		fn({client, arg}) {
+			return arg.split('').reverse().join('');
 		}
 	}
 };

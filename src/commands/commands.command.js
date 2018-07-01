@@ -1,6 +1,5 @@
 /**
-	cmd_commands.js
-	Command file for configuring the permissions of commands.
+	Command file for configuring the permissions of commands and other command-related stuff.
 	
 	First, it must be established where all commands can be used
 	!commands.allow * #bot-channel
@@ -22,96 +21,59 @@
 	And you're done!
 */
 
-const CommandInterfaceHelpEmbed = {
-	title: 'Command Permissions Interface | Help',
-	description: 'This interface will let you configure which commands can and can\'t be used, by channel, role, user, or on the entire server.',
-	fields: [
-		{
-			name: 'General Syntax for Arguments',
-			value: '`[#channel [#...]] [@user [@...]] [@role [@...]] [$SERVER] command1={1|0} [...]`'
-		},
-		{
-			name: 'Notes on the Syntax',
-			value: '`[]` means optional, `...` means an indefinite number of items following, `{|}` means a set of choices, and `$SERVER` is a keyword that targets the server itself. You can provide any number of channels, users, and roles as you\'d like in any order, but you can only provide 1 `$SERVER` argument (any other targets are ignored). Commands are validated, so any mismatching ones are ignored.'
-		},
-		{
-			name: 'Accessibility',
-			value: 'There are four levels of accessibility that commands can be set to: __public__, __private__, __inclusive__, and __exclusive__. Public commands are accessible to everyone, everywhere and their permissions are locked. Private commands are accessible only to the bot owner and their permissions are locked. Inclusive commands use a whitelist of targets, so you must be included to be allowed to use it. Exclusive commands follow a blacklist instead, so if you are included you cannot use it. Only the bot owner may change this setting.'
-		}
-	]
-};
+const {Markdown:md} = require('../Utils');
 
-function whatIs(x) {
-	if (/<@&.*>/.test(x)) {
-		return 'role';
-	} else if (/<@.*>/.test(x)) {
-		return 'user';
-	} else if (/<#.*>/.test(x)) {
-		return 'channel';
-	} else if (/\$server/i.test(x)) {
-		return 'server';
-	} else {
-		return 'other';
+function parse(serverID, channelID, args) {
+	var commands = [];
+	var server = {
+		users: [],
+		roles: [],
+		channels: []
+	};
+	
+	for (let a of args) {
+		if (/<@&.*>/.test(a)) { // role
+			a = md.id(a);
+			if (!server.roles.includes(a)) {
+				server.roles.push(a);
+			}
+		} else if (/<@.*>/.test(a)) { // user
+			a = md.id(a);
+			if (!server.users.includes(a)) {
+				server.users.push(a);
+			}
+		} else if (/<#.*>/.test(a)) { // channel
+			a = md.id(a);
+			if (!server.channels.includes(a)) {
+				server.channels.push(a);
+			}
+		} else {
+			if (!commands.includes(a)) {
+				commands.push(a);
+			}
+		}
 	}
+	
+	if (server.users.length + server.roles.length + server.channels.length == 0) {
+		server.channels.push(channelID);
+	}
+	
+	//console.log(server);
+	
+	return {
+		commands,
+		servers: {
+			[serverID]: server
+		}
+	};
 }
 
 function showErrors(errors) {
 	if (errors.length > 0) {
+		//console.log(...errors);
 		return '\nWarnings:\n```\n' + errors.join('\n') + '\n```';
 	} else {
 		return '';
-	}
-}
-
-class PermissionParser {
-	constructor(server) {
-		this.commands = [];
-		this.users = [];
-		this.roles = [];
-		this.channels = [];
-		this.servers = [];
-		this.serverID = server;
-	}
-	parse(args) {
-		for (let a of args) {
-			switch (whatIs(a)) {
-				case 'role':
-					a = a.match(/\d+/)[0];
-					if (this.roles.indexOf(a) < 0) {
-						this.roles.push(a);
-					}
-					break;
-				case 'user':
-					a = a.match(/\d+/)[0];
-					if (this.users.indexOf(a) < 0) {
-						this.users.push(a);
-					}
-					break;
-				case 'channel':
-					a = a.match(/\d+/)[0];
-					if (this.channels.indexOf(a) < 0) {
-						this.channels.push(a);
-					}
-					break;
-				case 'server':
-					if (!this.servers.length) {
-						this.servers.push(this.serverID);
-					}
-					break;
-				default:
-					if (this.commands.indexOf(a) < 0) {
-						this.commands.push(a);
-					}
-					break;
-			}
-		}
-		//console.log(this);
-	}
-	get length() {
-		return this.roles.length + this.users.length + this.channels.length + this.servers.length;
-	}
-	validate(client) {
-		this.commands = this.commands.filter(cmd => !!client.commands.get(cmd));
 	}
 }
 
@@ -119,43 +81,22 @@ module.exports = {
 	'commands': {
 		aliases: ['cmds'],
 		category: 'Admin',
-		info: 'Interface for enabling and disabling commands.',
-		permissions: {
-			type: 'private'
-		},
+		info: 'Interface for enabling and disabling commands. *You should configure commands in a private channel to avoid mentioning users and roles.*',
+		permissions: 'privileged',
 		suppress: true,
-		fn({client, args}) {
-			return this.listSubcommands() + '\n\n*You should configure commands in a private channel to avoid mentioning users and roles.*';
-		},
 		subcommands: {
-			'help': {
-				info: 'Provides info about how to use the `commands` interface.',
-				permissions: {
-					type: 'private'
-				},
-				fn() {
-					return CommandInterfaceHelpEmbed;
-				}
-			},
 			'enable': {
 				aliases: ['allow'],
-				info: 'Enables command(s) for the current channel/given channel(s)/given user(s)/entire server.',
+				info: 'Enables command(s) for the current channel/channel(s)/user(s)/role(s).',
 				parameters: ['...commands', '[...targets]'],
-				permissions: {
-					type: 'private'
-				},
 				fn({client, args, channelID, serverID}) {
-					var pp = new PermissionParser(serverID);
-					pp.parse(args);
-					if (pp.length == 0) {
-						pp.channels.push(channelID);
-					}
+					var data = parse(serverID, channelID, args);
+					var suppressedErrors = [];
+					var commands = client.commands.get(...data.commands);
 					
-					let suppressedErrors = [];
-					var commands = client.commands.get(...pp.commands);
 					for (var command of commands) {
 						try {
-							command.permissions.allow(client, pp);
+							command.permissions.allow(client, data);
 						} catch (e) {
 							suppressedErrors.push(e);
 						}
@@ -166,27 +107,21 @@ module.exports = {
 			},
 			'disable': {
 				aliases: ['deny'],
-				info: 'Disables command(s) for the current channel/given channel(s)/given user(s)/entire server.',
+				info: 'Disables command(s) for the current channel/channel(s)/user(s)/role(s).',
 				parameters: ['...commands', '[...targets]'],
-				permissions: {
-					type: 'private'
-				},
 				fn({client, args, channelID, serverID}) {
-					var pp = new PermissionParser(serverID);
-					pp.parse(args);
-					if (pp.length == 0) {
-						pp.channels.push(channelID);
-					}
-					
+					var data = parse(serverID, channelID, args);
 					var suppressedErrors = [];
-					var commands = client.commands.get(...pp.commands);
+					var commands = client.commands.get(...data.commands);
+					
 					for (var command of commands) {
 						try {
-							command.permissions.deny(client, pp);
+							command.permissions.deny(client, data);
 						} catch (e) {
 							suppressedErrors.push(e);
 						}
 					}
+					
 					client.database.get('permissions').save();
 					return 'Settings saved.' + showErrors(suppressedErrors);
 				}
@@ -195,25 +130,27 @@ module.exports = {
 				aliases: ['reset'],
 				info: 'Clears permission settings for the given commands in this server.',
 				parameters: ['...commands'],
-				permissions: {
-					type: 'private'
-				},
 				fn({client, args, channelID, server}) {
-					var p = {};
-					p.servers  = [server.id];
-					p.users    = [];//Object.keys(server.members);
-					p.channels = Object.keys(server.channels);
-					p.roles    = Object.keys(server.roles);
-					
+					var data = {
+						servers: {
+							[server.id]: {
+								users: Object.keys(server.users),
+								channels: Object.keys(server.channels),
+								roles: Object.keys(server.roles)
+							}
+						}
+					};
 					var suppressedErrors = [];
 					var commands = client.commands.get(...args);
+					
 					for (let command of commands) {
 						try {
-							command.permissions.clear(client, p);
+							command.permissions.clear(client, data);
 						} catch (e) {
 							suppressedErrors.push(e);
 						}
 					}
+					
 					client.database.get('permissions').save();
 					return 'Settings saved.' + showErrors(suppressedErrors);
 				}
@@ -221,9 +158,6 @@ module.exports = {
 			'copy': {
 				info: 'Copy permission settings from one command to one or more commands.',
 				parameters: ['src_command','...commands'],
-				permissions: {
-					type: 'private'
-				},
 				fn({client, args, server}) {
 					var [src,...dest] = args;
 					var src_command = client.commands.get(src);
@@ -247,26 +181,22 @@ module.exports = {
 					client.database.get('permissions').save();
 					return 'Settings saved.' + showErrors(suppressedErrors);
 				}
-			},
+			},/*
 			'setaccess': {
 				aliases: ['settype'],
-				info: 'Changes the accessibility scope of permissions of a command. Possible values: `private`, `public`, `inclusive`, `exclusive`. Warning: this command will wipe the current permissions for the new accessibility to take effect.',
+				info: 'Changes the accessibility scope of permissions of a command. Possible values: `private`, `public`, `privileged`, `inclusive`, `exclusive`.',
 				parameters: ['command', 'access'],
-				permissions: {
-					type: 'private'
-				},
+				permissions: 'private',
+				suppress: true,
 				fn({client, args, server}) {
 					client.commands.get(args[0])[0].permissions.changeType(client, args[1]);
 					client.database.get('permissions').save();
 					return 'Access setting saved.';
 				}
-			},
+			},*/
 			'invert': {
-				info: 'Inverts the accessibility scope of permissions. Inclusive becomes exclusive, and vice versa. Public/private commands are not affected.',
+				info: 'Inverts the accessibility scope of permissions. Inclusive becomes exclusive, and vice versa. Public/private/privileged commands are not affected.',
 				parameters: ['...commands'],
-				permissions: {
-					type: 'private'
-				},
 				fn({client, args, server}) {
 					var suppressedErrors = [];
 					var commands = client.commands.get(...args);
@@ -282,36 +212,30 @@ module.exports = {
 				}
 			},
 			'check': {
-				info: 'Retrieves the command permissions.',
+				info: 'Retrieves the command permissions for the server.',
 				parameters: ['...commands'],
-				permissions: {
-					type: 'private'
-				},
 				fn({client, args, server}) {
 					var commands = client.commands.get(...args);
 					if (commands.length == 0) {
 						throw 'Invalid command(s).';
 					}
-					return commands.map(cmd => `\`${cmd.fullID}\`: ${cmd.permissions.toString(client, server)}`).join('\n');
+					return commands.map(cmd => `__\`${cmd.fullID}\`__\n${cmd.permissions.toString(client, server)}`).join('\n');
 				}
 			},
 			'checkall': {
-				info: 'Retrieves ALL permissions for a single command.',
+				info: 'Retrieves ALL server permissions for a single command.',
 				parameters: ['command'],
-				permissions: {
-					type: 'private'
-				},
+				permissions: 'private',
+				suppress: true,
 				fn({client, arg, server}) {
-					return client.commands.get(arg)[0].permissions.toDebugEmbed(client);
+					return client.commands.get(arg)[0].permissions.embed(client);
 				}
 			},
 			'move': {
 				aliases: ['replace', 'alias', 'rename'],
 				info: 'Replace permission entry keys with new ones, in case the names of commands change and are no longer binded. :warning: Warning! This is a low-level command, it will create or delete data regardless of validation!',
 				parameters: ['...old:new'],
-				permissions: {
-					type: 'private'
-				},
+				permissions: 'private',
 				fn({client, args}) {
 					var pairs = args.map(a => a.split(':'));
 					var permissions = client.database.get('permissions');
@@ -338,10 +262,6 @@ module.exports = {
 				aliases: ['new'],
 				info: 'Create a new temporary command. Surround the code in a code block for proper parsing. By default, unlimited arguments may be passed and all known context members are defined.',
 				parameters: ['name','code'],
-				permissions: {
-					type: 'private'
-				},
-				suppress: true,
 				fn({client, args}) {
 					var [cmd,code] = args;
 					var fn = new Function('data','with (data) {\n' + code + '\n}');
@@ -354,6 +274,7 @@ module.exports = {
 							info: 'This is a temporary command.',
 							suppress: false,
 							analytics: false,
+							permissions: 'public',
 							fn
 						});
 						return 'Created temporary command: ' + cmd;

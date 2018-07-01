@@ -1,3 +1,5 @@
+const {isUpperCase} = require('../Utils');
+
 /**
 	Credit to NNTin on GitHub for the algorithm: https://github.com/NNTin/Cubify-Reddit/blob/master/cubify.py
 */
@@ -5,11 +7,9 @@ module.exports = {
 	id: 'wordcubify',
 	title: '',
 	info: 'Turn T E X T into a letter cube.',
-	permissions: {
-		type: 'public'
-	},
+	permissions: 'public',
 	resolver({message}) {
-		if (message == message.toUpperCase() && /\w( \w){3,}/gm.test(message)) {
+		if (isUpperCase(message) && /\w( \w){4,}/gm.test(message)) {
 			return 'wc';
 		}
 	},
@@ -17,7 +17,7 @@ module.exports = {
 		wc({message}) {
 			message = message.replace(/\s+/g,''); // remove spaces
 			var thing = '';
-			if (message.length < 5) {
+			if (message.length < 6) {
 				thing += message.split('').join(' ')
 				for (let i=1;i<message.length;i++) thing += '\n' + message[i]
 			} else if (message.length < 30) {

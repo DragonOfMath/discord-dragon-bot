@@ -1,8 +1,6 @@
 module.exports = {
 	id: 'owo-whats-this',
-	permissions: {
-		type: 'public'
-	},
+	permissions: 'public',
 	resolver({message}) {
 		if (/what'?s this.?$/gi.test(message)) return 'OwO';
 	},

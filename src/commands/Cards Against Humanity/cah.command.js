@@ -141,6 +141,7 @@ module.exports = {
 		title: 'Cards Against Humanity',
 		info: 'Picks a random white answer card.',
 		parameters: ['[count]'],
+		permissions: 'inclusive',
 		fn({client, args, serverID}) {
 			var count = ~~args[0] || 1;
 			var server = client.database.get('servers').get(serverID);
@@ -294,6 +295,7 @@ module.exports = {
 				title: 'Cards Against Humanity | Custom Card',
 				info: 'Create a new white or black card to use on the server.',
 				parameters: ['<w|white|b|black>', '...text'],
+				permissions: 'privileged',
 				fn({client, args, serverID}) {
 					var type = CardsAgainstHumanity.resolveType(args[0]);
 					var text = args.slice(1).join(' ');
@@ -310,6 +312,7 @@ module.exports = {
 				title: 'Cards Against Humanity | Remove Custom Card',
 				info: 'Remove a single custom card from this server.',
 				parameters: ['<w|white|b|black>', 'id'],
+				permissions: 'privileged',
 				fn({client, args, serverID}) {
 					var cardRemoved;
 					var type = CardsAgainstHumanity.resolveType(args[0]);
@@ -330,6 +333,7 @@ module.exports = {
 				title: 'Cards Against Humanity | Clear Custom Cards',
 				info: 'Clears all custom white/black cards for this server. Can choose a type of card, otherwise all are cleared.',
 				parameters: ['[<w|white|b|black>]'],
+				permissions: 'privileged',
 				fn({client, args, serverID}) {
 					var type = CardsAgainstHumanity.resolveType(args[0]);
 					client.database.get('servers').modify(serverID, server => {

@@ -15,7 +15,8 @@ const {Bignum:bn,fetch,random,Markdown:md,Format:fmt} = require('../Utils'); // 
 // Command Descriptor Schema
 module.exports = {
 	// This is a top-level command.
-	// The key is the name/id, it may not contain spaces or punctuation marks (except ?). Casing does not matter.
+	// The key is the name/id, it may not contain spaces or punctuation marks (except ?).
+	// Case does not matter except if it overwrites an internal property.
 	// Most properties are optional! But to use them anyways is good practice.
 	'myTestCmd': {
 		
@@ -45,20 +46,15 @@ module.exports = {
 		//   <arg|um|ent>  = choice argument (alternative to string argument)
 		parameters: ['argument1', '[optionalArgument]', '...infiniteArgs'],
 		
-		// Statically allow or deny this command for any user, role, channel, or server.
-		// The type specifies how it may be used: either 'inclusive' or 'exclusive'
+		// Override the default permissions type.
 		//  * Inclusive use means only the listed users, roles, channels, or servers may use it.
 		//  * Exclusive use means the listed users, roles, channels, or servers may *not* use it.
-		// The arrays must hold string IDs of their respective resources.
-		// Alternatively, a database table may be used to configure these settings.
-		// Subcommands DO NOT inherit permissions in their namespace.
-		permissions: {
-			type: 'inclusive',
-			users:    [],
-			roles:    [],
-			channels: [],
-			servers:  []
-		},
+		//  * Public means it's available to everyone.
+		//  * Private means it's available only to the bot owner.
+		//  * Privileged means it's available only to users that manage the guild.
+		//  * Inherit means it uses the permissions of its supercommand (if it has one, otherwise it defaults to something)
+		// By default, subcommands use inherit and supercommands use inclusive.
+		permissions: 'inclusive',
 		
 		// Special properties that this command uses.
 		// These can be accessed with this.prop(x), but cannot be overwritten.

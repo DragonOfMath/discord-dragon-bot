@@ -19,13 +19,14 @@ module.exports = {
 		title: Bank.header,
 		category: 'Fun',
 		info: 'The bank tracks the credits of all users on the server. Credits can be used to play games, like Blackjack, Slots, Fishing, and Lottery. Users can transfer their credits or make investments. Authorized bank staff may offer loans and custom bank amounts.',
+		permissions: 'inclusive',
 		subcommands: {
 			'auth': {
 				aliases: ['authorize'],
 				title: Bank.header + ' | Authorize User',
 				info: 'Authorizes special privileges to a user, such as the ability to open others\' accounts and deposit/withdraw at will.',
 				parameters: ['user'],
-				permissions: { type: 'private' },
+				permissions: 'privileged',
 				fn({client, args, userID, server, channelID}) {
 					let thisUserID = resolveTargetUser(args, '');
 					return Bank.auth(client, thisUserID);
@@ -36,7 +37,7 @@ module.exports = {
 				title: Bank.header + ' | Unauthorize User',
 				info: 'Strips authorized privileges from a user.',
 				parameters: ['user'],
-				permissions: { type: 'private' },
+				permissions: 'privileged',
 				fn({client, args, userID, server, channelID}) {
 					let thisUserID = resolveTargetUser(args, '');
 					return Bank.unauth(client, thisUserID);
@@ -47,7 +48,6 @@ module.exports = {
 				title: Bank.header + ' | Check Authorization',
 				info: 'Checks account for authorized privileges.',
 				parameters: ['[user]'],
-				permissions: { type: 'public' },
 				fn({client, args, userID, server, channelID}) {
 					let thisUserID = resolveTargetUser(args, userID);
 					if (Bank.checkAuth(client, thisUserID)) {
@@ -250,9 +250,7 @@ module.exports = {
 						aliases: ['revert'],
 						info: 'Reverts an account\'s state back to a log entry with the given timestamp ID.',
 						parameters: ['user', 'timestamp'],
-						permissions: {
-							type: 'private'
-						},
+						permissions: 'private',
 						fn({client, args, userID, channelID}) {
 							let thisUserID = resolveTargetUser(args);
 							return Bank.revertToHistory(client, thisUserID, args[0]);
@@ -262,9 +260,7 @@ module.exports = {
 						title: Bank.header + ' | Purge History',
 						info: 'Deletes account history, just in case...',
 						parameters: ['user'],
-						permissions: {
-							type: 'private'
-						},
+						permissions: 'private',
 						fn({client, args, user, userID, server, channelID}) {
 							let thisUserID = resolveTargetUser(args);
 							return Bank.purgeHistory(client, thisUserID);
@@ -319,6 +315,7 @@ module.exports = {
 		category: 'Fun',
 		title: Bank.header + ' | Daily Cash',
 		info: 'Earn free money every day!',
+		permissions: 'inclusive',
 		fn({client, args, user, userID, server, channelID}) {
 			return Bank.daily(client, userID);
 		}

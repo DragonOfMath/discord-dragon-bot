@@ -1,15 +1,5 @@
 const Permissions = require('./Permissions');
-
-const PUBLIC    = 'public';    // no permissions
-const WHITELIST = 'inclusive'; // whitelisted users
-const BLACKLIST = 'exclusive'; // not blacklisted users
-const PRIVATE   = 'private' ;  // bot owner only
-
-const TYPES = [PUBLIC,WHITELIST,BLACKLIST,PRIVATE];
-const TARGETS = ['users','roles','channels','servers'];
-
-const PUBLIC_STRING = 'Public: usable by everyone, everywhere.';
-const PRIVATE_STRING = 'Private: only the bot owner may use this.';
+const Constants   = require('./Constants');
 
 /**
 	Permissions class
@@ -27,93 +17,90 @@ module.exports = class ConfigurablePermissions extends Permissions {
 		@arg {Array<String>} [channels] - array of channel names that a command is exclusive to
 		 * Empty implies it is usable everywhere
 	*/
-	constructor(descriptor, binding) {
-		super(descriptor, binding);
+	constructor(data, binding) {
+		super(data, binding);
 		
 		Object.defineProperties(this, {
 			'usesDefaultPermissions': {
-				value: this.users.length > 0 || this.roles.length > 0 || this.channels.length > 0 || this.servers.length > 0,
+				value: Object.keys(this.servers).length > 0,
 				enumerable: false,
 				writable: false
 			}
 		});
 	}
 	/**
-		Checks that the arguments, user, and channel are permissed.
-		@arg {Array<String>} args - Contains the arguments passed, or an empty array if otherwise
-		@arg {String} uid - User ID
-		@arg {String} cid - Channel ID
-	*/
-	check(input) {
-		this.load(input.client);
-		return super.check(input);
-	}
-	/**
 		To String
 		Translates permissions into an understandable format
+		@arg {Client} client - the discord client
 		@arg {Server} server - the server reference
 	*/
 	toString(client, server) {
 		this.load(client);
 		return super.toString(client, server);
 	}
-	toDebugEmbed(client) {
+	embed(client, server) {
 		this.load(client);
-		return super.toDebugEmbed(client);
+		return super.embed(client, server);
+	}
+	/**
+		Checks that the arguments, user, and channel are permissed.
+	*/
+	check(handler) {
+		this.load(handler.client);
+		return super.check(handler);
 	}
 	load(client) {
-		if (this.usesDefaultPermissions || this.isPublic || this.isPrivate) {
+		if (this.usesDefaultPermissions || this.isPublic || this.isPrivate || this.isPrivileged || this.isInherited) {
 			return this;
 			//throw `${this.id} is using default permissions and cannot be changed.`;
 		}
-		let temp = client.database.get('permissions').get(this.id);
-		this.type     = temp.type || WHITELIST;
-		this.users    = temp.users || [];
-		this.roles    = temp.roles || [];
-		this.channels = temp.channels || [];
-		this.servers  = temp.servers || [];
-		
+		var servers = client.database.get('permissions').get(this.id);
+		if (servers) super.copy({servers});
+		//console.log(this.servers);
 		return this;
 	}
 	save(client) {
+		if (this.usesDefaultPermissions) {
+			throw `${this.id} is using default permissions and cannot be changed.`;
+		}
+		if (this.isPublic || this.isPrivate || this.isPrivileged || this.isInherited) {
+			throw `${this.id} uses ${this.type} accessibility.`;
+		}
 		if (client) {
-			if (this.usesDefaultPermissions) {
-				throw `${this.id} is using default permissions and cannot be changed.`;
-			}
-			client.database.get('permissions').set(this.id, this);
+			client.database.get('permissions').set(this.id, this.servers);
 		}
 		return this;
 	}
-	allow(client, p) {
+	allow(client, data) {
 		if (this.usesDefaultPermissions) {
 			throw `${this.id} is using default permissions and cannot be changed.`;
 		}
 		if (client) this.load(client);
-		super.allow(p);
+		super.allow(data);
 		return this.save(client);
 	}
-	deny(client, p) {
+	deny(client, data) {
 		if (this.usesDefaultPermissions) {
 			throw `${this.id} is using default permissions and cannot be changed.`;
 		}
 		if (client) this.load(client);
-		super.deny(p);
+		super.deny(data);
 		return this.save(client);
 	}
-	clear(client, p) {
+	clear(client, data) {
 		if (this.usesDefaultPermissions) {
 			throw `${this.id} is using default permissions and cannot be changed.`;
 		}
 		if (client) this.load(client);
-		super.clear(p);
+		super.clear(data);
 		return this.save(client);
 	}
-	copy(client, p) {
+	copy(client, data) {
 		if (this.usesDefaultPermissions) {
 			throw `${this.id} is using default permissions and cannot be changed.`;
 		}
 		if (client) this.load(client);
-		super.copy(p);
+		super.copy(data);
 		return this.save(client);
 	}
 	invert(client) {

@@ -1,5 +1,5 @@
 const Resource = require('../../Resource');
-const {fetch,truncate} = require('../../Utils');
+const {fetch,truncate,unescapeHTMLEntities} = require('../../Utils');
 
 const TYPE = ['','hot','new','rising','top','controversial']; // '' and 'hot' are the same
 const TIME = ['hour','day','week','month','year','all'];
@@ -35,10 +35,12 @@ class Reddit {
 		.then(response => response[0].data);
 	}
 	static isImage(post) {
-		return IMAGE_DOMAINS.includes(post.domain) || IMAGE_FORMATS.some(f => post.url.endsWith(f));
+		var filePart = post.url.split('/').pop();
+		return IMAGE_DOMAINS.includes(post.domain) || IMAGE_FORMATS.some(f => filePart.includes(f));
 	}
 	static isVideo(post) {
-		return VIDEO_DOMAINS.includes(post.domain) || VIDEO_FORMATS.some(f => post.url.endsWith(f));
+		var filePart = post.url.split('/').pop();
+		return VIDEO_DOMAINS.includes(post.domain) || VIDEO_FORMATS.some(f => filePart.includes(f));
 	}
 	static isXpost(post) {
 		return post.domain && post.domain.includes('reddit.com');
@@ -71,8 +73,11 @@ class Reddit {
 		if (post.num_comments) {
 			e.description += ' | :speech_balloon: ' + post.num_comments;
 		}
-		if (/^http/.test(post.url)) {
-			e.url = post.url;
+		if (post.url) {
+			post.url = unescapeHTMLEntities(post.url);
+			if (/^http/.test(post.url)) {
+				e.url = post.url;
+			}
 		}
 		if (post.permalink) {
 			post.permalink = REDDIT + post.permalink;
@@ -147,6 +152,7 @@ class Reddit {
 			};
 		} else {
 			// nothing else works
+			post.url = unescapeHTMLEntities(post.url);
 			e.description = post.url;
 		}
 		return e;

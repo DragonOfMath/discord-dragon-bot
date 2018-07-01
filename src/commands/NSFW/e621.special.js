@@ -7,9 +7,7 @@ module.exports = {
 		id: '',
 		hash: ''
 	},
-	permissions: {
-		type: 'public'
-	},
+	permissions: 'public',
 	resolver({message}) {
 		try {
 			this.data.id   = message.match(e621.postRegex);

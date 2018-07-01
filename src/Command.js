@@ -1,8 +1,9 @@
-const Parameters   = require('./Parameters');
-const CPermissions = require('./ConfigurablePermissions');
-const Properties   = require('./Properties');
-const TypeMapBase  = require('./TypeMapBase');
-const Constants    = require('./Constants');
+const Parameters  = require('./Parameters');
+const Permissions = require('./ConfigurablePermissions');
+const Properties  = require('./Properties');
+const TypeMapBase = require('./TypeMapBase');
+const Resource    = require('./Resource');
+const Constants   = require('./Constants');
 const {Markdown:md,strcmp} = require('./Utils');
 
 /**
@@ -34,7 +35,7 @@ class Subcommands extends TypeMapBase {
 				aliases: ['help','subcommands'],
 				title: `Subcommands`,
 				info: '(Automatically generated subcommand for listing other subcommands)',
-				permissions: { type: 'public' },
+				permissions: 'public',
 				suppress: true,
 				analytics: false,
 				fn() {
@@ -67,8 +68,6 @@ class Subcommands extends TypeMapBase {
 		}
 		//console.log(`Adding ${sub.id} to ${this.supercommand.fullID}`);
 		sub.supercommand = this.supercommand;
-		
-		//sub.permissions.inherit(this.supercommand.permissions);
 		sub.properties.inherit(this.supercommand.properties);
 		sub.category = sub.category || this.supercommand.category;
 		sub.suppress = sub.suppress || this.supercommand.suppress;
@@ -78,94 +77,69 @@ class Subcommands extends TypeMapBase {
 }
 
 /**
+	@class CommandError
+	@extends Error
+	Custom error object for commands.
+*/
+class CommandError extends Error {
+	constructor(cmd, str) {
+		super(`${str} (in "${cmd}")`);
+		this.name = 'CommandError';
+	}
+}
+
+/**
 	Command class
 	Defines a command's main handle, aliases, description, permissions, and subcommands
 */
-class Command {
+class Command extends Resource {
 	/**
-		Command constructor
-		@class
-		@arg {String}        cmd                      - the main alias/handle/name of the command.
+		@class Command
+		@extends Resource
+		@arg {String}        id                       - the main alias/handle/name of the command.
 		@arg {Object}        [descriptor]             - command description object, multiple fields below
 		@arg {Array<String>} [descriptor.aliases]     - alternative names for the command
 		@arg {String}        [descriptor.category]    - category for the command, else a default one is used
 		@arg {String}        [descriptor.info]        - retrievable information about the command
 		@arg {Array<String>} [descriptor.parameters]  - strictly-formatted parameter list for the command (see Parameters.js)
-		@arg {Object}        [descriptor.permissions] - default permission settings of the command        (see Permissions.js)
+		@arg {String}        [descriptor.permissions] - default permission type of the command            (see Permissions.js)
 		@arg {Object}        [descriptor.properties]  - optional properties for the command               (see Properties.js)
 		@arg {Boolean}       [descriptor.suppress]    - prevent listing this command and its subcommands
 		@arg {Object}        [descriptor.subcommands] - subcommands which are recursively processed
-		@arg {Function}      descriptor.fn            - the command function handler, which takes one argument, the input object
+		@arg {Function}      [descriptor.fn]          - the command function handler, which takes one argument, the input object
 	*/
-	constructor(cmd, {
-		aliases  = [],
-		category = Constants.Command.DEFAULT_CATEGORY,
-		title    = Constants.Command.DEFAULT_TITLE,
-		info     = Constants.Command.DEFAULT_INFO,
-		parameters  = [],
-		permissions = {},
-		properties  = {},
-		suppress    = Constants.Command.DEFAULT_SUPPRESSION,
-		analytics   = Constants.Command.DEFAULT_ANALYTICS,
-		subcommands = {},
-		fn
-	}) {
-		if (typeof(cmd) !== 'string' || !cmd) {
-			throw new TypeError(`${this.constructor.name}.id must be a string identifier.`);
+	constructor(id, descriptor = {}) {
+		super(Constants.Command.TEMPLATE, descriptor);
+		if (typeof(id) !== 'string' || !id) {
+			throw new CommandError('<invalid>', `id must be a string identifier.`);
 		}
-		if (Constants.Symbols.RESERVED.some(r => cmd.indexOf(r) > -1)) {
-			throw new TypeError(`${this.constructor.name}.${cmd}.id cannot have any of these reserved characters: ${Constants.Symbols.RESERVED.join('')}`);
+		if (Constants.Symbols.RESERVED.some(r => id.includes(r))) {
+			throw new CommandError(id, `id cannot have any of these reserved characters: ${Constants.Symbols.RESERVED.join('')}`);
 		}
-		if (!(aliases instanceof Array)) {
-			throw new TypeError(`${this.constructor.name}.${cmd}.aliases must be an Array.`);
+		if (this.aliases.some(a => Constants.Symbols.RESERVED.some(r => a.includes(r)))) {
+			throw new CommandError(id, `aliases (${this.aliases.join(',')}) cannot have any of these reserved characters: ${Constants.Symbols.RESERVED.join('')}`);
 		}
-		if (aliases.some(a => Constants.Symbols.RESERVED.some(r => a.indexOf(r) > -1))) {
-			throw new TypeError(`${this.constructor.name}.${cmd}.aliases = ${aliases.join(',')} cannot have any of these reserved characters: ${Constants.Symbols.RESERVED.join('')}`);
+		if (Constants.Symbols.RESERVED.some(r => this.category.includes(r))) {
+			throw new CommandError(id, `category (${category}) cannot have any of these reserved characters: ${Constants.Symbols.RESERVED.join('')}`);
 		}
-		if (typeof(category) !== 'string') {
-			throw new TypeError(`${this.constructor.name}.${cmd}.category must be a string identifier.`);
-		}
-		if (Constants.Symbols.RESERVED.some(r => category.indexOf(r) > -1)) {
-			throw new TypeError(`${this.constructor.name}.${cmd}.category cannot have any of these reserved characters: ${Constants.Symbols.RESERVED.join('')}`);
-		}
-		if (typeof(title) !== 'string') {
-			throw new TypeError(`${this.constructor.name}.${cmd}.title must be a string.`);
-		}
-		if (typeof(info) !== 'string') {
-			throw new TypeError(`${this.constructor.name}.${cmd}.info must be a string.`);
-		}
-		if (typeof(parameters) !== 'object') {
-			throw new TypeError(`${this.constructor.name}.${cmd}.parameters must be an array or object.`);
-		}
-		if (typeof(permissions) !== 'object') {
-			throw new TypeError(`${this.constructor.name}.${cmd}.permissions must be an object.`);
-		}
-		if (typeof(properties) !== 'object') {
-			throw new TypeError(`${this.constructor.name}.${cmd}.properties must be an object.`);
-		}
-		if (typeof(subcommands) !== 'object') {
-			throw new TypeError(`${this.constructor.name}.${cmd}.subcommands must be an object.`);
-		}
-		
-		this.id       = cmd;
-		this.aliases  = aliases;
-		this.category = category;
-		this.title    = title;
-		this.info     = info;
-		this.suppress = !!suppress;
-		this.analytics = !!analytics;
-		
-		this.parameters  = new Parameters(parameters, this);
-		this.properties  = new Properties(properties, this);
-		this.permissions = new CPermissions(permissions, this);
-		this.subcommands = new Subcommands(subcommands, this);
-		this.fn = fn;
+		this.id = id;
+		this.parameters  = new Parameters(descriptor.parameters, this);
+		this.properties  = new Properties(descriptor.properties, this);
+		this.permissions = new Permissions(descriptor.permissions || Constants.Permissions.DEFAULT_TYPE, this);
+		this.subcommands = new Subcommands(descriptor.subcommands, this);
+		this.fn = descriptor.fn;
 	}
 	/**
 		@return full command string identifier
 	*/
 	get fullID() {
 		return (typeof(this.supercommand) !== 'undefined' ? (this.supercommand.fullID + Constants.Symbols.DELIMITER + this.id) : this.id).toLowerCase();
+	}
+	/**
+		@return the string that represents this command's usage
+	*/
+	get usage() {
+		return this.toString(Constants.Symbols.PREFIX);
 	}
 	/**
 		@return a boolean that indicates if this command is a subcommand
@@ -231,24 +205,12 @@ class Command {
 		return last;
 	}
 	/**
-		Resolve permissions and return a Grant
-	*/
-	checkPermissions(input) {
-		return this.permissions.check(input);
-	}
-	/**
-		Resolve parameters and return a grant
-	*/
-	checkParameters(params) {
-		return this.parameters.check(params);
-	}
-	/**
 		Validating the arguments with the command's permissions, then return the result
 	*/
 	validate(handler) {
-		let grant = this.checkPermissions(handler.context);
+		let grant = this.permissions.check(handler);
 		if (grant.granted) {
-			grant = this.checkParameters(handler.args);
+			grant = this.parameters.check(handler.args);
 		}
 		handler.grant = grant.value;
 		return handler;
@@ -258,42 +220,42 @@ class Command {
 	*/
 	run(handler) {
 		// command functions can either generate responses internally or return one
-		var _handler, value;
+		var resolving, value;
 		try {
 			if (this.fn instanceof Function) {
 				value = this.fn.call(this, handler);
 			} else if (this.info) {
 				value = this.info + (this.hasSubcommands ? `\nUse ${md.code(this.fullID + '.?')} to list subcommands.` : '');
 			}
-			_handler = handler.resolve(value);
+			resolving = handler.resolve(value);
 		} catch (e) {
-			_handler = handler.reject(e);
+			resolving = handler.reject(e);
 		} finally {
-			return _handler.then(() => {handler.title = this.title});
+			return resolving.then(() => {handler.title = this.title});
 		}
 	}
 	/**
 		Returns the representative string of the command
 	*/
-	toString() {
-		return md.code(this.fullID + ' ' + this.parameters.toString());
+	toString(prefix = '') {
+		return md.code(prefix + this.fullID + ' ' + this.parameters.toString());
 	}
 	/**
 		Returns an embeddable object containing information about this command
 	*/
-	toHelpEmbed(client, server) {
+	embed(client, server) {
 		return {
 			title: this.category + ': ' + this.fullID,
 			description: this.info,
 			fields: [
 				{
 					name: 'Usage',
-					value: Constants.Symbols.PREFIX + this.toString(),
+					value: this.usage,
 					inline: true
 				},
 				{
 					name: 'Aliases',
-					value: this.aliases.map(a => a.toLowerCase()).join(', ') || 'No other aliases.',
+					value: this.aliases.map(a => a.toLowerCase()).join(', ') || 'None',
 					inline: true
 				},
 				{
@@ -308,12 +270,11 @@ class Command {
 				},
 				{
 					name: 'Subcommands',
-					value: this.subcommands.toString() || 'No subcommands for this command.',
+					value: this.subcommands.toString() || 'None',
 					inline: true
 				}
 			]
 		};
-		
 	}
 	/**
 		Resolves to the command object(s) that matches any aliases
@@ -329,7 +290,7 @@ class Command {
 			cmd = cmd.split('.');
 		}
 		if (!(cmd instanceof Array)) {
-			throw new TypeError(`${arguments.callee.name} requires a String or Array.`);
+			throw new CommandError(this.id, `${arguments.callee.name} requires a String or Array.`);
 		}
 		
 		let selector = cmd[level];

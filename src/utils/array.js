@@ -92,8 +92,31 @@ class Array2D extends Array {
 	}
 }
 
+/**
+	Combine 'a' with 'b' such that 'b' contains no elements already found in 'a'
+*/
+function union(a, b) {
+	if (b && b.length) {
+		return a.concat(b.filter(x => !a.includes(x)));
+	} else {
+		return a;
+	}
+}
+/**
+	Filter 'a' such that it contains no elements in 'b'
+*/
+function diff(a, b) {
+	if (b && b.length) {
+		return a.filter(x => !b.includes(x));
+	} else {
+		return a;
+	}
+}
+
 module.exports = {
 	forEachAsync,
 	mapAsync,
-	Array2D
+	Array2D,
+	union,
+	diff
 };

@@ -22,6 +22,7 @@ module.exports = {
 		title: 'Analytics',
 		info: 'Display statistics about bot command usage in this server.',
 		parameters: ['[...commands]'],
+		permissions: 'inclusive',
 		fn({client, args, serverID}) {
 			var commands = client.commands.get(...args).map(c => c.fullID);
 			var analytics = Analytics.retrieve(client, serverID);
@@ -33,9 +34,7 @@ module.exports = {
 				title: 'Analytics | Delete',
 				info: 'Deletes specific items from the analytics table.',
 				parameters: ['...items'],
-				permissions: {
-					type: 'private'
-				},
+				permissions: 'private',
 				fn({client, args, channelID, serverID}) {
 					var commands = args;
 					Analytics.delete(client, serverID, commands);
@@ -46,9 +45,7 @@ module.exports = {
 				title: 'Analytics | Merge',
 				info: 'Merges two or more items in the analytics table, for cleaning up legacy commands. (You can use JSON to quickly merge multiple things, just do {keyToMerge: [...items to merge]})',
 				parameters: ['keepitem','[...items]'],
-				permissions: {
-					type: 'private'
-				},
+				permissions: 'private',
 				fn({client, arg, args, channelID, serverID}) {
 					var things;
 					try {
@@ -64,9 +61,7 @@ module.exports = {
 				title: 'Analytics | Sort',
 				info: 'Sorts analytics items alphabetically (or by any way specified by `sortMethod`: `key|key-desc|value|value-desc`)',
 				parameters: ['[sortMethod]'],
-				permissions: {
-					type: 'private'
-				},
+				permissions: 'private',
 				fn({client, arg, channelID, serverID}) {
 					Analytics.sort(client, serverID, arg);
 					return 'Items successfully sorted.';
@@ -76,9 +71,7 @@ module.exports = {
 				title: 'Analytics | All',
 				info: 'Retrieves command analytics from all servers.',
 				parameters: ['[...commands]'],
-				permissions: {
-					type: 'private'
-				},
+				permissions: 'private',
 				fn({client, args, channelID}) {
 					var commands = client.commands.get(...args).map(c => c.fullID);
 					var analytics = Analytics.retrieve(client);
@@ -100,9 +93,7 @@ module.exports = {
 						title: 'Analytics | This Session | All',
 						info: 'Retrieves command analytics for this session across all servers.',
 						parameters: ['[...commands]'],
-						permissions: {
-							type: 'private'
-						},
+						permissions: 'private',
 						fn({client, args, channelID}) {
 							var commands = client.commands.get(...args).map(c => c.fullID);
 							var analytics = Analytics.retrieveTemp();

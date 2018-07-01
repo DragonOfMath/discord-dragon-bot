@@ -35,6 +35,12 @@ class Context {
 		this.memberID  = userID;
 		this.member    = this.isDM ? this.user : this.server.members[userID];
 		
+		if (this.isDM) {
+			this.roles = [];
+		} else {
+			this.roles = this.member.roles.map(r => this.server.roles[r]);
+		}
+		
 		// if the WebSocket message is passed, it contains the correct message ID
 		if (typeof(message) === 'string') {
 			this.messageID = WSMessage ? WSMessage.d.id : this.channel.last_message_id;

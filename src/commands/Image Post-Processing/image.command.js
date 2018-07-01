@@ -1,8 +1,10 @@
 const {random,Jimp,Math,Color,Perlin2} = require('../../Utils');
 const brailleify = require('./brailleify');
 
-const TEST_IMAGE_TYPES  = ['blank','grid','checkerboard','color','noise','random'];
-const TEST_IMAGE_COLORS = [Color.WHITE,Color.RED,Color.GREEN,Color.BLUE,Color.YELLOW,Color.CYAN,Color.MAGENTA];
+const TEST_IMAGES = ['blank','grid','checkerboard','color','noise','random']
+const TEST_COLORS = [Color.WHITE,Color.RED,Color.GREEN,Color.BLUE,Color.YELLOW,Color.CYAN,Color.MAGENTA];
+const WHITE = Color.WHITE.rgba;
+const BLACK = Color.BLACK.rgba;
 
 function processImage(client, channelID, args, filename, process) {
 	var _args = args.slice();
@@ -40,7 +42,7 @@ function isImage(url) {
 	return /^http.+\.(jpg|jpeg|png)$/i.test(url);
 }
 
-function resolvePercent(num, scale) {
+function resolvePercent(num, scale = 1) {
 	if (String(num).endsWith('%')) {
 		num = Number(num.match(/\d+/));
 		num = Math.minmax(num, 0, 100);
@@ -62,86 +64,6 @@ function resolvePos(image, x, y, defaultX, defaultY) {
 	}
 	return {x,y};
 }
-function applyTransform(image, F) {
-	var w = image.bitmap.width;
-	var h = image.bitmap.height;
-	var d = Math.hypot(w,h); // diagonal
-	var clone = image.clone();
-	return clone.scan(0, 0, w, h, (x,y,i) => {
-		// transform x and y
-		var {x:tx,y:ty} = F(x,y);
-		var x0 = tx | 0, y0 = ty | 0, x1 = x0 + 1, y1 = y0 + 1;
-		var hex;
-		if (x0 < tx || y0 < ty) {
-			var colors = [
-				image.getPixelColor(x0, y0),
-				image.getPixelColor(x1, y0),
-				image.getPixelColor(x0, y1),
-				image.getPixelColor(x1, y1)
-			].map(i => Jimp.intToRGBA(i));
-			// anti-aliasing
-			hex = Color.interpolate(
-				Color.interpolate(colors[0], colors[1], tx - x0),
-				Color.interpolate(colors[2], colors[3], tx - x0),
-			ty - y0).rgba;
-		} else {
-			hex = image.getPixelColor(x0, y0);
-		}
-		clone.setPixelColor(hex, x, y);
-	});
-}
-function applyDifferential(image, diff) {
-	var w = image.bitmap.width;
-	var h = image.bitmap.height;
-	var d = Math.hypot(w,h); // diagonal
-	var clone = image.clone();
-	return clone.scan(0, 0, w, h, (x,y,i) => {
-		// get the base pixel components
-		var hex = image.getPixelColor(x, y);
-		var color = Jimp.intToRGBA(hex), color2;
-		
-		// get the differential at the x and y
-		var {dx,dy} = diff(x,y);
-		
-		// find its scalar value
-		var dist = Math.hypot(dx, dy);
-		if (isFinite(dist)) {
-			// normalize the stepping values
-			dx /= dist;
-			dy /= dist;
-			
-			// calculate the starting point and the line length
-			var count = 1, step = 0, max = Math.min(dist, d);
-			
-			// start at one end of the slope line
-			var tx = x - dx * max / 2;
-			var ty = y - dy * max / 2;
-			
-			for (; step < max; ++step) {
-				if (tx < 0 || tx > w || ty < 0 || ty > h) {
-					// skip out of bounds
-				} else {
-					hex    = image.getPixelColor(tx|0, ty|0);
-					color2 = Jimp.intToRGBA(hex);
-					color.r += color2.r;
-					color.g += color2.g;
-					color.b += color2.b;
-					count++;
-				}
-				tx += dx;
-				ty += dy;
-			}
-			
-			color.r /= count;
-			color.g /= count;
-			color.b /= count;
-			
-			// set the clone's pixel color to the average of the colors traversed
-			hex = Jimp.rgbaToInt(color.r|0, color.g|0, color.b|0, color.a);
-			clone.setPixelColor(hex, x, y);
-		}
-	});
-}
 function iterate(cx,cy,p,limit) {
 	var x = cx, y = cy, i = 0;
 	while (i < limit) {
@@ -159,18 +81,18 @@ module.exports = {
 		category: 'Misc',
 		title: 'Image Post-Processing',
 		info: 'A variety of image-manipulating commands.',
+		permissions: 'inclusive',
 		analytics: false,
 		subcommands: {
 			'test': {
 				aliases: ['testing', 'generate'],
 				info: 'Creates a testing image. Specify what preset to use and at what size.',
-				parameters: [`[<${TEST_IMAGE_TYPES.join('|')}>]`,'[size]'],
+				parameters: [`[<${TEST_IMAGES.join('|')}>]`,'[size]'],
 				fn({client, args}) {
-					var [type = random(TEST_IMAGE_TYPES), size = 200] = args;
+					var [type = random(TEST_IMAGES), size = 200] = args;
 					type = type.toLowerCase();
 					size = resolvePercent(size, 1000);
-					var WHITE = Color.WHITE.rgba;
-					var BLACK = Color.BLACK.rgba;
+					
 					var image = new Jimp(size, size, WHITE);
 					var spacing = Math.floor(size / 10);
 					var algorithm;
@@ -179,18 +101,18 @@ module.exports = {
 							algorithm = () => WHITE;
 							break;
 						case 'grid':
-							algorithm = (x,y,i) => {
+							algorithm = (x,y) => {
 								return ((x && x % spacing == 0) || (y && y % spacing == 0)) ? BLACK : WHITE;
 							};
 							break;
 						case 'checkerboard':
-							algorithm = (x,y,i) => {
+							algorithm = (x,y) => {
 								return (((Math.floor(x/spacing)+Math.floor(y/spacing)) % 2) == 1) ? BLACK : WHITE;
 							};
 							break;
 						case 'color':
 							var saturation = 2 * Math.random();
-							algorithm = (x,y,i) => {
+							algorithm = (x,y) => {
 								var tx = x / size;
 								var ty = y / size;
 								return Color.hsl(360 * tx, saturation, Math.abs(2 * ty - 1)).rgba;
@@ -199,8 +121,8 @@ module.exports = {
 						case 'noise':
 							var perlin = new Perlin2(spacing);
 							var color = random(TEST_IMAGE_COLORS);
-							algorithm = (x,y,i) => {
-								var n = perlin.noise(x/10, y/10);
+							algorithm = (x,y) => {
+								var n = perlin.noise(x/20, y/20);
 								n = (n + 1) / 2;
 								return color.scale(n).rgba;
 							};
@@ -210,7 +132,7 @@ module.exports = {
 							break;
 					}
 					image.scan(0, 0, size, size, (x,y,i) => {
-						image.setPixelColor(algorithm(x,y,i), x, y);
+						image.setPixelColor(algorithm(x,y), x, y);
 					});
 					return getBufferAs('test.jpg')(image);
 				}
@@ -221,12 +143,7 @@ module.exports = {
 				parameters: ['[imageURL]'],
 				fn({client, args, channelID}) {
 					return processImage(client, channelID, args, 'deepfry.jpg', function (image) {
-						return image.color([{
-							apply: 'saturate',
-							params: [random(20,100)]
-						}])
-						.posterize(random(4,15))
-						.quality(random(1,20));
+						return image.deepfry();
 					});
 				}
 			},
@@ -335,6 +252,22 @@ module.exports = {
 				fn({client, channelID, args}) {
 					return processImage(client, channelID, args, 'emboss.jpg', function (image) {
 						return image.emboss();
+					});
+				}
+			},
+			'gradient': {
+				info: 'Calculates the image gradient.',
+				parameters: ['[imageURL]', '[dir]'],
+				fn({client, channelID, args}) {
+					return processImage(client, channelID, args, 'gradient.jpg', function (image, dir = 'y') {
+						switch (dir.toLowerCase()) {
+							case 'x':
+							case 'horizontal':
+								return image.gradientX();
+							case 'y':
+							case 'vertical':
+								return image.gradientY();
+						}
 					});
 				}
 			},
@@ -464,9 +397,7 @@ module.exports = {
 						strength = strength === undefined ? random(min) : resolvePercent(strength, min);
 						var dx = strength * Math.cos(direction);
 						var dy = strength * Math.sin(direction);
-						return applyDifferential(image, (x,y) => {
-							return {dx,dy};
-						});
+						return image.differentialBlur(() => ({dx,dy}));
 					});
 				}
 			},
@@ -483,12 +414,10 @@ module.exports = {
 						var rad = min * Math.PI / 8;
 						var {x:ox,y:oy} = resolvePos(image, xpos, ypos, Math.floor(w / 2), Math.floor(h / 2));
 						strength = strength === undefined ? random(2,rad) : resolvePercent(strength, rad);
-						return applyDifferential(image, (x,y) => {
-							return {
-								dx: strength * (oy - y) / h,
-								dy: strength * (x - ox) / w
-							};
-						});
+						return image.differentialBlur((x,y) => ({
+							dx: strength * (oy - y) / h,
+							dy: strength * (x - ox) / w
+						}));
 					});
 				}
 			},
@@ -505,12 +434,10 @@ module.exports = {
 						var scale = 20;
 						var {x:ox,y:oy} = resolvePos(image, xpos, ypos, Math.floor(w / 2), Math.floor(h / 2));
 						strength = strength === undefined ? random(3,scale) : resolvePercent(strength, scale);
-						return applyDifferential(image, (x,y) => {
-							return {
+						return image.differentialBlur((x,y) => ({
 								dx: strength * (x - ox) / w,
 								dy: strength * (y - oy) / h
-							};
-						});
+						}));
 					});
 				}
 			},
@@ -526,7 +453,7 @@ module.exports = {
 						var max = Math.max(w,h);
 						var {x:ox,y:oy} = resolvePos(image, xpos, ypos, Math.floor(w / 2), Math.floor(h / 2));
 						strength = strength === undefined ? random(min) : resolvePercent(strength, min);
-						return applyTransform(image, (x,y) => {
+						return image.transform((x,y) => {
 							var dx = ox - x;
 							var dy = oy - y;
 							var dd = Math.hypot(dx, dy);
@@ -546,24 +473,8 @@ module.exports = {
 				parameters: ['[imageURL]', '[strength]'],
 				fn({client, channelID, args}) {
 					return processImage(client, channelID, args, 'swirl.jpg', function (image, strength) {
-						var w = image.bitmap.width;
-						var h = image.bitmap.height;
-						var min = Math.min(w,h);
-						var max = Math.max(w,h);
-						var ox = Math.floor(w / 2);
-						var oy = Math.floor(h / 2);
 						strength = strength === undefined ? (5 * random()) : resolvePercent(strength, 5);
-						var swirlRadius = Math.log(2) * min / 5;
-						return applyTransform(image, (x,y) => {
-							var dx = x - ox;
-							var dy = y - oy;
-							var dd = Math.hypot(dx, dy);
-							var theta = Math.atan2(dy, dx);
-							theta += strength * Math.PI * Math.exp(-dd/swirlRadius);
-							x = ox + dd * Math.cos(theta);
-							y = oy + dd * Math.sin(theta);
-							return {x,y};
-						});
+						return image.swirl(strength);
 					});
 				}
 			},
@@ -583,7 +494,7 @@ module.exports = {
 						power = power === undefined ? (random(-8,8)||2) : resolvePercent(power, 8);
 						iterations = iterations === undefined ? 2 : resolvePercent(iterations, 20);
 						iterations = Math.minmax(iterations, 1, 20);
-						return applyTransform(image, (x,y) => {
+						return image.transform((x,y) => {
 							// map the pixel plane to the complex plane
 							var dx = scale * (x - ox);
 							var dy = scale * (y - oy);
@@ -615,30 +526,50 @@ module.exports = {
 						image = image.greyscale().normalize();
 						
 						// create a random dot pattern, but also make characteristic "blotches"
-						var pattern = new Jimp(pw, h);
-						pattern.scan(0, 0, pw, h, function (x, y, idx) {
-							pattern.setPixelColor(Color.random().rgba, x, y);
-						})
+						var pattern = new Jimp(pw, h)
+						.map(Color.random)
 						.blur(random(5,15))
 						.normalize()
 						.emboss()
 						.contrast(random(0.1,0.5));
 						
 						// generate the stereogram by shifting regions in the pattern by the corresponding depth map values
-						var stereogram = new Jimp(w, h);
-						stereogram.scan(0, 0, w, h, function (x, y, idx) {
-							var color = image.getPixelColor(x, y);
-							var depth = (Jimp.intToRGBA(color).r / 255);
+						return image.map((color,x,y,i,img) => {
+							var depth = (color.r / 255);
 							var shift = ~~(((mid - x) / pw) * depth * strength);
 							if (walleyed) shift *= -1;
-							color = pattern.getPixelColor((x + shift) % pw, y);
-							stereogram.setPixelColor(color, x, y);
+							return pattern.getPixelColor(Math.modulo(x + shift, pw), y);
 						});
-						
-						return stereogram;
 					});
 				}
-			}
+			},
+			'droste': {
+				aliases: ['recursion'],
+				info: 'Apply the Droste effect, which is a recursion of the image itself.',
+				parameters: ['[imageURL]', '[xpos]', '[ypos]', '[scalefactor]'],
+				fn({client, channelID, args}) {
+					return processImage(client, channelID, args, 'recursion.jpg', function (image, xpos, ypos, scale) {
+						var w = image.bitmap.width,
+							h = image.bitmap.height,
+							ox = Math.floor(w / 2),
+							oy = Math.floor(h / 2);
+
+						({x:xpos,y:ypos} = resolvePos(image, xpos, ypos, ox/2, oy/2));
+						scale = scale === undefined ? 0.5 : resolvePercent(scale);
+						return image.recursion(xpos, ypos, scale);
+					});
+				}
+			}/*,
+			'magik': {
+				aliases: ['magick','magic'],
+				info: 'Apply seam-carving to an image.',
+				parameters: ['[imageURL]'],
+				fn({client, channelID, args}) {
+					return processImage(client, channelID, args, 'magik.jpg', function (image) {
+						return image.magik();
+					});
+				}
+			}*/
 		}
 	}
 };

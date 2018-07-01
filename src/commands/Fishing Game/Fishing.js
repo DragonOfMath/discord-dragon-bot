@@ -295,7 +295,14 @@ class FishingEvent extends Session {
 			category: 'fishing',
 			info: 'A fishing event is happening!',
 			data: { fish, type, multiplier },
-			permissions: { type: 'inclusive', servers: [serverID] },
+			permissions: {
+				type: 'inclusive',
+				servers: {
+					[serverID]: {
+						channels: [channelID]
+					}
+				}
+			},
 			settings: { expires, silent: false },
 			events: {
 				goodbye() {
@@ -436,7 +443,7 @@ class Fishing {
 	}
 	static getEvents(client, serverID) {
 		var sessionIDs = client.sessions.filter((sID,session) => {
-			return session.category == 'fishing' && session.permissions.servers.includes(serverID);
+			return session.category == 'fishing' && serverID in session.permissions.servers;
 		});
 		return sessionIDs.map(sID => client.sessions[sID]);
 	}

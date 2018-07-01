@@ -108,9 +108,7 @@ module.exports = {
 	'bot': {
 		category: 'Info',
 		info: 'Shows bot info, such as command count, uptime, ping, memory usage, and version, as well as a count of guilds, channels, and users.',
-		permissions: {
-			type: 'public'
-		},
+		permissions: 'public',
 		fn({client, channelID}) {
 			return client.ping(channelID).then(p => {
 				return {
@@ -129,9 +127,6 @@ module.exports = {
 			'commands': {
 				aliases: ['cmds'],
 				info: 'Displays the number of commands currently registered.',
-				permissions: {
-					type: 'public'
-				},
 				fn({client}) {
 					return {fields: commands(client)};
 				}
@@ -139,18 +134,12 @@ module.exports = {
 			'developer': {
 				aliases: ['dev','owner'],
 				info: 'Displays the bot\'s developer.',
-				permissions: {
-					type: 'public'
-				},
 				fn({client}) {
 					return {fields: developer(client)};
 				}
 			},
 			'performance': {
 				info: 'Displays uptime, pint, and memory usage.',
-				permissions: {
-					type: 'public'
-				},
 				fn({client, channelID}) {
 					return client.ping(channelID).then(p => ({fields: performance(client, p)}));
 				}
@@ -158,9 +147,6 @@ module.exports = {
 			'uptime': {
 				aliases: ['up'],
 				info: 'Displays how long the bot has been running.',
-				permissions: {
-					type: 'public'
-				},
 				fn({client}) {
 					return {fields: uptime(client)};
 				}
@@ -168,9 +154,6 @@ module.exports = {
 			'ping': {
 				aliases: ['ms'],
 				info: 'Checks bot latency.',
-				permissions: {
-					type: 'public'
-				},
 				fn({client, channelID}) {
 					return client.ping(channelID).then(p => ({fields: ping(client, p)}));
 				}
@@ -178,18 +161,12 @@ module.exports = {
 			'memory': {
 				aliases: ['mem'],
 				info: 'Checks bot memory usage.',
-				permissions: {
-					type: 'public'
-				},
 				fn({client}) {
 					return {fields: memory(client)};;
 				}
 			},
 			'version': {
 				info: 'Shows bot and library versions.',
-				permissions: {
-					type: 'public'
-				},
 				fn({client}) {
 					return {fields: version(client)};
 				}
@@ -197,18 +174,12 @@ module.exports = {
 			'src': {
 				aliases: ['source','sourcecode','repo','github'],
 				info: 'Gives link to GitHub repository that has the bot\'s source code, for whatever reason.',
-				permissions: {
-					type: 'public'
-				},
 				fn({client}) {
 					return {fields: sourcecode(client)};
 				}
 			},
 			'stats': {
 				info: 'Shows how many guilds, channels, and users the bot is connected to.',
-				permissions: {
-					type: 'public'
-				},
 				fn({client}) {
 					return {fields: stats(client)};
 				}
@@ -219,17 +190,12 @@ module.exports = {
 		category: 'Info',
 		title: 'Info',
 		info: 'Information interface for Discord resources.',
-		permissions: {
-			type: 'public'
-		},
+		permissions: 'public',
 		subcommands: {
 			'message': {
 				title: 'Info | Message',
 				info: 'Displays information about a message.',
 				parameters: ['[messageID]'],
-				permissions: {
-					type: 'public'
-				},
 				fn({client, args, channelID, messageID}) {
 					var id = args[0] || messageID;
 					return client.getMessage({channelID, messageID: id})
@@ -244,9 +210,6 @@ module.exports = {
 				title: 'Info | Channel',
 				info: 'Displays information about a channel.',
 				parameters: ['[channel]'],
-				permissions: {
-					type: 'public'
-				},
 				fn({client, args, channelID}) {
 					var channel = DiscordUtils.resolve(client.channels, md.channelID(args[0]), args[0], channelID);
 					if (!channel) {
@@ -260,9 +223,6 @@ module.exports = {
 				title: 'Info | Server',
 				info: 'Displays information about a server.',
 				parameters: ['[serverID]'],
-				permissions: {
-					type: 'public'
-				},
 				fn({client, args, serverID}) {
 					var server = DiscordUtils.resolve(client.servers, args[0], serverID);
 					if (!server) {
@@ -276,9 +236,6 @@ module.exports = {
 				title: 'Info | Member',
 				info: 'Displays information about a user.',
 				parameters: ['[userID]'],
-				permissions: {
-					type: 'public'
-				},
 				fn({client, args, userID, server}) {
 					var member = DiscordUtils.resolve(server.members, md.userID(args[0]), args[0], userID);
 					var user = client.users[member.id];
@@ -293,9 +250,6 @@ module.exports = {
 				title: 'Info | Role',
 				info: 'Displays information about a role.',
 				parameters: ['roleID'],
-				permissions: {
-					type: 'public'
-				},
 				fn({client, args, server}) {
 					var role = DiscordUtils.resolve(server.roles, md.roleID(args[0]), args[0]);
 					if (!role) {
@@ -308,9 +262,6 @@ module.exports = {
 				title: 'Info | Invite',
 				info: 'Reveals information about a server invite.',
 				parameters: ['invite'],
-				permissions: {
-					type: 'public'
-				},
 				fn({client, args}) {
 					var inviteCode = args[0].match(/discord.gg\/(.+)/);
 					if (inviteCode) inviteCode = inviteCode[1];
@@ -329,18 +280,13 @@ module.exports = {
 		category: 'Info',
 		title: 'Listing',
 		info: 'Listing interface for all users, roles, and channels in this server.',
-		permissions: {
-			type: 'public'
-		},
+		permissions: 'public',
 		subcommands: {
 			'users': {
 				aliases: ['members'],
 				title: 'Listing | Users',
 				info: 'List members of this server.',
 				parameters: ['[page]'],
-				permissions: {
-					type: 'public'
-				},
 				fn({client, args, server}) {
 					var users = DiscordUtils.getServerUsers(client.users, server);
 					return list(users, args[0], md.mention);
@@ -350,9 +296,6 @@ module.exports = {
 				title: 'Listing | Roles',
 				info: 'List roles of this server.',
 				parameters: ['[page]'],
-				permissions: {
-					type: 'public'
-				},
 				fn({client, args, server}) {
 					var roles = DiscordUtils.getServerRoles(server);
 					return list(roles, args[0], md.role);
@@ -362,9 +305,6 @@ module.exports = {
 				title: 'Listing | Channels',
 				info: 'List channels of this server.',
 				parameters: ['[page]'],
-				permissions: {
-					type: 'public'
-				},
 				fn({client, args, server}) {
 					var channels = DiscordUtils.getServerChannels(server);
 					return list(channels, args[0], md.channel);
@@ -374,9 +314,7 @@ module.exports = {
 				aliases: ['every'],
 				title: 'Listing | All',
 				info: 'Listing interface for all users, roles, channels, and servers the bot has access to.',
-				permissions: {
-					type: 'private'
-				},
+				permissions: 'private',
 				suppress: true,
 				subcommands: {
 					'users': {
@@ -384,9 +322,6 @@ module.exports = {
 						title: 'Listing | All Users',
 						info: 'List all users the bot has access to. Optionally, filter by server ID.',
 						parameters: ['[serverID]', '[page]'],
-						permissions: {
-							type: 'private'
-						},
 						fn({client, args, server: thisServer}) {
 							var [serverID, page] = args;
 							if (typeof(serverID) === 'number') {
@@ -412,9 +347,6 @@ module.exports = {
 						title: 'Listing | All Roles',
 						info: 'List all roles the bot has access to. Optionally, filter by server ID.',
 						parameters: ['[serverID]', '[page]'],
-						permissions: {
-							type: 'private'
-						},
 						fn({client, args, server: thisServer}) {
 							var [serverID, page] = args;
 							if (typeof(serverID) === 'number') {
@@ -439,9 +371,6 @@ module.exports = {
 						title: 'Listing | All Channels',
 						info: 'List all channels the bot has access to. Optionally, filter by server ID.',
 						parameters: ['[serverID]', '[page]'],
-						permissions: {
-							type: 'private'
-						},
 						fn({client, args, server: thisServer}) {
 							var [serverID, page] = args;
 							if (typeof(serverID) === 'number') {
@@ -467,9 +396,6 @@ module.exports = {
 						title: 'Listing | All Servers',
 						info: 'List all servers the bot has access to. Optionally, filter by servers that a user is in.',
 						parameters: ['[userID]', '[page]'],
-						permissions: {
-							type: 'private'
-						},
 						fn({client, args, server: thisServer}) {
 							var [user, page] = args;
 							if (typeof(user) === 'number') {
@@ -506,9 +432,7 @@ module.exports = {
 		title: 'Search',
 		info: 'Search a message in the current channel, up to 1000 messages into history.',
 		parameters: ['...keywords'],
-		permissions: {
-			type: 'public'
-		},
+		permissions: 'public',
 		fn({client, args, channelID}) {
 			var [index, ...keywords] = args;
 			var limit = 0;
@@ -553,9 +477,6 @@ module.exports = {
 				title: 'Search | Users',
 				info: 'Search for usernames with the given keywords in their name OR discriminator.',
 				parameters: ['discriminator | keyword','[...more keywords]'],
-				permissions: {
-					type: 'public'
-				},
 				fn({client, args, server}) {
 					var [disc, ...keywords] = args;
 					if (isNaN(disc) || String(disc).length !== 4) {
@@ -578,9 +499,6 @@ module.exports = {
 				title: 'Search | Roles',
 				info: 'Search for roles with the given keywords in their name.',
 				parameters: ['...keywords'],
-				permissions: {
-					type: 'public'
-				},
 				fn({client, arg: keywords, server}) {
 					var matches = DiscordUtils.search(server.roles, role => {
 						return substrcmp(role.name, keywords);
@@ -593,9 +511,6 @@ module.exports = {
 				title: 'Search | Channels',
 				info: 'Search for channels with the given keywords in their name.',
 				parameters: ['[...keywords]'],
-				permissions: {
-					type: 'public'
-				},
 				fn({client, arg: keywords, server}) {
 					var matches = DiscordUtils.search(server.channels, channel => {
 						return substrcmp(channel.name, keywords);
@@ -607,9 +522,7 @@ module.exports = {
 				aliases: ['every', 'global'],
 				title: 'Search | All',
 				info: 'Search interface for finding a user, role, or channel in any server.',
-				permissions: {
-					type: 'private'
-				},
+				permissions: 'private',
 				suppress: true,
 				subcommands: {
 					'user': {
@@ -617,9 +530,6 @@ module.exports = {
 						title: 'Search | All Users',
 						info: 'Search all users with the given keywords in their name OR discriminator.',
 						parameters: ['discriminator | keyword','[...more keywords]'],
-						permissions: {
-							type: 'private'
-						},
 						fn({client, args, server}) {
 							var [disc, ...keywords] = args;
 							if (isNaN(disc) || String(disc).length !== 4) {
@@ -643,9 +553,6 @@ module.exports = {
 						title: 'Search | All Roles',
 						info: 'Search all roles with the given keywords in their name.',
 						parameters: ['...keywords'],
-						permissions: {
-							type: 'private'
-						},
 						fn({client, arg: keywords, server}) {
 							var roles = DiscordUtils.getAllRoles(client.servers);
 							var matches = DiscordUtils.search(roles, role => {
@@ -663,9 +570,6 @@ module.exports = {
 						title: 'Search | All Channels',
 						info: 'Search all channels with the given keywords in their name.',
 						parameters: ['...keywords'],
-						permissions: {
-							type: 'private'
-						},
 						fn({client, arg: keywords, server}) {
 							var matches = DiscordUtils.search(server.channels, channel => {
 								return substrcmp(channel.name, keywords);
@@ -682,9 +586,6 @@ module.exports = {
 						title: 'Search | All Servers',
 						info: 'Search all servers with the given keywords in their name.',
 						parameters: ['...keywords'],
-						permissions: {
-							type: 'private'
-						},
 						fn({client, arg: keywords}) {
 							var matches = DiscordUtils.search(client.servers, server => {
 								return substrcmp(server.name, keywords);

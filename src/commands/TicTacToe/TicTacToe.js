@@ -44,9 +44,12 @@ class TicTacToe extends Session {
 			},
 			permissions: {
 				type: 'inclusive',
-				users: [context.userID],
-				channels: [context.channelID],
-				servers: [context.serverID]
+				servers: {
+					[context.serverID]: {
+						users: [context.userID],
+						channels: [context.channelID]
+					}
+				}
 			},
 			resolver({client,message}) {
 				if (this.turn != this.player) return;

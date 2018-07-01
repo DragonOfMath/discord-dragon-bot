@@ -17,6 +17,7 @@ module.exports = {
 	'welcome': {
 		category: 'Admin',
 		info: 'Let your users feel welcome! Set a channel and message for which this bot may greet them.',
+		permissions: 'privileged',
 		subcommands: {
 			'message': {
 				title: 'Welcome | Message',
@@ -89,9 +90,6 @@ module.exports = {
 			},
 			'test': {
 				info: 'Test the welcome/goodbye messages.',
-				permissions: {
-					type: 'private'
-				},
 				fn({client, serverID, context}) {
 					var serverTable = client.database.get('servers');
 					var welcome = new Welcome(serverTable.get(serverID).welcome);

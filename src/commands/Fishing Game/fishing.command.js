@@ -15,6 +15,7 @@ module.exports = {
 		category: 'Fun',
 		title: Fishing.header,
 		info: `Catch critters of the sea to win big prizes! Each try costs **${Fishing.cost} credits** and you must wait **${fmt.time(Fishing.cooldown)}** between tries. :new: Events are here! For a limited time, fish will be harder/easier to catch, or be more/less valuable!`,
+		permissions: 'inclusive',
 		fn({client, userID, channelID, serverID}) {
 			return Fishing.fish(client, userID, channelID, serverID);
 		},
@@ -71,9 +72,7 @@ module.exports = {
 				title: Fishing.header,
 				info: '(Admin only) Starts a new fishing event, either from given parameters or randomized.',
 				parameters: ['[fish]','[<rarity|value>]','[multiplier]', '[expires]'],
-				permissions: {
-					type: 'private'
-				},
+				permissions: 'private',
 				fn({client, args, channelID, serverID}) {
 					var [fish, type, multiplier, expires] = args;
 					return Fishing.createFishingEvent(client, serverID, channelID, {fish, type, multiplier, expires});
@@ -92,9 +91,7 @@ module.exports = {
 				title: Fishing.header + ' | Set Cooldown',
 				info: 'Temporarily set the cooldown for `fish` usage.',
 				parameters: ['[time]'],
-				permissions: {
-					type: 'private'
-				},
+				permissions: 'private',
 				fn({client, args}) {
 					var wait = Number(args[0]) || 0;
 					return Fishing.setCooldown(wait);

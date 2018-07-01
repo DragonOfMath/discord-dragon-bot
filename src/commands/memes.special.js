@@ -70,9 +70,7 @@ const LENNYFACE = `( ͡° ͜ʖ ͡°)`;
 module.exports = {
 	id: 'memes',
 	info: 'Reply with maymays',
-	permissions: {
-		type: 'public'
-	},
+	permissions: 'public',
 	resolver({message}) {
 		if (/doot|calcium|strong bones/i.test(message)) return 'doot';
 		else if (/^me(.{1,4}|<.*>)?irl$/i.test(message)) return 'me_irl';
@@ -161,10 +159,13 @@ module.exports = {
 			return '*NANI?!*';
 		},
 		delet_this({client, channelID}) {
-			return client.undo(channelID).then(() => 'ok');
+			return client.undo(channelID);
 		},
 		deep() {
 			return random([
+				'bottom text',
+				'There\'s people in the world.',
+				'We preside in a civilization.',
 				'Really makes you think. :thinking:',
 				'Deep. :pensive:',
 				'omg deep af :eyes:',

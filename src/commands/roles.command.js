@@ -48,6 +48,7 @@ module.exports = {
 		category: 'Misc',
 		title: 'Role',
 		info: 'Manage roles on the server, and allow users to assign themselves roles or remove roles.',
+		permissions: 'public',
 		subcommands: {
 			'add': {
 				aliases: ['give','iama','iam'],
@@ -137,13 +138,29 @@ module.exports = {
 					return takeRole();
 				}
 			},
+			'List': {
+				aliases: ['show', 'display', 'roles'],
+				title: 'Roles | List',
+				info: 'Lists all roles that may be assigned/removed.',
+				fn({client, server}) {
+					var roles = client.database.get('roles').filter((id,role) => {
+						var r = new Role(role);
+						return id in server.roles && r.assign;
+					});
+					if (roles.length) {
+						return 'The following roles are self-assignable:\n' + roles.map(id => md.bold(server.roles[id].name)).join('\n');
+					} else {
+						return 'There are no self-assignable roles on this server.';
+					}
+				}
+			},
 			'Create': {
 				aliases: ['make','new'],
 				category: 'Admin',
 				title: 'Roles | Create',
 				info: 'Create new self-assignable role(s), with no special permissions. You can assign a color to a role by appending it with `:color`, e.g. `artist:#FFFF00` (for yellow).',
 				parameters: ['...roles'],
-				permissions: {},
+				permissions: 'privileged',
 				fn({client, server, serverID, args}) {
 					var roleTable = client.database.get('roles');
 					var roles = args.slice();
@@ -201,7 +218,7 @@ module.exports = {
 				title: 'Roles | Rename',
 				info: 'Renames an existing role.',
 				parameters: ['oldname','newname'],
-				permissions: {},
+				permissions: 'privileged',
 				fn({client, server, serverID, args}) {
 					var role = findRole(server, args[0]);
 					if (!role) {
@@ -225,7 +242,7 @@ module.exports = {
 				title: 'Roles | Recolor',
 				info: 'Replaces color of an existing role.',
 				parameters: ['role','color'],
-				permissions: {},
+				permissions: 'privileged',
 				fn({client, server, serverID, args}) {
 					var role = findRole(server, args[0]);
 					if (!role) {
@@ -250,7 +267,7 @@ module.exports = {
 				title: 'Roles | Assign',
 				info: 'Makes role(s) self-assignable.',
 				parameters: ['...roles'],
-				permissions: {},
+				permissions: 'privileged',
 				fn({client,server,args}) {
 					var roleTable = client.database.get('roles');
 					var roles = resolveRoles(args, server);
@@ -271,7 +288,7 @@ module.exports = {
 				title: 'Roles | Un-Assign',
 				info: 'Makes role(s) un-self-assignable.',
 				parameters: ['...roles'],
-				permissions: {},
+				permissions: 'privileged',
 				fn({client,server,args}) {
 					var roleTable = client.database.get('roles');
 					var roles = resolveRoles(args, server);
@@ -284,22 +301,6 @@ module.exports = {
 					}
 					roleTable.save();
 					return `Roles saved:\n${roles.map(r => md.bold(r.name)).join('\n')}`;
-				}
-			},
-			'List': {
-				aliases: ['show', 'display', 'roles'],
-				title: 'Roles | List',
-				info: 'Lists all roles that may be assigned/removed.',
-				fn({client, server}) {
-					var roles = client.database.get('roles').filter((id,role) => {
-						var r = new Role(role);
-						return id in server.roles && r.assign;
-					});
-					if (roles.length) {
-						return 'The following roles are self-assignable:\n' + roles.map(id => md.bold(server.roles[id].name)).join('\n');
-					} else {
-						return 'There are no self-assignable roles on this server.';
-					}
 				}
 			}
 		}

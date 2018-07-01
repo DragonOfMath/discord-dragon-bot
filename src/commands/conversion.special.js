@@ -69,9 +69,7 @@ module.exports = {
 	data: {
 		conversions: []
 	},
-	permissions: {
-		type: 'public'
-	},
+	permissions: 'public',
 	resolver({client, message, userID, channelID}) {
 		if (/http/.test(message)) return;
 		this.data.conversions = [];

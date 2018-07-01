@@ -191,7 +191,8 @@ class PromiseClient extends Discord.Client {
 	}
 	
 	getLastMessage(channelID) {
-		var messageID = this.channels[channelID].last_message_id;
+		var channel = this.channels[channelID] || this.directMessages[channelID];
+		var messageID = channel.last_message_id;
 		return this.getMessage({channelID, messageID});
 	}
 	

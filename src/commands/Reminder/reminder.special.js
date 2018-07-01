@@ -4,9 +4,7 @@ module.exports = {
 	id: 'reminder-scheduler',
 	title: 'Reminder',
 	info: 'Processes reminders in queue.',
-	permissions: {
-		type: 'public'
-	},
+	permissions: 'public',
 	events: {
 		tick(client) {
 			var clientTable = client.database.get('client');
@@ -17,7 +15,7 @@ module.exports = {
 				var rem = reminders[r];
 				if (now > rem.when) {
 					console.log('Fulfilled',rem);
-					client.send(rem.who, '**Reminder!** ' + rem.what);
+					client.send(rem.who, '**Reminder!** ' + rem.what).catch(e => client.error(e));
 					reminders.splice(r, 1);
 					changed = true;
 				} else ++r;

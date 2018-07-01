@@ -14,6 +14,7 @@ module.exports = {
 		title: 'Reddit',
 		info: 'Retrieve a random reddit post from a sub of your choice or one at random.',
 		parameters: ['[subreddit]'],
+		permissions: 'inclusive',
 		fn({client, arg, channel}) {
 			return Reddit.getSubreddit(arg)
 			.then(noPostsFound)

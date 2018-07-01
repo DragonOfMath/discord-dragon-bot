@@ -1,70 +1,5 @@
-const {Markdown:md,random} = require('../Utils');
-
-/*
-{
-	"a": {
-		1: 1, // index: weight
-		2: 2,
-		3: 5,
-		7: 2,
-		...
-	},
-	...
-}
-*/
-
-class Markov {
-	constructor(markov = {}) {
-		for (var node in markov) {
-			this[node] = markov[node];
-		}
-	}
-	get nodes() {
-		return Object.keys(this);
-	}
-	index(node) {
-		return this.nodes.indexOf(node);
-	}
-	add(x,c) {
-		this[x] = this[x] || {};
-		if (c && c in this) {
-			var idx = this.index(x);
-			this[c][idx] = (this[c][idx] || 0) + 1;
-		}
-	}
-	digest(text, sliceSize = 1) {
-		var off = sliceSize - 1;
-		var words = text.split(/[\b\s]+/);
-		for (var i = off, node = '', lastNode; i < words.length; i++) {
-			lastNode = node;
-			node = words.slice(i - off, sliceSize).join(' ');
-			this.add(node, lastNode);
-		}
-	}
-	output(iterations = 20, seed) {
-		var str = '', node = '', nodes = this.nodes, indexes, weights, idx, sum, rnd;
-		if (seed && seed in this) node = seed;
-		else node = random(nodes);
-		while (iterations-- > 0 && node) {
-			str += node + ' ';
-			// prepare node
-			indexes = Object.keys(this[node]);
-			weights = indexes.map(i => this[node][i]);
-			// select a random node by its weight
-			sum = weights.reduce((s,w) => s + w, 0);
-			rnd = random(sum);
-			idx = 0;
-			while (idx < indexes.length) {
-				rnd -= weights[idx];
-				if (rnd > 0) idx++;
-				else break;
-			}
-			// use this as the next node in the chain
-			node = nodes[indexes[idx]];
-		}
-		return str;
-	}
-}
+const {Markdown:md} = require('../../Utils');
+const Markov = require('./Markov');
 
 module.exports = {
 	'markov': {
@@ -73,6 +8,7 @@ module.exports = {
 		category: 'Fun',
 		info: 'Produce a sentence using a Markov chain of words and phrases. Can use a seed to start a sentence off.',
 		parameters: ['[iterations]','[seed]'],
+		permissions: 'inclusive',
 		fn({client, args, userID}) {
 			var DATA = client.database.get('client').get(client.id);
 			var M = new Markov(DATA.markov);
@@ -98,6 +34,7 @@ module.exports = {
 				title: 'Markov Chain | Read Messages',
 				info: 'Read a number of messages in a channel and add them to the Markov chain. Default is 100 messages (ignores command messages)',
 				parameters: ['channel','[count]'],
+				permissions: 'privileged',
 				fn({client, args}) {
 					var channelID = md.channelID(args[0]);
 					if (!channelID) {
@@ -111,23 +48,26 @@ module.exports = {
 						client.database.get('client').modify(client.id, DATA => {
 							var M = DATA.markov = new Markov(DATA.markov);
 							for (var message of messages) {
-								if (message.author.id != client.id && !message.content.startsWith(client.PREFIX)) {
+								// no messages from the bot or from unknown authors
+								if (message.author && message.author.id != client.id && 
+									// no commands
+									!message.content.startsWith(client.PREFIX) &&
+									// no messages with attachments/embeds
+									!(message.attachments.length || message.embeds.length)) { 
 									M.digest(message.content, 2);
 									actualProcessed++;
 								}
 							}
 							return DATA;
 						}).save();
-						return `${actualProcessed} messages fed to Markov chain.`;
+						return `${actualProcessed} messages from ${md.channel(channelID)} fed to Markov chain.`;
 					});
 				}
 			},
 			'clear': {
 				title: 'Markov Chain | Clear',
 				info: 'Clears all Markov chain data.',
-				permissions: {
-					type: 'private'
-				},
+				permissions: 'private',
 				fn({client}) {
 					client.database.get('client').modify(client.id, DATA => {
 						delete DATA.markov;

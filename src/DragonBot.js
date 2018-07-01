@@ -7,7 +7,7 @@ const VariableStore = require('./Variables');
 const Constants     = require('./Constants');
 const Analytics     = require('./Analytics');
 const Context       = require('./Context');
-const CommandParser = require('./CommandParser');
+const Parser        = require('./Parser');
 const Handler       = require('./Handler');
 
 const {Markdown:md} = Utils;
@@ -30,7 +30,7 @@ class DragonBot extends DebugClient {
 		this.SOURCE_CODE = 'https://github.com/DragonOfMath/discord-dragon-bot/';
 		
 		this.utils  = Utils;
-		this.parser = CommandParser;
+		this.parser = Parser;
 		this.db     = this.database  = new Database(this);
 		this.cmds   = this.commands  = new Commands(this);
 		this.spcs   = this.sessions  = new Sessions(this);
@@ -130,10 +130,17 @@ class DragonBot extends DebugClient {
 		}
 		
 		// evaluate the %(...) expression
-		if (text[0] == Constants.Symbols.EXPRESSION && text[1] == Constants.Symbols.EXP_START && text.endsWith(Constants.Symbols.EXP_END)) {
-			value = eval(text.substring(1));
-			this.info('Evaluating expression:',text,'->',value);
-			text = value;
+		if (text[0] == Constants.Symbols.EXPRESSION) {
+			if (text[1] == Constants.Symbols.EXP_START && text.endsWith(Constants.Symbols.EXP_END)) {
+				value = eval(text.substring(1));
+				this.info('Evaluating expression:',text,'->',value);
+				text = value;
+			} else if ((text[1] == Constants.Symbols.ARR_START && text.endsWith(Constants.Symbols.ARR_END))
+				    || (text[1] == Constants.Symbols.OBJ_START && text.endsWith(Constants.Symbols.OBJ_END))) {
+				value = JSON.parse(text.substring(1));
+				this.info('Parsing object:',text,'->',value);
+				text = value;
+			}
 		}
 		
 		return text;
@@ -258,7 +265,7 @@ class DragonBot extends DebugClient {
 				}
 			}
 			
-			var input = CommandParser.parse(context.message);
+			var input = Parser.parseCommand(context.message);
 			return this.run(context, input).catch(e => this.error(e));
 		} catch (e) {
 			this.error(e);
@@ -268,7 +275,7 @@ class DragonBot extends DebugClient {
 	/**
 		Run input with the given Context
 		@arg {Context} context - see src/Context.js
-		@arg {Block}   input   - see src/CommandParser.js
+		@arg {Block}   input   - see src/Parser.js
 		@return A Promise for the handler
 	*/
 	run(context, input) {
@@ -289,9 +296,11 @@ class DragonBot extends DebugClient {
 			}
 			
 			var handler = new Handler(context, input);
-			// create a copy of the args array with normalized values
-			handler.args = input.args.map(a => this.normalize(a,context));
-			handler.arg  = handler.args.map(String).join(' ');
+			if (input.args) {
+				// create a copy of the args array with normalized values
+				handler.args = input.args.map(a => this.normalize(a,context));
+				handler.arg  = handler.args.map(String).join(' ');
+			}
 			
 			// resolve command or special text
 			return (handler.cmd ? this.commands : this.sessions).resolve(handler)

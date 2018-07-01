@@ -5,9 +5,7 @@ module.exports = {
 		title: 'Variable',
 		info: 'Gets or sets a variable. *Hint: if you are assigning the result of an expression to a variable, use* `%(...)`',
 		parameters: ['name', '[value]'],
-		permissions: {
-			type: 'public'
-		},
+		permissions: 'public',
 		fn({client, args, serverID}) {
 			var [name, value] = args;
 			name = name.toLowerCase();
@@ -24,9 +22,6 @@ module.exports = {
 				title: 'Variable | Increment',
 				info: 'Increments a variable by 1, or by some amount.',
 				parameters: ['name', '[value]'],
-				permissions: {
-					type: 'public'
-				},
 				fn({client, args, serverID}) {
 					var [name, value = 1] = args;
 					name  = name.toLowerCase();
@@ -40,9 +35,6 @@ module.exports = {
 				title: 'Variable | Decrement',
 				info: 'Decrements a variable by 1, or by some amount.',
 				parameters: ['name', '[value]'],
-				permissions: {
-					type: 'public'
-				},
 				fn({client, args, serverID}) {
 					var [name, value = 1] = args;
 					name  = name.toLowerCase();
@@ -56,9 +48,6 @@ module.exports = {
 				title: 'Variable | Delete',
 				info: 'Deletes a variable.',
 				parameters: ['name'],
-				permissions: {
-					type: 'public'
-				},
 				fn({client, args, serverID}) {
 					var name = args[0];
 					name = name.toLowerCase();
@@ -74,9 +63,7 @@ module.exports = {
 		category: 'Meta',
 		info: 'Enumerates a range of values. If `enumerable` is a number, it iterates from 0 up to N-1 (hard limit of 10000). If it\'s a string, it iterates using each character.',
 		parameters: ['enumerable', 'var', '{command}'],
-		permissions: {
-			type: 'public'
-		},
+		permissions: 'public',
 		fn(data) {
 			const {client, args, serverID, context, input} = data;
 			var [enumerable,varName,command] = args;

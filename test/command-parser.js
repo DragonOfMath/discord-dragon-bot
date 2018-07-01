@@ -1,12 +1,10 @@
-const CommandParser = require('../src/CommandParser');
+const Parser = require('../src/Parser');
 
-console.log(CommandParser.parse(`
-	!test "hello world" 123 ;;;
-	yes
-	!nope {nope};
+console.log(Parser.parseCommand(`
+	!test "hello world" 123 {!fish};
 `));
 
-console.log(CommandParser.parse(`
+console.log(Parser.parseCommand(`
 !batch {
 	!test "Hello World!";
 	// This is a test
@@ -16,7 +14,7 @@ console.log(CommandParser.parse(`
 }
 `));
 
-console.log(CommandParser.parse(`
+console.log(Parser.parseCommand(`
 !batch {
 	!mset.aa true;
 	// create a new render
@@ -27,7 +25,7 @@ console.log(CommandParser.parse(`
 }
 `));
 
-console.log(CommandParser.parse(`
+console.log(Parser.parseCommand(`
 !repeat 10 {
 	!fish;
 	!wait 5000 {

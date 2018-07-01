@@ -9,9 +9,7 @@ module.exports = {
 		title: 'Invite:mailbox_with_mail:',
 		category: 'Misc',
 		info: 'Gives you a link to add the bot to your servers.',
-		permissions: {
-			type: 'public'
-		},
+		permissions: 'public',
 		fn({client, userID}) {
 			// prepare permissions for inviting
 			var link = 'Here is the link to add me to your servers:\n' + client.inviteURL + '&permissions=' + client.PERMISSIONS;
@@ -25,15 +23,13 @@ module.exports = {
 		title: 'Help',
 		info: 'Lists bot commands, or shows information about a command.',
 		parameters: ['[command]'],
-		permissions: {
-			type: 'public'
-		},
+		permissions: 'public',
 		fn({client, arg, userID, server}) {
 			if (arg && client.commands.has(arg)) {
 				var cmd = client.commands.get(arg)[0];
-				return cmd.toHelpEmbed(client, server);
+				return cmd.embed(client, server);
 			} else {
-				return client.commands.toHelpEmbed(client, userID == client.ownerID);
+				return client.commands.embed(client, userID == client.ownerID);
 			}
 		}
 	},
@@ -43,9 +39,7 @@ module.exports = {
 		title: 'Category Info',
 		info: 'Lists bot categories, or shows commands under that category.',
 		parameters: ['[category]'],
-		permissions: {
-			type: 'public'
-		},
+		permissions: 'public',
 		fn({client, args}) {
 			var cat = client.commands.resolveCategory(args[0]);
 			if (cat) {
@@ -63,21 +57,22 @@ module.exports = {
 		aliases: ['allowed'],
 		category: 'Misc',
 		title: 'Can I Use...',
-		info: 'Checks your permissions to use a command.',
-		parameters: ['command'],
-		permissions: {
-			type: 'public'
-		},
-		fn({client, context, arg}) {
-			var cmd = client.commands.get(arg)[0];
-			if (!cmd) {
-				throw `${md.code(arg)} is not a recognized command.`;
+		info: 'Checks your permissions to use a command. Optionally, you may specify which channel to use it in.',
+		parameters: ['command','[channel]'],
+		permissions: 'public',
+		fn({client, context, args}) {
+			var cmd = args[0], channelID = md.channelID(args[1]) || context.channelID;
+			var command = client.commands.get(cmd)[0];
+			if (!command) {
+				throw `${md.code(cmd)} is not a recognized command.`;
 			}
-			var g = cmd.permissions.check(context);
+			var channel = client.channels[channelID];
+			var fakeContext = Object.assign({}, context, {channel,channelID});
+			var g = command.permissions.check({client, context: fakeContext});
 			if (g.granted) {
-				return `${md.code(cmd.fullID)}? Yes.`;
+				return `${md.code(command.fullID)} in ${md.channel(channel)}? Yes.`;
 			} else {
-				return `${md.code(cmd.fullID)}? No. ${g.reason}`;
+				return `${md.code(command.fullID)} in ${md.channel(channel)}? No: ${g.reason}`;
 			}
 		}
 	},
@@ -85,9 +80,7 @@ module.exports = {
 		aliases: ['oops'],
 		category: 'Misc',
 		info: 'Removes the bot\'s last post in this channel (in case it posts something stupid).',
-		permissions: {
-			type: 'public'
-		},
+		permissions: 'public',
 		fn({client, channelID}) {
 			return client.undo(channelID);
 		}
@@ -97,9 +90,7 @@ module.exports = {
 		category: 'Misc',
 		info: 'Re-runs the last command you or a specific user gave, except for `redo` and `undo`.',
 		parameters: ['[user]'],
-		permissions: {
-			type: 'public'
-		},
+		permissions: 'public',
 		fn({client, channelID, userID, args}) {
 			if (args[0]) userID = md.userID(args[0]) || userID;
 			return client.redo(channelID, userID);

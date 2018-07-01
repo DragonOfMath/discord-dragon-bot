@@ -21,30 +21,51 @@ function rollSum(rolls) {
 	return sum;
 }
 
+const RPS = {
+	choices: ['✊','✋','✌'],
+	outcomes: [
+		[0,-1,1],
+		[1,0,-1],
+		[-1,1,0]
+	]
+};
+
 module.exports = {
+	'rate': {
+		aliases: ['outta10'],
+		category: 'Fun',
+		title: ':100:',
+		info: 'I will rate anything out of 10 points.',
+		paramters: ['...thing'],
+		permissions: 'inclusive',
+		fn({arg,userID}) {
+			return md.mention(userID) + ', I rate ' + arg + ' a ' + md.bold(random(11) + '/10');
+		}
+	},
 	'decide':{
 		aliases: ['choose','choices'],
 		category: 'Fun',
 		title: ':scales:',
-		info: 'Let me choose between your choices (use quotation marks to separate mult-word choices; if left out, all words are choices)',
+		info: 'Let me choose between your choices (use quotation marks/OR/`|` to separate mult-word choices; if left out, all words are choices)',
 		parameters: ['...choices'],
+		permissions: 'inclusive',
 		fn({args,userID}) {
-			let decisions = args;
-			/*
+			
 			let decisions = [];
 			let or = args.indexOf('OR');
-			
+			if (or < 0) or = args.indexOf('|');
 			if (or > -1) {
 				while (or > -1) {
 					decisions.push(args.splice(0,or).join(' '));
 					args.shift();
 					or = args.indexOf('OR');
+					if (or < 0) or = args.indexOf('|');
 				}
 				decisions.push(args.join(' '));
 			} else {
 				decisions = args;
 			}
-			*/
+			
 			return md.mention(userID) + random([
 				' I\'d go with ',
 				' I choose ',
@@ -63,6 +84,7 @@ module.exports = {
 		title: ':8ball:',
 		info: 'Ask me a yes-no question and I\'ll tell you the answer!',
 		parameters: ['...question'],
+		permissions: 'inclusive',
 		fn({client, args}) {
 			var chance = 100 * Math.random();
 			if (chance < 40) {
@@ -82,6 +104,7 @@ module.exports = {
 		title: ':black_joker:',
 		info: 'Pick a card (or number of cards, limit of 5) from a standard 52-card deck',
 		parameters: ['[number]'],
+		permissions: 'inclusive',
 		fn({userID,args}) {
 			var cards = [];
 			var i = Math.min(args[0],5);
@@ -103,6 +126,7 @@ module.exports = {
 		title: ':coin:',
 		info: 'Flip a coin.',
 		parameters: ['[rolls]'],
+		permissions: 'inclusive',
 		fn({args, userID}) {
 			let [rolls = 1] = args;
 			let [heads,tails] = randomDistribution(2,rolls);
@@ -119,6 +143,7 @@ module.exports = {
 		title: ':game_die:',
 		info: 'Roll a 6-sided die.',
 		parameters: ['[rolls]'],
+		permissions: 'inclusive',
 		fn({args, userID}) {
 			let [rolls = 1] = args;
 			let sides = randomDistribution(6,rolls);
@@ -135,6 +160,7 @@ module.exports = {
 		title: ':game_die:',
 		info: 'Roll a 20-sided die.',
 		parameters: ['[rolls]'],
+		permissions: 'inclusive',
 		fn({args, userID}) {
 			let [rolls = 1] = args;
 			let sides = randomDistribution(20,rolls);
@@ -150,6 +176,7 @@ module.exports = {
 		title: ':game_die:',
 		info: 'Advanced dice-roll command, using an expression of dice rolls in the form XdXX, plus modifiers.',
 		parameters: ['XdXX + offset + ...'],
+		permissions: 'inclusive',
 		fn({args, userID}) {
 			var expression = args.map(a => {
 				try {
@@ -164,10 +191,46 @@ module.exports = {
 			return md.mention(userID) + ' rolled ' + md.code(expression) + ' = ' + md.bold(eval(expression));
 		}
 	},
+	'rps': {
+		aliases: ['rockpaperscissors'],
+		title: 'Rock Paper Scissors',
+		parameters: ['<r|rock|✊|p|paper|✋|s|scissors|✌>'],
+		permissions: 'inclusive',
+		fn({args, userID}) {
+			var p = args[0].toLowerCase();
+			switch (p) {
+				case 'r':
+				case 'rock':
+				case '✊':
+					p = 0;
+					break;
+				case 'p':
+				case 'paper':
+				case '✋':
+					p = 1;
+					break;
+				case 's':
+				case 'scissors':
+				case '✌':
+					p = 2;
+					break;
+			}
+			var c = random(RPS.choices.length);
+			switch (RPS.outcomes[p][c]) {
+				case 1:
+					return RPS.choices[c] + ', you win!';
+				case 0:
+					return RPS.choices[c] + ', it\'s a tie!';
+				case -1:
+					return RPS.choices[c] + ', I win!';
+			}
+		}
+	},
 	'random': {
 		aliases: ['rand', 'rng'],
 		category: 'Fun',
 		info: 'Random',
+		permissions: 'inclusive',
 		subcommands: {
 			'integer': {
 				aliases: ['int','i'],
