@@ -50,7 +50,7 @@ const LoggerMixin = (Base) => class LoggerBase extends Base {
 			enumerable: false
 		});
 		Object.defineProperty(this, '_level', {
-			value: LEVELS.Normal,
+			value: LEVELS.All,
 			writable: true,
 			enumerable: false
 		});

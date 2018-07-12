@@ -353,6 +353,17 @@ class Moderation {
 			}
 		});
 	}
+	static warn(client, server, userID, modID, reason) {
+		userID = validateTargetUser(client, server, userID, modID);
+		if (!reason) {
+			return 'You must give a reason for warning a user.';
+		}
+		var modlogID = this.getModlogChannel(client, server);
+		if (modlogID) {
+			client.send(modlogID, modlog(modID, userID, 'Warning', reason));
+		}
+		return `${md.mention(userID)} has been warned for ${md.bold(reason)}`;
+	}
 	static kick(client, server, userID, modID, reason) {
 		userID = validateTargetUser(client, server, userID, modID);
 		if (!reason) {

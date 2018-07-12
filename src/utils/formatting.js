@@ -40,7 +40,7 @@ class Format {
 		return p.toFixed(r) + '%';
 	}
 	static time(t) {
-		t = t|0;
+		t = Math.floor(t);
 		let ms = t % 1000;
 		t = Math.floor(t/1000);
 		let sec = t % 60;
@@ -65,7 +65,7 @@ class Format {
 		return time.join(' ');
 	}
 	static timestamp(t) {
-		t = t|0;
+		t = Math.floor(t);
 		let ms = (t % 1000);
 		t = Math.floor(t/1000);
 		let sec = t % 60;

@@ -227,7 +227,7 @@ class PromiseClient extends Discord.Client {
 	deleteMessages({channelID, messageIDs: messages}) {
 		messages = messages.map(m => m.id || m);
 		if (messages.length == 1) {
-			return client.deleteMessage({channelID, messageID: messages[0]});
+			return this.deleteMessage({channelID, messageID: messages[0]});
 		}
 		var client = this;
 		function loop() {

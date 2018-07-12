@@ -78,7 +78,7 @@ function iterate(cx,cy,p,limit) {
 module.exports = {
 	'image': {
 		aliases: ['img', 'picture', 'pic'],
-		category: 'Misc',
+		category: 'Fun',
 		title: 'Image Post-Processing',
 		info: 'A variety of image-manipulating commands.',
 		permissions: 'inclusive',

@@ -7,9 +7,7 @@ const MapBase = require('./MapBase');
 class Record extends MapBase {
 	constructor(data = {}, fields = {}) {
 		super(fields);
-		for (let k in data) {
-			this[k] = data[k];
-		}
+		Object.assign(this, data);
 	}
 	get fields() {
 		return this.keys;

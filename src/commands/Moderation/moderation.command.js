@@ -95,6 +95,16 @@ module.exports = {
 					return `That user has **${fmt.plural('Strike',strikes)}** on record.`;
 				}
 			},
+			'warn': {
+				title: 'Moderation | Warn',
+				info: 'Warn a user and give a reason why.',
+				parameters: ['user', '...reason'],
+				fn({client, args, server, userID}) {
+					var [user, ...reason] = args;
+					reason = reason.join(' ');
+					return Moderation.warn(client, server, user, userID, reason);
+				}
+			},
 			'kick': {
 				title: 'Moderation | Kick',
 				info: 'Kick a user from the server and give a reason why.',

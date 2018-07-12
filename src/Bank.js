@@ -451,6 +451,17 @@ class Bank {
 		}).save();
 		return typeof(message) === 'string' ? `${md.mention(userID)} ${message}` : message;
 	}
+	/* modifies the account without saving */
+	static _modify(client, userID, fn) {
+		if (!client.users[userID]) {
+			throw `Invalid user: \`${userID}\``;
+		}
+		client.database.get('users').modify(userID, user => {
+			user.bank = new BankAccount(userID, user.bank);
+			fn(user.bank, user);
+			return user;
+		});
+	}
 	static save(client) {
 		client.database.get('users').save();
 		return this;

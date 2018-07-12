@@ -1,11 +1,22 @@
 const Resource = require('../../Resource');
+const Subscription = require('../../Subscription');
 const {fetch,truncate,unescapeHTMLEntities} = require('../../Utils');
 
 const TYPE = ['','hot','new','rising','top','controversial']; // '' and 'hot' are the same
 const TIME = ['hour','day','week','month','year','all'];
 const REDDIT = 'https://www.reddit.com';
 const COLOR = 0xd25a32;
-const DEFAULT_INTERVAL = 60000;
+const SUBSCRIPTION_TEMPLATE = {
+	pollInterval: 60000,
+	lastPollTime: (t) => t || Date.now(),
+	active: true,
+	options: {
+		type: 'hot',
+		time: 'all',
+		limit: 200
+	},
+	subs: {}
+};
 
 const VIDEO_DOMAINS = ['v.redd.it','gfycat.com','youtube.com','youtu.be'];
 const VIDEO_FORMATS = ['.gifv','.mp4','.webm'];
@@ -159,20 +170,8 @@ class Reddit {
 	}
 }
 
-const SUBSCRIPTION_TEMPLATE = {
-	pollInterval: DEFAULT_INTERVAL,
-	lastPollTime: () => Date.now(),
-	active: true,
-	options: {
-		type: 'hot',
-		time: 'all',
-		limit: 200
-	},
-	subs: {}
-};
-
 class RedditSubscription extends Resource {
-	constructor(subscription) {
+	constructor(subscription = {}) {
 		super(SUBSCRIPTION_TEMPLATE, subscription);
 	}
 	subscribe(...subs) {

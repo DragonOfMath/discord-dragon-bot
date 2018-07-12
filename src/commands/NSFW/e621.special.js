@@ -2,7 +2,7 @@ const e621 = require('./e621');
 const {Markdown:md} = require('../../Utils');
 
 module.exports = {
-	id: 'e621-assist',
+	id: 'e621',
 	data: {
 		id: '',
 		hash: ''
@@ -64,6 +64,9 @@ module.exports = {
 					embed
 				};
 			});
+		},
+		tick(client) {
+			
 		}
 	}
 };

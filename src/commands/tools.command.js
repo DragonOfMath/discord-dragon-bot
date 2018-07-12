@@ -11,10 +11,9 @@ module.exports = {
 		info: 'Gives you a link to add the bot to your servers.',
 		permissions: 'public',
 		fn({client, userID}) {
-			// prepare permissions for inviting
-			var link = 'Here is the link to add me to your servers:\n' + client.inviteURL + '&permissions=' + client.PERMISSIONS;
 			// DM the link
-			client.sendMessage({to: userID, message: link});
+			return client.send(userID, 'Here is the link to add me to your servers:\n' + client.inviteURL + '&permissions=' + client.PERMISSIONS)
+			.then(() => 'Check your DMs for my invite!~');
 		}
 	},
 	'help': {

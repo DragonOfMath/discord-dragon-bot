@@ -72,6 +72,7 @@ module.exports = {
 				' Maybe ',
 				' Probably ',
 				' Definitely ',
+				' Obviously ',
 				' Ooh, tough choice. How about ',
 				' Hmmm, I pick ',
 				' '
@@ -90,7 +91,7 @@ module.exports = {
 			if (chance < 40) {
 				return ['Yes', 'Yeah', 'Yup', 'Yep', 'Absolutely', 'Totally'];
 			} else if (chance < 60) {
-				return ['Maybe', 'Perhaps', 'Hmmm', 'Let me think...', '<:thinking:>'];
+				return ['Maybe', 'Perhaps', 'Hmmm', 'Let me think...', ':thinking:'];
 			} else if (chance < 90) {
 				return ['No', 'Nope', 'Never', 'Nah', 'Absolutely not'];
 			} else {
@@ -107,7 +108,7 @@ module.exports = {
 		permissions: 'inclusive',
 		fn({userID,args}) {
 			var cards = [];
-			var i = Math.min(args[0],5);
+			var i = Math.min(Math.max(args[0],1),5);
 			while (i > 0) {
 				var suit  = random(":spades:",":hearts:",":diamonds:",":clubs:");
 				var value = random('A',2,3,4,5,6,7,8,9,10,'J','Q','K');
@@ -131,9 +132,9 @@ module.exports = {
 			let [rolls = 1] = args;
 			let [heads,tails] = randomDistribution(2,rolls);
 			if (rolls == 1) {
-				return `<@${userID}> **${heads ? 'Heads' : 'Tails'}**`;
+				return md.mention(userID) + ' ' + (heads ? 'Heads' : 'Tails');
 			} else {
-				return `<@${userID}> **Heads: ${heads} | Tails: ${tails}**`;
+				return md.mention(userID) + ' ' + md.bold(`Heads: ${heads} | Tails: ${tails}`);
 			}
 		}
 	},
@@ -148,9 +149,9 @@ module.exports = {
 			let [rolls = 1] = args;
 			let sides = randomDistribution(6,rolls);
 			if (rolls == 1) {
-				return `<@${userID}> rolled a **${s.findIndex(x=>!!x)+1}**`;
+				return md.mention(userID) + ' rolled a ' + md.bold(sides.findIndex(x=>!!x)+1);
 			} else {
-				return `<@${userID}> ${sides.map((x,i) => `${i+1}x${x}`).join(' + ')} = **${rollSum(sides)}**`;
+				return md.mention(userID) + ' ' + sides.map((x,i) => `${i+1}x${x}`).join(' + ') + ' = ' + md.bold(roleSum(sides));
 			}
 		}
 	},
@@ -165,9 +166,9 @@ module.exports = {
 			let [rolls = 1] = args;
 			let sides = randomDistribution(20,rolls);
 			if (rolls == 1) {
-				return `<@${userID}> rolled a **${s.findIndex(x=>!!x)+1}**`;
+				return md.mention(userID) + ' rolled a ' + md.bold(sides.findIndex(x=>!!x)+1);
 			} else {
-				return `<@${userID}> ${sides.map((x,i) => `${i+1}x${x}`).join(' + ')} = **${rollSum(sides)}**`;
+				return md.mention(userID) + ' ' + sides.map((x,i) => `${i+1}x${x}`).join(' + ') + ' = ' + md.bold(roleSum(sides));
 			}
 		}
 	},
@@ -178,10 +179,10 @@ module.exports = {
 		parameters: ['XdXX + offset + ...'],
 		permissions: 'inclusive',
 		fn({args, userID}) {
-			var expression = args.map(a => {
+			let expression = args.map(a => {
 				try {
-					var [,rolls,sides] = a.match(/^(\d+)d(\d+)$/);
-					var s = randomDistribution(sides, rolls);
+					let [,rolls,sides] = a.match(/^(\d+)d(\d+)$/);
+					let s = randomDistribution(sides, rolls);
 					return s.map((x,i) => `(${i+1} * ${x})`).join(' + ');
 				} catch (e) {
 					return a;
@@ -193,11 +194,13 @@ module.exports = {
 	},
 	'rps': {
 		aliases: ['rockpaperscissors'],
+		category: 'Fun',
 		title: 'Rock Paper Scissors',
+		info: 'A classic game of Rock Paper Scissors versus the bot!',
 		parameters: ['<r|rock|✊|p|paper|✋|s|scissors|✌>'],
 		permissions: 'inclusive',
 		fn({args, userID}) {
-			var p = args[0].toLowerCase();
+			let p = args[0].toLowerCase();
 			switch (p) {
 				case 'r':
 				case 'rock':
@@ -215,7 +218,7 @@ module.exports = {
 					p = 2;
 					break;
 			}
-			var c = random(RPS.choices.length);
+			let c = random(RPS.choices.length);
 			switch (RPS.outcomes[p][c]) {
 				case 1:
 					return RPS.choices[c] + ', you win!';
@@ -239,7 +242,7 @@ module.exports = {
 				parameters: ['[lowerbound]','[upperbound]'],
 				fn({args, userID}) {
 					let [a = 0, b = 1e10] = args;
-					return `<@${userID}> ${Math.round(random(a,b))}`;
+					return md.mention(userID) + ' ' + Math.round(random(a,b));
 				}
 			},
 			'number': {
@@ -249,7 +252,7 @@ module.exports = {
 				parameters: ['[lowerbound]','[upperbound]'],
 				fn({args, userID}) {
 					let [a = 0, b = 1e10] = args;
-					return `<@${userID}> ${random(a,b)}`;
+					return md.mention(userID) + ' ' + random(a,b);
 				}
 			},
 			'letter': {
@@ -258,7 +261,7 @@ module.exports = {
 				info: 'Get a random letter from the standard English alphabet, or your own charset.',
 				parameters: ['[letters]'],
 				fn({arg, userID}) {
-					return `<@${userID}> ${random((arg||'abcdefghijklmnopqrstuvwxyz').split(''))}`;
+					return md.mention(userID) + ' ' + random(arg||'abcdefghijklmnopqrstuvwxyz');
 				}
 			},
 			'string': {
@@ -274,7 +277,30 @@ module.exports = {
 					while (length-- > 0) {
 						word += random(chars);
 					}
-					return `<@${userID}> ${word}`;
+					return md.mention(userID) + ' ' + word;
+				}
+			},
+			'user': {
+				aliases: ['member','m'],
+				title: 'Random | User',
+				info: 'Pick a random user on the server and mention them (lol). Optionally, you can specify if you want to pick from only online users or everyone.',
+				parameters: ['[<everyone|here>]'],
+				fn({server, args}) {
+					let [scope = 'everyone'] = args;
+					if (scope.toLowerCase() == 'everyone') {
+						return md.mention(random(Object.keys(server.members)));
+					} else if (scope.toLowerCase() == 'here') {
+						let onlineUsers = Object.keys(server.members).filter(id => server.members[id].status == 'online');
+						return md.mention(random(onlineUsers));
+					}
+				}
+			},
+			'channel': {
+				aliases: ['chan','c'],
+				title: 'Random | Channel',
+				info: 'Pick a random channel on the server.',
+				fn({server}) {
+					return md.channel(random(Object.keys(server.channels)));
 				}
 			}
 		}

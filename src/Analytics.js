@@ -148,9 +148,18 @@ class Analytics extends MapBase {
 			return a.sort(method);
 		}).save();
 	}
+	static toggle(force) {
+		if (typeof(force) !== 'undefined') {
+			this._active = !!force;
+		} else {
+			this._active = !this._active;
+		}
+		return this._active;
+	}
 }
 
 // current process analytics
 Analytics._temp = {};
+Analytics._active = true;
 
 module.exports = Analytics;

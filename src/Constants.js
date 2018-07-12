@@ -72,7 +72,7 @@ module.exports = {
 		]
 	},
 	DragonBot: {
-		TEMP_MSG_LIFETIME:  5000,
+		TEMP_MSG_LIFETIME:  10000,
 		RATE_LIMIT_DELAY:   1000,
 		DISCONNECT_DELAY:   3000,
 		LAST_COMMAND_LIMIT: 50,
@@ -110,7 +110,7 @@ module.exports = {
 			},
 			data: {},
 			permissions: {},
-			resolver: NOOP,
+			resolver: (f) => f || NOOP,
 			events: {},
 			manager: null,
 			started: () => Date.now(),

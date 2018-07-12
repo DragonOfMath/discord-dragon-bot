@@ -85,6 +85,7 @@ module.exports = {
 		else if (/we live in a society/i.test(message)) return 'deep';
 		else if (/ay{2,} ?lmao/i.test(message)) return 'ayylmao';
 		else if (/^what[\.\?]*$/i.test(message)) return 'what';
+		else if (/(\w+)-ass (\w+)/i.test(message)) return 'x_ass_y';
 	},
 	events: {
 		doot() {
@@ -181,6 +182,10 @@ module.exports = {
 		what({client, channelID, messageID}) {
 			return client.getMessages({channelID,limit:1,before:messageID})
 			.then(res => (res[0] && res[0].content ? `*${res[0].content.toUpperCase()}*` : ''));
+		},
+		x_ass_y({client, message}) {
+			var [,x,y] = message.match(/(\w+)-ass (\w+)/i);
+			return x+' ass-'+y;
 		}
 	}
 };

@@ -31,7 +31,7 @@ module.exports = {
 						server.welcome.message = message;
 						return server;
 					}).save();
-					return md.code(message);
+					return 'Saved.';
 				}
 			},
 			'channel': {
@@ -51,7 +51,7 @@ module.exports = {
 						var welcome = new Welcome(serverTable.get(serverID));
 						channel = welcome.channel;
 					}
-					return channel ? md.channel(channel) : '(No channel set.)';
+					return channel ? 'Saved as ' + md.channel(channel) : '(No channel set.)';
 				}
 			},
 			'role': {
@@ -71,7 +71,7 @@ module.exports = {
 						var welcome = new Welcome(serverTable.get(serverID));
 						role = welcome.role;
 					}
-					return role ? md.role(role) : '(No role set.)';
+					return role ? 'Saved as ' + md.role(role) : '(No role set.)';
 				}
 			},
 			'goodbye': {
@@ -85,7 +85,7 @@ module.exports = {
 						server.welcome.goodbye = goodbye;
 						return server;
 					}).save();
-					return md.code(goodbye);
+					return 'Saved.';
 				}
 			},
 			'test': {

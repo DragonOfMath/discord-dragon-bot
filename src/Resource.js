@@ -10,57 +10,28 @@ class Resource {
 	constructor(template = {}, data = {}) {
 		// cache template
 		this.makeProp('_template', template);
-		
-		/**
-			Instantiate the resource by copying the template to itself.
-			Ignore functions as those will be used for generating attributes
-			from data next.
-		*/
-		var norm = (function copy(o, c = {}) {
-			if (typeof(o) === 'object') for (var k in o) {
-				var v = o[k];
-				switch (typeof(v)) {
-					case 'function':
-						c[k] = null;
-						break;
-					case 'object':
-						if (Array.isArray(v)) {
-							c[k] = v.slice();
-						} else {
-							c[k] = copy(v);
-						}
-						break;
-					default:
-						c[k] = v;
+		Object.assign(this, (function zip(t = {}, d = {}) {
+			let o = {};
+			for (let k in t) {
+				if (typeof(t[k]) === 'function') {
+					o[k] = t[k](d[k]);
+				} else if (typeof(t[k]) === 'object') {
+					if (Array.isArray(t[k])) {
+						o[k] = k in d ? d[k] : [].slice.call(t[k]);
+					} else {
+						o[k] = zip(t[k], d[k]);
+					}
+				} else {
+					o[k] = k in d ? d[k] : t[k];
 				}
 			}
-			return c;
-		})(this._template);
-		//console.log(norm);
-		/**
-			Apply the data through the template.
-			* Template functions return normalized values
-			* Template objects merge with the init data
-			* Remaining properties are merged with the normalized object
-		*/
-		for (var k in norm) {
-			if (typeof(this._template[k]) === 'function') {
-				norm[k] = this._template[k](data[k], data, this);
-			} else if (typeof(v) === 'object') {
-				norm[k] = Object.assign(norm[k], data[k]);
-			} else if (k in data) {
-				norm[k] = data[k];
+			for (let k in d) {
+				if (o[k] === undefined) {
+					o[k] = d[k];
+				}
 			}
-		}
-		for (var k in data) {
-			if (typeof(norm[k]) === 'undefined') {
-				norm[k] = data[k];
-			}
-		}
-		/**
-			Assign the key/values of an object to this instance.
-		*/
-		Object.assign(this, norm);
+			return o;
+		})(template, data));
 	}
 	/**
 		Create a non-enumerable property.

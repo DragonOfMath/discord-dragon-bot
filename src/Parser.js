@@ -143,7 +143,7 @@ class Parser {
 				// inline comment
 				case '//':
 					if (token) break; // avoid breaking links
-					i = this.lookahead(text, Constants.NEWLINE, i+1);
+					i = this.lookahead(text, Constants.NEWLINE, i+1, false);
 					//token = text.substring(j, i);
 					push();
 					continue main;
@@ -218,12 +218,12 @@ class Parser {
 		push();
 		return tokens;
 	}
-	static lookahead(x, y, i = 0) {
+	static lookahead(x, y, i = 0, strict = true) {
 		do {
 			i++;
 			if (x[i] == Constants.ESCAPE) i++;
 		} while (x[i] && !includesAt(x,y,i));
-		if (!x[i]) throw new ParseError(`Stopping point "${y}" not found.`);
+		if (!x[i] && strict) throw new ParseError(`Stopping point "${y}" not found.`);
 		return i;
 	}
 	static lookaheadCarefully(x, sin, sout, i = 0) {

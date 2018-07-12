@@ -88,7 +88,7 @@ class Permissions {
 		this.servers = {};
 		if (typeof(data) === 'object') {
 			this.type = data.type;
-			this.copy(data);
+			Permissions.prototype.copy.call(this, data);
 		} else if (typeof(data) === 'string') {
 			this.type = data;
 		} else {
@@ -111,8 +111,8 @@ class Permissions {
 	}
 	get inherited() {
 		var p = this;
-		while (p.binding && p.binding.permissions && p.isInherited) {
-			p = this.binding.supercommand.permissions;
+		while (p.isInherited && p.binding && p.binding.supercommand) {
+			p = p.binding.supercommand.permissions;
 		}
 		return p;
 	}
@@ -151,13 +151,15 @@ class Permissions {
 		Checks with the current server permissions for the given context.
 	*/
 	check({client, context}) {
+		//console.log('Permissions#check({client,context})');
+		
 		// check inheritance
 		if (this.isInherited) {
 			if (this.binding.supercommand) {
 				return this.inherited.check({client, context});
 			} else {
 				throw 'Permissions cannot be inherited from nothing.';
-			}
+			} 
 		}
 		
 		// check bot ownership permission
@@ -171,6 +173,10 @@ class Permissions {
 		
 		// check privileged user permission
 		if (this.isPrivileged) {
+			// bot owner always has permissions
+			if (context.user && context.user.id == client.ownerID) {
+				return Grant.granted();
+			}
 			if (context.server && context.member) {
 				if (Permissions.memberHasPermission(context.server, context.member, Constants.PRIVILEGED_PERMISSION)) {
 					return Grant.granted();
@@ -347,6 +353,7 @@ class Permissions {
 		return this;
 	}
 	copy(data) {
+		//console.log('Permissions#copy(data)');
 		switch (this.type) {
 			case Constants.TYPES.INHERIT:
 			case Constants.TYPES.PUBLIC:

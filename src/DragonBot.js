@@ -31,6 +31,7 @@ class DragonBot extends DebugClient {
 		
 		this.utils  = Utils;
 		this.parser = Parser;
+		this.usage  = this.analytics = Analytics;
 		this.db     = this.database  = new Database(this);
 		this.cmds   = this.commands  = new Commands(this);
 		this.spcs   = this.sessions  = new Sessions(this);
@@ -99,7 +100,7 @@ class DragonBot extends DebugClient {
 		.then(messages => messages.find(m => {
 			return (!userID || m.author.id == userID) &&
 				(m.content.startsWith(this.PREFIX) &&
-					!['redo','undo'].includes(m.content.substring(1).toLowerCase()));
+					!['redo','undo'].includes(m.content.substring(this.PREFIX.length).toLowerCase()));
 		}))
 		.then(m => {
 			if (!m) return 'Command not found.';
@@ -230,12 +231,16 @@ class DragonBot extends DebugClient {
 	_connected() {
 		super._connected();
 		this.presenceText = `\uD83D\uDC32 | ${this.PREFIX}help`;
-		this.sessions.startSessionTimer();
+		this.sessions.startTimer();
 		// Perform cleanup on the database
 		//this.database.get('servers').gc(this.servers);
 		//this.database.get('channels').gc(this.channels);
 		//this.database.get('roles').gc(this.roles);
 		//this.database.get('users').gc(this.users);
+	}
+	_disconnected() {
+		super._disconnected();
+		this.sessions.stopTimer();
 	}
 	/**
 		Handles receiving a message, creates Context and parses command(s)
@@ -308,10 +313,11 @@ class DragonBot extends DebugClient {
 			.then(() => {
 				if (handler.error) {
 					this.warn(handler.error);
-				} else if (handler.command && handler.command.analytics && handler.grant == 'granted') {
+				} else if (this.analytics._active && handler.command && handler.command.analytics && handler.grant == 'granted') {
 					// analytics is updated if a command was successfully resolved
-					Analytics.push(this, handler.serverID, handler.cmd);
-					Analytics.pushTemp(handler.serverID, handler.cmd); // current session analytics
+					this.analytics.push(this, handler.serverID, handler.cmd);
+					// current session analytics
+					this.analytics.pushTemp(handler.serverID, handler.cmd);
 				}
 				
 				if (!handler.response || !(handler.response.message || handler.response.embed || handler.response.file)) {

@@ -37,11 +37,11 @@ class Sessions extends Logger(TypeMapBase) {
 	_register(filename, file) {
 		this.start(file);
 	}
-	startSessionTimer() {
+	startTimer() {
 		this.interval = setInterval(this.checkExpirations.bind(this), Constants.Sessions.POLL_TIME);
 	}
-	stopSessionTimer() {
-		removeInterval(this.interval);
+	stopTimer() {
+		clearInterval(this.interval);
 	}
 	start(data = {}) {
 		var id = data.id;

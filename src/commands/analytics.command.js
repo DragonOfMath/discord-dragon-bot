@@ -3,8 +3,6 @@
 	Command file for retrieving and modifying Analytics tables.
 */
 
-const Analytics = require('../Analytics');
-
 function filterAnalytics(analytics, commands) {
 	for (let cmd in analytics) {
 		if (commands.includes(cmd)) {
@@ -25,7 +23,7 @@ module.exports = {
 		permissions: 'inclusive',
 		fn({client, args, serverID}) {
 			var commands = client.commands.get(...args).map(c => c.fullID);
-			var analytics = Analytics.retrieve(client, serverID);
+			var analytics = client.analytics.retrieve(client, serverID);
 			return filterAnalytics(analytics, commands);
 		},
 		subcommands: {
@@ -37,14 +35,14 @@ module.exports = {
 				permissions: 'private',
 				fn({client, args, channelID, serverID}) {
 					var commands = args;
-					Analytics.delete(client, serverID, commands);
+					client.analytics.delete(client, serverID, commands);
 					return 'Items successfully deleted.';
 				}
 			},
 			'merge': {
 				title: 'Analytics | Merge',
 				info: 'Merges two or more items in the analytics table, for cleaning up legacy commands. (You can use JSON to quickly merge multiple things, just do {keyToMerge: [...items to merge]})',
-				parameters: ['keepitem','[...items]'],
+				parameters: ['dest','[...src]'],
 				permissions: 'private',
 				fn({client, arg, args, channelID, serverID}) {
 					var things;
@@ -53,17 +51,17 @@ module.exports = {
 					} catch (e) {
 						things = {[args[0]]: args.slice(1)};
 					}
-					Analytics.merge(client, serverID, things);
+					client.analytics.merge(client, serverID, things);
 					return 'Items successfully merged.';
 				}
 			},
 			'sort': {
 				title: 'Analytics | Sort',
-				info: 'Sorts analytics items alphabetically (or by any way specified by `sortMethod`: `key|key-desc|value|value-desc`)',
-				parameters: ['[sortMethod]'],
+				info: 'Sorts analytics items alphabetically (or by any way specified)',
+				parameters: ['[<key|key-desc|value|value-desc>]'],
 				permissions: 'private',
 				fn({client, arg, channelID, serverID}) {
-					Analytics.sort(client, serverID, arg);
+					client.analytics.sort(client, serverID, arg);
 					return 'Items successfully sorted.';
 				}
 			},
@@ -74,7 +72,7 @@ module.exports = {
 				permissions: 'private',
 				fn({client, args, channelID}) {
 					var commands = client.commands.get(...args).map(c => c.fullID);
-					var analytics = Analytics.retrieve(client);
+					var analytics = client.analytics.retrieve(client);
 					return filterAnalytics(analytics, commands);
 				}
 			},
@@ -85,7 +83,7 @@ module.exports = {
 				parameters: ['[...commands]'],
 				fn({client, args, serverID}) {
 					var commands = client.commands.get(...args).map(c => c.fullID);
-					var analytics = Analytics.retrieveTemp(serverID);
+					var analytics = client.analytics.retrieveTemp(serverID);
 					return filterAnalytics(analytics, commands);
 				},
 				subcommands: {
@@ -96,10 +94,19 @@ module.exports = {
 						permissions: 'private',
 						fn({client, args, channelID}) {
 							var commands = client.commands.get(...args).map(c => c.fullID);
-							var analytics = Analytics.retrieveTemp();
+							var analytics = client.analytics.retrieveTemp();
 							return filterAnalytics(analytics, commands);
 						}
 					}
+				}
+			},
+			'toggle': {
+				aliases: ['enable','disable'],
+				title: 'Analytics | Enable/Disable',
+				info: 'Toggle command usage tracking.',
+				permissions: 'private',
+				fn({client}) {
+					return `Analytics is now **${client.analytics.toggle()?'enabled':'disabled'}**.`;
 				}
 			}
 		}

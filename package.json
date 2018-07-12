@@ -2,7 +2,7 @@
   "name": "discord-dragon-bot",
   "description": "rawr",
   "main": "index.js",
-  "version": "1.7.0",
+  "version": "1.7.1",
   "dependencies": {
 	"bluebird": "^3.5.1",
 	"discord.io": "github:woor/discord.io#gateway_v6",

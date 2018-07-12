@@ -12,6 +12,7 @@ module.exports = {
 		subcommands: {
 			'replace': {
 				aliases: ['set'],
+				title: 'e621 Tag Blacklist | Replace',
 				info: 'Replace the current blacklist with the given `tags` (no tags given will clear the blacklist)',
 				parameters: ['[...tags]'],
 				fn({client, args, userID, serverID}) {

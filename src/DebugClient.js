@@ -11,6 +11,7 @@ class DebugClient extends Logger(PromiseClient) {
 		super(token, autorun);
 		this.STARTED = this.milliseconds;
 		this._tryReconnect = false;
+		this._suspend      = false;
 		this._ignoreUsers  = true;
 		this._ignoreBots   = true;
 		
@@ -36,17 +37,27 @@ class DebugClient extends Logger(PromiseClient) {
 	
 	stop() {
 		this._tryReconnect = false;
+		this._suspend      = false;
 		this._ignoreUsers  = true;
 		this._ignoreBots   = true;
+	}
+	suspend(time) {
+		this._tryReconnect = false;
+		this._suspend      = true;
+		this.disconnect();
+		setTimeout(() => this.connect(), time);
 	}
 	_connected() {
 		this.info('Client connected.');
 		this._ignoreUsers  = false;
 		this._ignoreBots   = false;
 		this._tryReconnect = true;
+		this._suspend      = false;
 	}
 	_disconnected() {
-		if (this._tryReconnect) {
+		if (this._suspend) {
+			this.notice('Client suspended.');
+		} else if (this._tryReconnect) {
 			this.warn('Client lost connection. Reconnecting...');
 			this.connect();
 		} else {

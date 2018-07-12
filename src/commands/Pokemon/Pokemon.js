@@ -336,19 +336,19 @@ class PkmnAccount extends Resource {
 
 class PokeShop {
 	static inventory() {
-		let fields = {};
-		for (let item of PokemonItemList) {
+		var fields = {};
+		for (var item of PokemonItemList) {
 			(fields[item.title] || (fields[item.title] = [])).push([item.name, md.bold(fmt.currency(item.value,'$',1))]);
 		}
-		let embed = tableify(['Item','Price'], Object.keys(fields), function (name) {
+		var e = tableify(['Item','Price'], Object.keys(fields), function (name) {
 			return [
 				md.bold(name) + '\n' + fields[name].map(i => i[0]).join('\n'),
 				'----'        + '\n' + fields[name].map(i => i[1]).join('\n')
 			];
 		});
-		embed.title = 'PokéShop Inventory';
-		embed.color = COLOR;
-		return embed;
+		e.title = 'PokéShop Inventory';
+		e.color = COLOR;
+		return e;
 	}
 	static displayItemInfo(item) {
 		item = getItemDescriptor(item);
@@ -670,7 +670,7 @@ class PokemonGame {
 		if (item) {
 			return PokeShop.displayItemInfo(item);
 		} else {
-			return PokeShop.inventory(item);
+			return PokeShop.inventory();
 		}
 	}
 	static buyFromShop(client, serverID, userID, item, quantity) {

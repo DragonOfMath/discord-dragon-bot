@@ -154,7 +154,7 @@ class Commands extends TypeMapBase {
 			return handler.resolve(msg);
 		}
 	}
-	toHelpEmbed(client, showSuppressedCommands) {
+	embed(client, showSuppressedCommands) {
 		var cmds = this.keys.sort();
 		if (!showSuppressedCommands) {
 			cmds = cmds.filter(cmd => !this[cmd].suppress);

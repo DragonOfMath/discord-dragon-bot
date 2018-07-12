@@ -38,8 +38,12 @@ class Subcommands extends TypeMapBase {
 				permissions: 'public',
 				suppress: true,
 				analytics: false,
-				fn() {
-					return supercommand.listSubcommands();
+				fn({client,userID}) {
+					if (userID == client.ownerID) {
+						return supercommand.listAllSubcommands();
+					} else {
+						return supercommand.listSubcommands();
+					}
 				}
 			});
 			this.addSubcommand(help);

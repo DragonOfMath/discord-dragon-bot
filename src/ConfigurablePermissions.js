@@ -46,10 +46,12 @@ module.exports = class ConfigurablePermissions extends Permissions {
 		Checks that the arguments, user, and channel are permissed.
 	*/
 	check(handler) {
+		//console.log('ConfigurablePermissions#check(handler)');
 		this.load(handler.client);
 		return super.check(handler);
 	}
 	load(client) {
+		//console.log('ConfigurablePermissions#load(client)');
 		if (this.usesDefaultPermissions || this.isPublic || this.isPrivate || this.isPrivileged || this.isInherited) {
 			return this;
 			//throw `${this.id} is using default permissions and cannot be changed.`;
@@ -60,6 +62,7 @@ module.exports = class ConfigurablePermissions extends Permissions {
 		return this;
 	}
 	save(client) {
+		//console.log('ConfigurablePermissions#save(client)');
 		if (this.usesDefaultPermissions) {
 			throw `${this.id} is using default permissions and cannot be changed.`;
 		}
@@ -96,6 +99,7 @@ module.exports = class ConfigurablePermissions extends Permissions {
 		return this.save(client);
 	}
 	copy(client, data) {
+		//console.log('ConfigurablePermissions#copy(client,data)');
 		if (this.usesDefaultPermissions) {
 			throw `${this.id} is using default permissions and cannot be changed.`;
 		}
@@ -109,14 +113,6 @@ module.exports = class ConfigurablePermissions extends Permissions {
 		}
 		if (client) this.load(client);
 		super.invert();
-		return this.save(client);
-	}
-	changeType(client, type) {
-		if (this.usesDefaultPermissions) {
-			throw `${this.id} is using default permissions and cannot be changed.`;
-		}
-		if (client) this.load(client);
-		super.changeType(type);
 		return this.save(client);
 	}
 }

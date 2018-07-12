@@ -44,6 +44,18 @@ module.exports = {
 			return client.stop(args);
 		}
 	},
+	'suspend': {
+		aliases: ['pause'],
+		category: 'Admin',
+		title: 'Suspend Bot',
+		info: 'Disconnects the bot for a period of time, then reconnects it.',
+		parameters: ['time'],
+		permissions: 'private',
+		suppress: true,
+		fn({client, args}) {
+			return client.suspend(args[0]);
+		}
+	},
 	'proxy': {
 		aliases: ['ghost'],
 		category: 'Admin',
