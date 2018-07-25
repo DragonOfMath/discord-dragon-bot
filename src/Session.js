@@ -89,7 +89,7 @@ class Session extends Resource {
 	resolve(handler) {
 		if (!this.resolver) return;
 		
-		var grant = this.permissions.check(handler);
+		var grant = this.permissions.check(handler, true);
 		if (!grant.granted) return;
 		
 		this.last_channel_id = handler.channelID;

@@ -29,8 +29,8 @@ module.exports = {
 			'info': {
 				title: ':confetti_ball: Lottery | Info',
 				info: 'Get the current jackpot, the total number of tickets purchased globally, the time remaining, and the last winning number of the Lottery.',
-				fn({client}) {
-					return Lottery.get(client).embed();
+				fn({client,server}) {
+					return Lottery.get(client).embed(server);
 				}
 			},
 			'time': {

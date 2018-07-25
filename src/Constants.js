@@ -25,6 +25,7 @@ const PRIVILEGED  = 'privileged';
 const WHITELIST   = 'inclusive';
 const BLACKLIST   = 'exclusive';
 const INHERIT     = 'inherit';
+const PRIVILEGED_PERMISSION = 'MANAGE_CHANNELS';
 const NOOP = function () {};
 
 module.exports = {
@@ -163,7 +164,7 @@ module.exports = {
 		STRINGS: {
 			PUBLIC:     '**Public**: usable by everyone, everywhere.',
 			PRIVATE:    '**Private**: only the bot owner may use this.',
-			PRIVILEGED: '**Privileged**: only those with the Manage Guild permission can use this.',
+			PRIVILEGED: '**Privileged**: only those with the ' + PRIVILEGED_PERMISSION + ' permission can use this.',
 			WHITELIST:  '**Inclusive**: use is limited to whitelisted users/roles/channels only.',
 			BLACKLIST:  '**Exclusive**: use is restricted from blacklisted users/roles/channels.',
 			INHERIT:    'Inherited from supercommand.'
@@ -173,7 +174,7 @@ module.exports = {
 			'roles',
 			'channels'
 		],
-		PRIVILEGED_PERMISSION: 'MANAGE_GUILD',
+		PRIVILEGED_PERMISSION,
 		FLAGS: {
 			CREATE_INSTANT_INVITE: 0,
 			KICK_MEMBERS: 1,

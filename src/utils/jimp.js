@@ -136,7 +136,7 @@ Jimp.prototype.getAntiAliasedPixelColor = Jimp.prototype.getAAPixelColor = funct
 			this.getPixelColor(x1, y0),
 			this.getPixelColor(x0, y1),
 			this.getPixelColor(x1, y1)
-		].map(Jimp.intToRGBA);
+		].map(c => Jimp.intToRGBA(c));
 		// linear anti-aliasing
 		return Color.interpolate(
 			Color.interpolate(colors[0], colors[1], x - x0),
@@ -163,7 +163,7 @@ Jimp.prototype.map = function (map) {
 Jimp.prototype.transform = function (T) {
 	return this.map((color,x,y,i,img) => {
 		// transform x and y
-		({x,y} = F(x,y));
+		({x,y} = T(x,y));
 		return this.getAAPixelColor(x,y);
 	});
 };
@@ -176,7 +176,7 @@ Jimp.prototype.differentialBlur = function (D) {
 		var hex, color2;
 		
 		// get the differential at the x and y
-		var {dx,dy} = diff(x,y);
+		var {dx,dy} = D(x,y);
 		
 		// find its scalar value
 		var dist = Math.hypot(dx, dy);

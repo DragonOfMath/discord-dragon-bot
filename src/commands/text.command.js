@@ -1,49 +1,11 @@
 const {Markdown:md,random} = require('../Utils');
+const SOUL = require('../static/zalgo.json');
+const ALL  = [].concat(SOUL.UP, SOUL.DOWN, SOUL.MID);
+const EmojiNames = require('../static/emoji.json');
 
 /*
 	Zalgorithm from https://github.com/Marak/zalgo.js/blob/master/zalgo.js
 */
-
-const SOUL = { 
-	UP: [
-		'̍','̎','̄','̅',
-		'̿','̑','̆','̐',
-		'͒','͗','͑','̇',
-		'̈','̊','͂','̓',
-		'̈','͊','͋','͌',
-		'̃','̂','̌','͐',
-		'̀','́','̋','̏',
-		'̒','̓','̔','̽',
-		'̉','ͣ','ͤ','ͥ',
-		'ͦ','ͧ','ͨ','ͩ',
-		'ͪ','ͫ','ͬ','ͭ',
-		'ͮ','ͯ','̾','͛',
-		'͆','̚'
-	],
-  DOWN: [
-		'̖','̗','̘','̙',
-		'̜','̝','̞','̟',
-		'̠','̤','̥','̦',
-		'̩','̪','̫','̬',
-		'̭','̮','̯','̰',
-		'̱','̲','̳','̹',
-		'̺','̻','̼','ͅ',
-		'͇','͈','͉','͍',
-		'͎','͓','͔','͕',
-		'͖','͙','͚','̣'
-    ],
-  MID: [
-		'̕','̛','̀','́',
-		'͘','̡','̢','̧',
-		'̨','̴','̵','̶',
-		'͜','͝','͞',
-		'͟','͠','͢','̸',
-		'̷','͡','҉'
-    ]
-};
-const ALL = [].concat(SOUL.UP, SOUL.DOWN, SOUL.MID);
-
-
 function zalgo(text, size = 'maxi') {
 	var result = '';
 	var counts = {UP: 0, DOWN: 0, MID: 0};
@@ -187,6 +149,8 @@ function leet(x) {
 	return x.split('').map(c => c in LEET ? random(LEET[c]) : c).join('');
 }
 
+const SHERIFF = `⠀ ⠀ ⠀  🤠\n　   ???\n    ?   ?　?\n   👇   ?? 👇\n  　  ?　?\n　   ?　 ?\n　   👢     👢`;
+
 module.exports = {
 	'b': {
 		aliases: ['bemoji', '\uD83C\uDD71'],
@@ -327,6 +291,17 @@ module.exports = {
 		permissions: 'inclusive',
 		fn({client, arg}) {
 			return arg.split('').reverse().join('');
+		}
+	},
+	'sheriff': {
+		aliases: ['howdy'],
+		category: 'Fun',
+		info: 'Creates an Emoji Sheriff meme.',
+		parameters: ['[emoji]'],
+		permissions: 'inclusive',
+		fn({client, args}) {
+			var emoji = args[0] || random(Object.keys(EmojiNames));
+			return SHERIFF.replace(/\?/g, emoji) + '\nhowdy. i\'m the sheriff of ' + (EmojiNames[emoji] || md.emojiName(emoji) || emoji);
 		}
 	}
 };

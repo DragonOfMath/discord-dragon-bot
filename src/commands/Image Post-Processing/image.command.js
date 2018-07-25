@@ -42,10 +42,10 @@ function isImage(url) {
 	return /^http.+\.(jpg|jpeg|png)$/i.test(url);
 }
 
-function resolvePercent(num, scale = 1) {
+function resolvePercent(num, scale = 1, min = 0, max = 100) {
 	if (String(num).endsWith('%')) {
 		num = Number(num.match(/\d+/));
-		num = Math.minmax(num, 0, 100);
+		num = Math.minmax(num, min, max);
 		num /= 100;
 		num *= scale;
 	}
@@ -84,6 +84,18 @@ module.exports = {
 		permissions: 'inclusive',
 		analytics: false,
 		subcommands: {
+			'hash': {
+				aliases: ['phash','perceptualhash'],
+				title: 'Image | Perceptual Hash',
+				info: 'Get the perceptual hash of an image. Optionally, specify the base you wish to output in, default is 16.',
+				parameters: ['[imageURL]','[base]'],
+				fn({client, channelID, args}) {
+					return client.type(channelID)
+					.then(() => getImageInChannel(client, channelID, args.slice()))
+					.then(Jimp.read)
+					.then(image => image.hash(16));
+				}
+			},
 			'test': {
 				aliases: ['testing', 'generate'],
 				info: 'Creates a testing image. Specify what preset to use and at what size.',
@@ -462,6 +474,32 @@ module.exports = {
 							dy *= dd;
 							x += dx;
 							y += dy;
+							return {x,y};
+						});
+					});
+				}
+			},
+			'gravity': {
+				aliases: ['implode','potionseller','inversefisheye'],
+				info: 'Implode the image at the specified center and strength.',
+				parameters: ['[imageURL]', '[strength]', '[xpos]', '[ypos]'],
+				fn({client, channelID, args}) {
+					return processImage(client, channelID, args, 'gravity.jpg', function (image, strength, xpos, ypos) {
+						var w = image.bitmap.width;
+						var h = image.bitmap.height;
+						var min = Math.min(w,h);
+						var max = Math.max(w,h);
+						var {x:ox,y:oy} = resolvePos(image, xpos, ypos, Math.floor(w / 2), Math.floor(h / 2));
+						strength = strength === undefined ? random(min) : resolvePercent(strength, min);
+						return image.transform((x,y) => {
+							var dx = ox - x;
+							var dy = oy - y;
+							var dd = Math.hypot(dx, dy);
+							dd = Math.exp(-(dd*dd)/(strength*strength));
+							dx *= dd;
+							dy *= dd;
+							x -= dx;
+							y -= dy;
 							return {x,y};
 						});
 					});

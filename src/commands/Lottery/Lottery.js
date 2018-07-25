@@ -32,7 +32,7 @@ class Lottery extends Resource {
 	constructor(data) {
 		super(LOTTERY_TEMPLATE, data);
 	}
-	embed() {
+	embed(server) {
 		return {
 			fields: [
 				{
@@ -53,6 +53,11 @@ class Lottery extends Resource {
 				{
 					name: 'Previous Winning Number',
 					value: md.code(this.last),
+					inline: true
+				},
+				{
+					name: 'Winners in this Server',
+					value: this.winners.filter(w => w in server.members).map(md.mention).join(', ') || 'None',
 					inline: true
 				}
 			]

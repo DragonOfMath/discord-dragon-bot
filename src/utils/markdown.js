@@ -91,9 +91,16 @@ class Markdown {
 			return '';
 		}
 	}
+	static emojiName(x) {
+		try {
+			return x.match(/^<:(.+):(\d+)>$/)[1];
+		} catch (e) {
+			return '';
+		}
+	}
 	static emojiID(x) {
 		try {
-			return x.match(/^<:(.+):(\d+)>$/).slice(1);
+			return x.match(/^<:(.+):(\d+)>$/)[2];
 		} catch (e) {
 			return '';
 		}

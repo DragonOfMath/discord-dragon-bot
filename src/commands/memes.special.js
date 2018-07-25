@@ -1,4 +1,4 @@
-const {random} = require('../Utils');
+const {random,Markdown:md} = require('../Utils');
 
 const OOF = `
 ▒██████╗▒   ▒██████╗▒   ███████╗
@@ -65,6 +65,13 @@ const LOSS =
 ⠀⣿⣿⡆⠀⢸⣿⣿⣾⡇⠀⣿⣿⣿⣿⣿⣗⣻⡻⠿⠁
 ⠀⣿⣿⡇⠀⢸⣿⣿⡇⠀⠀⠉⠉⠉⠉⠉⠉⠁`;
 
+const DESPACITO =
+`ɴᴏᴡ ᴘʟᴀʏɪɴɢ: Luis Fonsi - Despacito (ft. Daddy Yankee)
+
+───────────────⚪────────────────────────────
+
+◄◄⠀▐▐ ⠀►►⠀⠀ ⠀ 1:17 / 3:48 ⠀ ───○ 🔊⠀ ᴴᴰ ⚙ ❐ ⊏⊐`;
+
 const LENNYFACE = `( ͡° ͜ʖ ͡°)`;
 
 module.exports = {
@@ -86,6 +93,7 @@ module.exports = {
 		else if (/ay{2,} ?lmao/i.test(message)) return 'ayylmao';
 		else if (/^what[\.\?]*$/i.test(message)) return 'what';
 		else if (/(\w+)-ass (\w+)/i.test(message)) return 'x_ass_y';
+		else if (/play despacito/i.test(message)) return 'despacito';
 	},
 	events: {
 		doot() {
@@ -145,13 +153,16 @@ module.exports = {
 			]);
 		},
 		ykihtditt() {
-			return '```\n' + YKIHTDITT + '\n```';
+			return md.codeblock(YKIHTDITT);
 		},
 		thinking() {
-			return '```\n' + THINKING + '\n```';
+			return md.codeblock(THINKING);
 		},
 		loss() {
-			return '```\n' + LOSS + '\n```';
+			return md.codeblock(LOSS);
+		},
+		despacito() {
+			return md.codeblock(DESPACITO);
 		},
 		lennyface() {
 			return LENNYFACE;
@@ -168,11 +179,11 @@ module.exports = {
 				'There\'s people in the world.',
 				'We preside in a civilization.',
 				'Really makes you think. :thinking:',
-				'Deep. :pensive:',
-				'omg deep af :eyes:',
-				'STAY W:eye:KE',
+				'I\'m crying this is so powerful',
+				'omg I\'m literally shaking this can\'t be real',
 				'this is so sad\ncan we hit 50 likes',
 				'this is so sad\ncan we hit ~~50 likes~~ babies',
+				'this is so sad\nAlexa play Despacito',
 				'Real shit? <:wokeThink:341907071953797130>'
 			]);
 		},

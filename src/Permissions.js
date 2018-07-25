@@ -150,7 +150,7 @@ class Permissions {
 	/**
 		Checks with the current server permissions for the given context.
 	*/
-	check({client, context}) {
+	check({client, context}, serverStrictness = false) {
 		//console.log('Permissions#check({client,context})');
 		
 		// check inheritance
@@ -181,16 +181,23 @@ class Permissions {
 				if (Permissions.memberHasPermission(context.server, context.member, Constants.PRIVILEGED_PERMISSION)) {
 					return Grant.granted();
 				} else {
-					return Grant.denied(`${md.mention(context.user)} does not have privileged permission.`);
+					return Grant.denied(`${md.mention(context.user)} does not have ${Constants.PRIVILEGED_PERMISSION}.`);
 				}
 			} else {
-				return Grant.denied(`This command may only be used by users with Manage Guild.`);
+				return Grant.denied(`This command may only be used in a server by users with ${Constants.PRIVILEGED_PERMISSION}.`);
 			}
 		}
 		
 		// check unconditional, if the message is from a DM, or if the server has no permission settings
-		if (this.isPublic || context.isDM || !(context.server && context.server.id in this.servers)) {
+		if (this.isPublic || context.isDM) {
 			return Grant.granted();
+		}
+		if (!(context.server.id in this.servers)) {
+			if (serverStrictness) {
+				return Grant.denied(`Server is not permissed.`);
+			} else {
+				return Grant.granted();
+			}
 		}
 		
 		// get permissions for the server
