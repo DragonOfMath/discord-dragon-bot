@@ -57,7 +57,7 @@ module.exports = {
 		}
 	},
 	'proxy': {
-		aliases: ['ghost'],
+		aliases: ['ghost','reply'],
 		category: 'Admin',
 		info: 'Send a message through the bot to another dimension.',
 		parameters: ['target','...message'],
@@ -67,6 +67,9 @@ module.exports = {
 			let [channelID, ...message] = args;
 			if (!(channelID in client.channels)) {
 				channelID = md.channelID(channelID);
+			}
+			if (!(channelID in client.channels)) {
+				throw 'Invalid channel: ' + channelID; 
 			}
 			message = message.join(' ');
 			client.send(channelID, message)
@@ -247,6 +250,47 @@ module.exports = {
 		fn({client}) {
 			client.snapshot('debug');
 			return 'Snapshot of memory saved.';
+		}
+	},
+	'block': {
+		category: 'Admin',
+		title: 'Block User',
+		info: 'Blocks a user from using the bot. Additionally, you may set a reason for the block.',
+		parameters: ['user', '[...reason]'],
+		permissions: 'private',
+		suppress: true,
+		fn({client, args}) {
+			let userID = md.userID(args[0]) || args[0];
+			let reason = args.slice(1).join(' ');
+			let user = client.users[userID];
+			if (!user) {
+				throw 'Invalid user.';
+			}
+			if (user.id == client.ownerID) {
+				throw 'Haha very funny, but you can\'t block the bot owner. :^)';
+			}
+			if (user.id == client.id) {
+				throw 'Haha very funny, but you can\'t block me.';
+			}
+			return client.block(user, reason)
+			.then(() => md.atUser(user) + ' has been blocked from using this bot.');
+		}
+	},
+	'unblock': {
+		category: 'Admin',
+		title: 'Unblock User',
+		info: 'Unblocks a user and allows them to use the bot again.',
+		parameters: ['user'],
+		permissions: 'private',
+		suppress: true,
+		fn({client, args}) {
+			let userID = md.userID(args[0]) || args[0];
+			let user = client.users[userID];
+			if (!user) {
+				throw 'Invalid user.';
+			}
+			return client.unblock(user)
+			.then(() => md.atUser(user) + ' is now allowed to use this bot again.');
 		}
 	}/*,
 	'prefix': {

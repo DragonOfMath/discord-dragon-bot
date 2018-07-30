@@ -44,6 +44,16 @@ module.exports = {
 			Moderation.cleanup(client, channelID, args[0], args.slice(1));
 		}
 	},
+	'snipe': {
+		category: 'Moderation',
+		title: 'Sniped!',
+		info: 'Find the most recent deleted message in the channel.',
+		parameters: ['[user]'],
+		permissions: 'privileged',
+		fn({client, args, channelID}) {
+			return Moderation.snipe(client, channelID, args[0]);
+		}
+	},
 	'mod': {
 		aliases: ['moderation'],
 		category: 'Moderation',

@@ -278,6 +278,30 @@ class Moderation {
 			return client.deleteMessages({channelID, messageIDs: messages});
 		});
 	}
+	static snipe(client, channelID, userID) {
+		userID = md.userID(userID) || userID;
+		return client.getMessages({
+			channelID,
+			limit: client.messageCacheLimit
+		})
+		// find deleted message(s) by checking the message cache
+		.then(messages => {
+			let messageIDs = messages.map(m => m.id);
+			let cache = client._messageCache[channelID] || {};
+			let deletedMessages = [];
+			// IDs go from oldest to newest
+			for (let id in cache) {
+				if (!messageIDs.includes(id) && (!userID || cache[id].author.id == userID)) {
+					deletedMessages.push(cache[id]);
+				}
+			}
+			if (deletedMessages.length) {
+				return DiscordUtils.embedMessage(deletedMessages.pop());
+			} else {
+				throw 'No sniped messages found.';
+			}
+		});
+	}
 	static getModlogChannel(client, server) {
 		return this.get(client, server).modlogID;
 	}

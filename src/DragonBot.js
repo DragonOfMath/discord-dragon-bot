@@ -39,9 +39,10 @@ class DragonBot extends DebugClient {
 		
 		this.on('ready',   this._connected);
 		this.on('message', this._handle);
-		
-		this.on('guildMemberAdd', this.greetUser);
-		this.on('guildMemberRemove', this.goodbyeUser);
+		this.on('guildCreate', this._joinedServer);
+		this.on('guildDelete', this._leftServer)
+		this.on('guildMemberAdd', this._greetUser);
+		this.on('guildMemberRemove', this._goodbyeUser);
 	}
 	/**
 		Getter for all server roles
@@ -106,6 +107,18 @@ class DragonBot extends DebugClient {
 			if (!m) return 'Command not found.';
 			return this._handle(null, userID, channelID, m);
 		});
+	}
+	/**
+		Add a user to the bot's ignore list
+	*/
+	block(user, reason = '[no reason]') {
+		return Promise.resolve(this.database.get('block').set(user.id, {reason}).save());
+	}
+	/**
+		Remove a user from the bot's ignore list
+	*/
+	unblock(user) {
+		return Promise.resolve(this.database.get('block').delete(user.id).save());
 	}
 	/**
 		Replaces variable symbols with their values, and if possible, evaluates the expression.
@@ -178,7 +191,7 @@ class DragonBot extends DebugClient {
 	/**
 		Handles a user joining a server.
 	*/
-	greetUser(member, WSMessage) {
+	_greetUser(member, WSMessage) {
 		try {
 			var data = WSMessage.d,
 				serverID = data.guild_id,
@@ -204,7 +217,7 @@ class DragonBot extends DebugClient {
 	/**
 		Handles a user leaving a server.
 	*/
-	goodbyeUser(member, WSMessage) {
+	_goodbyeUser(member, WSMessage) {
 		try {
 			// something's not right. member is undefined.
 			var data = WSMessage.d,
@@ -224,6 +237,18 @@ class DragonBot extends DebugClient {
 		} catch (e) {
 			this.error(e);
 		}
+	}
+	/**
+		Handles joining a new server.
+	*/
+	_joinedServer(server, WSMessage) {
+		this.log(md.atUser(this),'has joined',server.name);
+	}
+	/**
+		Handles leaving a server.
+	*/
+	_leftServer(server, WSMessage) {
+		this.log(md.atUser(this),'has left',server.name);
 	}
 	/**
 		Handles connecting the client.
@@ -305,6 +330,15 @@ class DragonBot extends DebugClient {
 				// create a copy of the args array with normalized values
 				handler.args = input.args.map(a => this.normalize(a,context));
 				handler.arg  = handler.args.map(String).join(' ');
+			}
+			
+			// check the bot's block list
+			let block = this.database.get('block');
+			if (handler.cmd && block.has(context.userID)) {
+				// politely remind the user they may not use the bot for commands anymore
+				let message = ':no_entry_sign: ' + md.bold('You are blocked from using this bot\'s commands.')
+					+ '\nReason: ' + md.italics(block.get(context.userID).reason);
+				return this.send(context.userID, message);
 			}
 			
 			// resolve command or special text

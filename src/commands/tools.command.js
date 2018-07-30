@@ -2,6 +2,7 @@
 	Command file for miscellaneous helpful commands.
 */
 
+const DiscordUtils = require('../DiscordUtils');
 const {Markdown:md} = require('../Utils');
 
 module.exports = {
@@ -93,6 +94,55 @@ module.exports = {
 		fn({client, channelID, userID, args}) {
 			if (args[0]) userID = md.userID(args[0]) || userID;
 			return client.redo(channelID, userID);
+		}
+	},
+	'contact': {
+		aliases: ['message','bugreport','report'],
+		category: 'Misc',
+		info: 'Send a direct message to the bot owner with your attached message. Let me know if you\'ve encountered a bug, have an idea for the bot, or just wanted to say hi! :smiley:',
+		parameters: ['...message'],
+		permissions: 'public',
+		fn({client, channel, server, user, messageID, arg}) {
+			if (arg.length > 1000) {
+				throw 'Message is limited to 1000 characters.';
+			}
+			
+			let message = {
+				title: ':mailbox_with_mail: You\'ve Got Mail!',
+				fields: [
+					{
+						name: ':bust_in_silhouette: Sender',
+						value: `User: ${md.atUser(user)} (${md.code(user.id)})`,
+						inline: true
+					},
+					{
+						name: ':homes: From',
+						value: `Channel: ${md.atChannel(channel)} (${md.code(channel.id)})\nServer: ${server.name} (${md.code(server.id)})`,
+						inline: true
+					},
+					{
+						name: ':envelope: Message',
+						value: arg
+					},
+					{
+						name: ':incoming_envelope: Reply',
+						value: md.code(`${client.PREFIX}reply ${md.channel(channel)} ${md.mention(user)} [message]`),
+						inline: true
+					},
+					{
+						name: ':no_entry_sign: Block',
+						value: md.code(`${client.PREFIX}block ${md.mention(user)} [reason]`),
+						inline: true
+					}
+				],
+				timestamp: new Date(),
+				author: {
+					icon_url: DiscordUtils.getAvatarURL(user)
+				}
+			};
+			// why doesn't this send???
+			return client.send(client.ownerID, message)
+			.then(() => ':mailbox: Message sent!');
 		}
 	}
 };

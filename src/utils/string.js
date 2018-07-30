@@ -93,6 +93,13 @@ function isLowerCase(text) {
 	return text === text.toLowerCase();
 }
 
+/**
+	Matches a MD5 hash in the string
+*/
+function md5(text) {
+	return text.match(/[0-9a-f]{32}/i);
+}
+
 module.exports = {
 	strcmp,
 	substrcmp,
@@ -103,5 +110,6 @@ module.exports = {
 	innerHTML,
 	unescapeHTMLEntities,
 	isUpperCase,
-	isLowerCase
+	isLowerCase,
+	md5
 };

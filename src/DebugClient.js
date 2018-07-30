@@ -58,6 +58,9 @@ class DebugClient extends Logger(PromiseClient) {
 		if (this._suspend) {
 			this.notice('Client suspended.');
 		} else if (this._tryReconnect) {
+			if (arguments.length) {
+				console.log(...arguments);
+			}
 			this.warn('Client lost connection. Reconnecting...');
 			this.connect();
 		} else {
