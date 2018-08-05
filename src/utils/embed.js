@@ -196,6 +196,9 @@ class DiscordEmbed {
 		}
 		return str.trim();
 	}
+	static stringify(message, embed) {
+		return new DiscordEmbed(message, embed).toString();
+	}
 }
 
 function tableify(columns = [], rows = [], callback) {

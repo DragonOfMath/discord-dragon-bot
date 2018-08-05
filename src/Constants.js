@@ -141,14 +141,16 @@ module.exports = {
 		TEMPLATE: {
 			archiveID: '',
 			modlogID: '',
+			modlogCasenum: 0,
 			actions: 0,
 			vulgarity: 0,
 			spam: 0,
 			strikes: {},
-			urls: {
+			urls: {   // urls which are banned on the server (prevents spam)
 				blacklisted: [],
 				whitelisted: []
-			}
+			},
+			names: [] // usernames which are banned on the server (prevents raid bots from joining, for example)
 		}
 	},
 	Permissions: {

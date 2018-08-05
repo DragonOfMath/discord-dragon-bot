@@ -40,7 +40,7 @@ module.exports = {
 	},
 	events: {
 		getPostFromID({client, userID}) {
-			return e621.get(this.data.id)
+			return e621.getPost(this.data.id)
 			.then(post => e621.embedPost(post, 'Post Assist'))
 			.then(embed => {
 				return {

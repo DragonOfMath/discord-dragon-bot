@@ -9,6 +9,14 @@ function substrcmp(a,b) {
 }
 
 /**
+	Capitalization of a word
+*/
+function capitalize(x) {
+	x = String(x);
+	return x[0].toUpperCase() + x.substring(1);
+}
+
+/**
 	Truncate text to a fixed length
 */
 function truncate(text,limit) {
@@ -23,6 +31,14 @@ function truncate(text,limit) {
 */
 function escape(text) {
 	return text.replace(/\\|"/g, match => '\\' + match);
+}
+
+/**
+	Escapes Regex special chars
+	https://stackoverflow.com/a/6969486
+*/
+function escapeRegExp(text) {
+	return text.replace(/[\-\[\]\/\{\}\(\)\*\+\?\.\\\^\$\|]/g, '\\$&');
 }
 
 /**
@@ -103,8 +119,10 @@ function md5(text) {
 module.exports = {
 	strcmp,
 	substrcmp,
+	capitalize,
 	truncate,
 	escape,
+	escapeRegExp,
 	quote,
 	includesAt,
 	innerHTML,

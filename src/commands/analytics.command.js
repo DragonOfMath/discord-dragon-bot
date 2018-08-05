@@ -45,13 +45,17 @@ module.exports = {
 				parameters: ['dest','[...src]'],
 				permissions: 'private',
 				fn({client, arg, args, channelID, serverID}) {
-					var things;
+					let items;
 					try {
-						things = JSON.parse(arg);
+						if (typeof(args[0]) === 'object') {
+							items = args[0];
+						} else {
+							items = JSON.parse(arg);
+						}
 					} catch (e) {
-						things = {[args[0]]: args.slice(1)};
+						items = {[args[0]]: args.slice(1)};
 					}
-					client.analytics.merge(client, serverID, things);
+					client.analytics.merge(client, serverID, items);
 					return 'Items successfully merged.';
 				}
 			},

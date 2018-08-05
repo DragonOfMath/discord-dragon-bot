@@ -3,7 +3,7 @@
 	Command file for various fun activities.
 */
 
-const {Markdown:md,random} = require('../Utils');
+const {Markdown:md,random,fetch} = require('../Utils');
 
 function randomDistribution(o,i) {
 	o = Number(o) || 2;
@@ -229,6 +229,42 @@ module.exports = {
 			}
 		}
 	},
+	'bottle': {
+		aliases: ['messageinabottle','miab'],
+		category: 'Fun',
+		title: ':ocean: :newspaper2:',
+		info: 'Send an anonymous message in a bottle to a random online user on the server.',
+		parameters: ['...message'],
+		permissions: 'inclusive',
+		fn({client, server, user, arg}) {
+			setTimeout(() => {
+				let onlineUsers = Object.values(server.members).filter(user => user.status === 'online');
+				let recipient = random(onlineUsers);
+				client.log('Message in a bottle sent by',md.atUser(user),'has been received by',md.atUser(recipient));
+				let message = ':ocean: :newspaper2: | You got a message in a bottle! It reads... ' + md.code(arg);
+				client.send(recipient.id, message)
+				.catch(err => client.error(err));
+			}, random(5000, 60000));
+			return 'Message in a bottle sent!';
+		}
+	},
+	'xkcd': {
+		category: 'Fun',
+		info: 'Shows you a random XKCD comic.',
+		parameters: ['[number]'],
+		permissions: 'inclusive',
+		fn({client, args}) {
+			if (args[0] && Number(args[0])) {
+				return 'https://xkcd.com/'+args[0];
+			} else {
+				return fetch('https://c.xkcd.com/random/comic/', {responseOnly:true})
+				.then(response => {
+					//console.log(JSON.stringify(response));
+					return response.request.uri.href;
+				});
+			}
+		}
+	},
 	'random': {
 		aliases: ['rand', 'rng'],
 		category: 'Fun',
@@ -281,7 +317,7 @@ module.exports = {
 				}
 			},
 			'user': {
-				aliases: ['member','m'],
+				aliases: ['member','mention','m'],
 				title: 'Random | User',
 				info: 'Pick a random user on the server and mention them (lol). Optionally, you can specify if you want to pick from only online users or everyone.',
 				parameters: ['[<everyone|here>]'],

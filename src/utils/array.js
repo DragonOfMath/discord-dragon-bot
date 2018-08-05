@@ -1,12 +1,12 @@
 function forEachAsync(callback, start = 0, end = this.length) {
 	var iterable = this;
 	function _next(i) {
-		return Promise.resolve(callback(iterable[i], i))
-		.then(() => {
-			if (i+1 < end) {
-				return _next(i+1);
-			}
-		});
+		if (i < end) {
+			return Promise.resolve(callback(iterable[i], i))
+			.then(() => _next(i+1));
+		} else {
+			return Promise.resolve(void 0);
+		}
 	}
 	return _next(start);
 }
@@ -14,15 +14,15 @@ function mapAsync(callback, start = 0, end = this.length) {
 	var iterable = this;
 	var mapped = [];
 	function _next(i) {
-		return Promise.resolve(callback(iterable[i], i))
-		.then(value => {
-			if (typeof(value) !== 'undefined') mapped.push(value);
-			if (i+1 < end) {
+		if (i < end) {
+			return Promise.resolve(callback(iterable[i], i))
+			.then(value => {
+				if (typeof(value) !== 'undefined') mapped.push(value);
 				return _next(i+1);
-			} else {
-				return mapped;
-			}
-		});
+			});
+		} else {
+			return Promise.resolve(mapped);
+		}
 	}
 	return _next(start);
 }

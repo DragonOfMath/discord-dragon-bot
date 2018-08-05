@@ -133,8 +133,8 @@ class Analytics extends MapBase {
 	static merge(client, serverID, items) {
 		client.database.get('analytics').modify(serverID, analytics => {
 			analytics = new Analytics(analytics);
-			for (var mergeKey in things) {
-				for (var obsKey of things[mergeKey]) {
+			for (let mergeKey in items) {
+				for (let obsKey of items[mergeKey]) {
 					analytics.add({[mergeKey]:analytics[obsKey]});
 					analytics.delete(obsKey);
 				}

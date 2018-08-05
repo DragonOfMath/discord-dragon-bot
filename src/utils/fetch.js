@@ -13,7 +13,7 @@ function fetch(url, options = {}) {
 			} else if (response.statusCode !== 200) {
 				reject('Status Code: '+response.statusCode);
 			} else try {
-				resolve(body);
+				resolve(options.responseOnly ? response : body);
 			} catch (e) {
 				reject(e.message);
 			}

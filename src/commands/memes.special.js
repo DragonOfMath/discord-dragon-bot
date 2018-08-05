@@ -66,7 +66,7 @@ const LOSS =
 ⠀⣿⣿⡇⠀⢸⣿⣿⡇⠀⠀⠉⠉⠉⠉⠉⠉⠁`;
 
 const DESPACITO =
-`ɴᴏᴡ ᴘʟᴀʏɪɴɢ: Luis Fonsi - Despacito (ft. Daddy Yankee)
+`ɴᴏᴡ ᴘʟᴀʏɪɴɢ: $SONG_NAME
 
 ───────────────⚪────────────────────────────
 
@@ -89,11 +89,11 @@ module.exports = {
 		else if (/omae wa mou shindeiru/i.test(message)) return 'nani';
 		else if (/is this loss/i.test(message)) return 'loss';
 		else if (/delete? this/i.test(message)) return 'delet_this';
-		else if (/we live in a society/i.test(message)) return 'deep';
+		else if (/we live in a society/i.test(message)) return 'society';
 		else if (/ay{2,} ?lmao/i.test(message)) return 'ayylmao';
 		else if (/^what[\.\?]*$/i.test(message)) return 'what';
 		else if (/(\w+)-ass (\w+)/i.test(message)) return 'x_ass_y';
-		else if (/play despacito/i.test(message)) return 'despacito';
+		else if (/(alexa|siri|google|dragon|dragonbot),? play (.+)/i.test(message)) return 'despacito';
 	},
 	events: {
 		doot() {
@@ -161,8 +161,12 @@ module.exports = {
 		loss() {
 			return md.codeblock(LOSS);
 		},
-		despacito() {
-			return md.codeblock(DESPACITO);
+		despacito({message}) {
+			let song = message.substring(message.indexOf('play') + 5);
+			if (song.toLowerCase() === 'despacito') {
+				song = 'Luis Fonsi - Despacito (ft. Daddy Yankee)';
+			}
+			return md.codeblock(DESPACITO.replace('$SONG_NAME', song));
 		},
 		lennyface() {
 			return LENNYFACE;
@@ -173,9 +177,9 @@ module.exports = {
 		delet_this({client, channelID}) {
 			return client.undo(channelID);
 		},
-		deep() {
+		society() {
 			return random([
-				'bottom text',
+				'BOTTOM TEXT!',
 				'There\'s people in the world.',
 				'We preside in a civilization.',
 				'Really makes you think. :thinking:',

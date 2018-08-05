@@ -1,4 +1,4 @@
-const {Markdown:md,strcmp} = require('./Utils');
+const {Markdown:md,strcmp,DiscordEmbed,truncate} = require('./Utils');
 
 const CHANNEL_TYPES = [
 	'Text',
@@ -130,6 +130,36 @@ class DiscordUtils {
 	static hasContent(m) {
 		return m.attachments.length > 0 || m.embeds.length > 0 || m.content.match(/https?:\/\//g);
 	}
+	static filterMessages(client, messages, flags = []) {
+		let blacklist = {
+			cmds:   flags.includes('-cmds')   || flags.includes('-c'),
+			bot:    flags.includes('-bot')    || flags.includes('-b'),
+			text:   flags.includes('-text')   || flags.includes('-t'),
+			media:  flags.includes('-media')  || flags.includes('-m'),
+			pinned: flags.includes('-pinned') || flags.includes('-p')
+		};
+		return messages.filter(m => {
+			if (m.content.startsWith(client.PREFIX) && blacklist.cmds) {
+				return false;
+			}
+			if (m.author.id == client.id && blacklist.bot) {
+				return false;
+			}
+			if (this.hasContent(m)) {
+				if (blacklist.media) {
+					return false;
+				}
+			} else {
+				if (blacklist.text) {
+					return false;
+				}
+			}
+			if (m.pinned && blacklist.pinned) {
+				return false;
+			}
+			return true;
+		});
+	}
 	static embedMessage(message) {
 		var embed = {
 			description: message.content,
@@ -140,20 +170,25 @@ class DiscordUtils {
 			}
 		};
 		
+		// stringify any embeds in the message so they are not left out
+		for (let embed of message.embeds) {
+			embed.description += DiscordEmbed.stringify('', embed);
+		}
+		embed.description = truncate(embed.description, 2000);
+		
 		switch (MESSAGE_TYPES[message.type]) {
 			case 'Default':
-				var user = message.author;
-				embed.title = md.atUser(user);
+				embed.title = md.atUser(message.author);
 				break;
 			default:
 				embed.title = MESSAGE_TYPES[message.type];
 				break;
 		}
 		
-		if (message.attachments.length > 0 || message.embeds.length > 0) {
+		if (message.attachments.length > 0) {
 			embed.fields.push({
 				name: 'Attachments and Links',
-				value: (messages.attachments.concat(messages.embeds)).map(x => x.url || (x.image && x.image.url) || (x.video && x.video.url)).join('\n')
+				value: messages.attachments.map(x => x.url || (x.image && x.image.url) || (x.video && x.video.url)).join('\n')
 			});
 		}
 		

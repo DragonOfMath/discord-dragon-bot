@@ -13,7 +13,7 @@ function random() {
 			if (typeof(arguments[0]) === 'number') {
 				var x = arguments[0] * Math.random();
 				if (isInt(arguments[0])) {
-					x |= 0;
+					x = Math.floor(x);
 				}
 				return x;
 			}
@@ -24,7 +24,7 @@ function random() {
 			if (typeof(arguments[0]) === 'number' && typeof(arguments[1]) === 'number') {
 				var x = arguments[0] + (arguments[1] - arguments[0]) * Math.random();
 				if (isInt(arguments[0]) && isInt(arguments[1])) {
-					x |= 0;
+					x = Math.floor(x);
 				}
 				return x;
 			}

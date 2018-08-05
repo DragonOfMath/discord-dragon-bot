@@ -9,6 +9,7 @@ const Analytics     = require('./Analytics');
 const Context       = require('./Context');
 const Parser        = require('./Parser');
 const Handler       = require('./Handler');
+const Moderation    = require('./Moderation');
 
 const {Markdown:md} = Utils;
 
@@ -168,6 +169,9 @@ class DragonBot extends DebugClient {
 		var date = new Date();
 		return {
 			// context
+			userID:      context.userID,
+			channelID:   context.channelID,
+			serverID:    context.serverID,
 			user:        md.bold(context.user ? context.user.username : '?'),
 			mention:     md.mention(context.user ? context.user.id : '@?'),
 			channelname: md.bold(context.channel ? context.channel.name : '?'),
@@ -200,6 +204,15 @@ class DragonBot extends DebugClient {
 			
 			this.log(md.atUser(user),'has joined',server.name);
 			
+			// moderate incoming users to prevent raids
+			let bannedName = Moderation.get(this, server).checkUser(user);
+			if (bannedName) {
+				return Moderation.ban(this, server, user.id, this.id, `Auto-banned for ${md.code(bannedName)} in name.`)
+				.then(msg => this.notice(msg))
+				.catch(err => this.error(err));
+			}
+			
+			// generate a custom welcome message for the user
 			var welcome = this.database.get('servers').get(serverID).welcome;
 			if (!welcome) return;
 			var {channel = '', role = '', message = ''} = welcome;
@@ -367,8 +380,8 @@ class DragonBot extends DebugClient {
 				// delete temporary messages after a set duration
 				.then(message => {
 					if (typeof(message) !== 'object') return;
-					// if the message expires, delete it after a set duration
-					if (handler.response.expires) {
+					// if the message expires, delete it after a set duration (only do this for short messages)
+					if (handler.response.expires && handler.response.message.length < 200) {
 						return this.wait(Constants.DragonBot.TEMP_MSG_LIFETIME)
 						.then(() => this.deleteMessage({
 							channelID: handler.channelID,

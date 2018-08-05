@@ -8,4 +8,7 @@ src/commands/WIP/
 *.log
 *.bat
 *.txt
+*.png
+*.jpg
+*.jpeg
 init.json

@@ -13,8 +13,8 @@ module.exports = {
 		info: 'Move messages in the current channel to an archive channel. Use flags to specify the kinds of messages to filter out: `-cmds`, `-bot`, `-media`, `-text`, and `-pinned` (use `+` instead of `-` to whitelist messages of that kind).',
 		parameters: ['count', '[...flags]'],
 		permissions: 'privileged',
-		fn({client, args, channelID, serverID}) {
-			return Moderation.archive(client, serverID, channelID, args[0]);
+		fn({client, server, channel, args}) {
+			return Moderation.archive(client, server, channel, args[0]);
 		},
 		subcommands: {
 			'id': {
@@ -22,11 +22,11 @@ module.exports = {
 				title: 'Archive | ID',
 				info: 'Gets or sets the archive channel ID.',
 				parameters: ['[channel]'],
-				fn({client, channelID, server, args}) {
+				fn({client, server, channelID, args}) {
 					if (args[0]) {
 						return Moderation.setArchiveChannel(client, server, args[0]);
 					} else {
-						var archiveID = Moderation.getArchiveChannel(client, server.id);
+						let archiveID = Moderation.getArchiveChannel(client, server);
 						return archiveID ? md.channel(archiveID) : 'No archive channel set.';
 					}
 				}
@@ -67,7 +67,7 @@ module.exports = {
 				info: 'Gets or sets the modlog channel ID. The modlog contains information about bans, kicks, and other moderation actions.',
 				parameters: ['[channel]'],
 				fn({client, server, args}) {
-					var [channel] = args;
+					let channel = args[0];
 					if (channel) {
 						return Moderation.setModlogChannel(client, server, channel);
 					} else {
@@ -100,8 +100,8 @@ module.exports = {
 				info: 'Get the strike count for a given user.',
 				parameters: ['user'],
 				fn({client, args, server, userID}) {
-					var [user] = args;
-					var strikes = Moderation.getStrikes(client, server, user);
+					let user = args[0];
+					let strikes = Moderation.getStrikes(client, server, user);
 					return `That user has **${fmt.plural('Strike',strikes)}** on record.`;
 				}
 			},
@@ -110,7 +110,7 @@ module.exports = {
 				info: 'Warn a user and give a reason why.',
 				parameters: ['user', '...reason'],
 				fn({client, args, server, userID}) {
-					var [user, ...reason] = args;
+					let [user, ...reason] = args;
 					reason = reason.join(' ');
 					return Moderation.warn(client, server, user, userID, reason);
 				}
@@ -120,19 +120,30 @@ module.exports = {
 				info: 'Kick a user from the server and give a reason why.',
 				parameters: ['user', '...reason'],
 				fn({client, args, server, userID}) {
-					var [user, ...reason] = args;
+					let [user, ...reason] = args;
 					reason = reason.join(' ');
 					return Moderation.kick(client, server, user, userID, reason);
 				}
 			},
 			'ban': {
 				title: 'Moderation | Ban',
-				info: 'Ban a user from the server and give a reason why.',
-				parameters: ['user', '...reason'],
+				info: 'Ban a user (or several) from the server and give a reason why.',
+				parameters: ['...users', '...reason'],
 				fn({client, args, server, userID}) {
-					var [user, ...reason] = args;
-					reason = reason.join(' ');
-					return Moderation.ban(client, server, user, userID, reason);
+					let users = [];
+					for (let a of args) {
+						if (md.userID(a) || /^\d+$/.test(a)) {
+							users.push(a);
+						} else {
+							break;
+						}
+					}
+					let reason = args.slice(users.length).join(' ');
+					if (users.length > 1) {
+						return Moderation.massBan(client, server, users, userID, reason);
+					} else {
+						return Moderation.ban(client, server, users[0], userID, reason);
+					}
 				}
 			},
 			'unban': {
@@ -140,7 +151,7 @@ module.exports = {
 				info: 'Unban a user.',
 				parameters: ['user'],
 				fn({client, args, server, userID}) {
-					var [user] = args;
+					let user = args[0];
 					return Moderation.unban(client, server, user, userID);
 				}
 			},
@@ -195,6 +206,39 @@ module.exports = {
 						info: 'Add URLs to the server\'s blacklist.',
 						fn({client, server, args}) {
 							return Moderation.addBlacklistedURLs(client, server, args);
+						}
+					}
+				}
+			},
+			'names': {
+				aliases: ['usernames', 'bannednames'],
+				title: 'Moderation | Banned Usernames',
+				info: 'Interface for protection against users with banned names.',
+				fn({client, args, server}) {
+					return Moderation.listBannedNames(client, server);
+				},
+				subcommands: {
+					'clear': {
+						title: 'Moderation | Clear Banned Usernames',
+						info: 'Clears all banned username filters.',
+						fn({client, server}) {
+							return Moderation.clearBannedNames(client, server);
+						}
+					},
+					'add': {
+						aliases: ['ban'],
+						title: 'Moderation | Add Banned Usernames',
+						info: 'Add username filters to the banned name list.',
+						fn({client, server, args}) {
+							return Moderation.addBannedNames(client, server, args);
+						}
+					},
+					'remove': {
+						aliases: ['unban'],
+						title: 'Moderation | Remove Banned Usernames',
+						info: 'Remove username filters from the banned name list.',
+						fn({client, server, args}) {
+							return Moderation.removeBannedNames(client, server, args);
 						}
 					}
 				}

@@ -222,7 +222,7 @@ module.exports = {
 		}
 	},
 	'caps': {
-		aliases: ['mixedcaps','mcaps'],
+		aliases: ['mixedcaps','mcaps','mock'],
 		category: 'Fun',
 		info: 'SuPer WacKY aND zAnY tExT!1!',
 		parameters: ['...text'],
@@ -238,7 +238,7 @@ module.exports = {
 		}
 	},
 	'owo': {
-		aliases: ['uwu', 'hewwo'],
+		aliases: ['uwu', 'hewwo', 'babytalk'],
 		category: 'Fun',
 		info: 'H-hewwo?! ',
 		parameters: ['...text'],
@@ -248,7 +248,7 @@ module.exports = {
 		}
 	},
 	'emoji': {
-		aliases: ['emojis'],
+		aliases: ['emojis','nitro','nitropls'],
 		category: 'Fun',
 		info: 'Use a custom emoji found on any server this bot is in.',
 		parameters: ['...emojiNames'],

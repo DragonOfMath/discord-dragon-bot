@@ -1,10 +1,11 @@
 const Jimp    = require('jimp');
-const Promise = require('bluebird');
 const {random} = require('./random');
 const {Color} = require('./color');
 
 // https://github.com/oliver-moran/jimp/issues/90
-Jimp.prototype.getBufferAsync = Promise.promisify(Jimp.prototype.getBuffer);
+// update 8/4/2018:
+// this was implemented in https://github.com/oliver-moran/jimp/blob/ba15d12ba6bf4f395a238ba387ef6e61a80db22c/src/index.js#L672
+//Jimp.prototype.getBufferAsync = require('bluebird').promisify(Jimp.prototype.getBuffer);
 
 Jimp.prototype.convoluteWithScale = function (convolutionMatrix, scale) {
 	return this.convolute(convolutionMatrix.map(row => row.map(x => x * scale)));

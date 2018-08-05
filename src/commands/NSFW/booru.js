@@ -399,6 +399,8 @@ class Booru {
 		} else if (post.deleted) {
 			embed.fields.push({name: '❌ File Deleted', value: post.delreason});
 			embed.image = post.preview;
+			// somehow the deleted image url isn't normalized
+			embed.image.url = this.host + embed.image.url;
 		}
 		
 		if (post.isVideo) {
