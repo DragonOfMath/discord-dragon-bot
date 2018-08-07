@@ -92,6 +92,7 @@ module.exports = {
 		title: 'Math:1234:',
 		info: 'Mathemathical! Get a factorial, find a prime, calculate a sum, and more.',
 		permissions: 'inclusive',
+		analytics: false,
 		subcommands: {
 			'sum': {
 				aliases: ['summation'],

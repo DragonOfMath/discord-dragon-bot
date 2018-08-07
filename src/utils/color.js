@@ -67,6 +67,9 @@ class Color {
 		this.green = Math.floor(x/0x100) % 0x100;
 		this.blue  = x % 0x100;
 	}
+	get hex() {
+		return '#' + this.val.toString(16).padStart(6, '0');
+	}
 	get greyscale() {
 		var average = (this.r + this.g + this.b) / 3;
 		return new Color(average,average,average);

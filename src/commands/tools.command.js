@@ -4,8 +4,18 @@
 
 const DiscordUtils = require('../DiscordUtils');
 const {Markdown:md} = require('../Utils');
+const PERMISSION_FLAGS = require('../Constants').Permissions.FLAGS;
 
 module.exports = {
+	'ping': {
+		title: ':ping_pong: Pong!',
+		category: 'Misc',
+		info: 'Basic heartbeat/latency checkup command.',
+		permissions: 'public',
+		fn({client}) {
+			return client.internals.ping + 'ms';
+		}
+	},
 	'invite': {
 		title: 'Invite:mailbox_with_mail:',
 		category: 'Misc',
@@ -97,9 +107,9 @@ module.exports = {
 		}
 	},
 	'contact': {
-		aliases: ['message','bugreport','report'],
+		aliases: ['message','feedback','bugreport','report','suggest'],
 		category: 'Misc',
-		info: 'Send a direct message to the bot owner with your attached message. Let me know if you\'ve encountered a bug, have an idea for the bot, or just wanted to say hi! :smiley:',
+		info: 'Send a direct message to the bot owner. Let me know if you\'ve encountered a bug, have an idea for the bot, or just wanted to say hi! :smiley:',
 		parameters: ['...message'],
 		permissions: 'public',
 		fn({client, channel, server, user, messageID, arg}) {
@@ -143,6 +153,25 @@ module.exports = {
 			// why doesn't this send???
 			return client.send(client.ownerID, message)
 			.then(() => ':mailbox: Message sent!');
+		}
+	},
+	'permcalc': {
+		aliases: ['permissions'],
+		category: 'Misc',
+		title: 'Permissions Calculator',
+		info: 'Calculate the number that is masked by these permissions: ' + Object.keys(PERMISSION_FLAGS).map(md.code).join(', '),
+		parameters: ['...flags'],
+		permissions: 'inclusive',
+		fn({client, args}) {
+			let total = 0;
+			for (let a of args) {
+				let flag = a.toUpperCase();
+				if (!(flag in PERMISSION_FLAGS)) {
+					throw 'Invalid flag: ' + md.code(flag);
+				}
+				total |= 1 << PERMISSION_FLAGS[flag];
+			}
+			return total;
 		}
 	}
 };

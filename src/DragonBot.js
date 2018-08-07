@@ -189,7 +189,17 @@ class DragonBot extends DebugClient {
 			version:     md.bold(this.VERSION),
 			source:      md.bold(this.SOURCE_CODE),
 			prefix:      md.code(this.PREFIX),
-			random:      String(Math.random())
+			random:      String(Math.random()),
+			// special characters
+			lb: '{',
+			rb: '}',
+			lp: '(',
+			rp: ')',
+			quot: '"',
+			bs: '\\',
+			lf: '\n',
+			semi: ';',
+			zws: '\u200B'
 		};
 	}
 	/**
@@ -393,7 +403,16 @@ class DragonBot extends DebugClient {
 			// send an error message if applicable
 			.catch(e => {
 				this.warn(e);
-				return this.send(handler.channelID, '<:fuck:351198367835095040> Oopsie woopsie! UwU we made a fucky wucky! A wittle fucko boingo!\n' + md.codeblock(e.toString()));
+				switch (this._handleErrors) {
+					case 2:
+						return this.send(handler.channelID, '<:fuck:351198367835095040> Oopsie woopsie! UwU we made a fucky wucky! A wittle fucko boingo!\n' + md.codeblock(e.toString()));
+					case 1:
+						return this.send(this.ownerID, 'Error:\n' + md.codeblock(e.toString())
+							+ '\nContext:\n' + md.codeblock(handler.context.debug())
+							+ '\nStack Trace:\n' + md.codeblock(e.stack));
+					case 0:
+						return;
+				}
 			})
 			// if this command is part of a metacommand, add a delay to prevent rate-limiting
 			.then(() => this.wait(Constants.DragonBot.RATE_LIMIT_DELAY))

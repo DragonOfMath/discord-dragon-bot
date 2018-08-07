@@ -35,10 +35,10 @@ function uptime(client) {
 		inline: true
 	}];
 }
-function ping(client, p) {
+function ping(client) {
 	return [{
 		name: ':stopwatch: Ping',
-		value: fmt.time(p),
+		value: fmt.time(client.internals.ping),
 		inline: true
 	}];
 }
@@ -49,10 +49,10 @@ function memory(client) {
 		inline: true
 	}];
 }
-function performance(client, p) {
+function performance(client) {
 	return [
 		...uptime(client),
-		...ping(client, p),
+		...ping(client),
 		...memory(client)
 	];
 }
@@ -110,18 +110,16 @@ module.exports = {
 		info: 'Shows bot info, such as command count, uptime, ping, memory usage, and version, as well as a count of guilds, channels, and users.',
 		permissions: 'public',
 		fn({client, channelID}) {
-			return client.ping(channelID).then(p => {
-				return {
-					fields: [
-						...commands(client),
-						...developer(client),
-						...stats(client),
-						...performance(client, p),
-						...version(client),
-						...sourcecode(client)
-					]
-				};
-			});
+			return {
+				fields: [
+					...commands(client),
+					...developer(client),
+					...stats(client),
+					...performance(client),
+					...version(client),
+					...sourcecode(client)
+				]
+			};
 		},
 		subcommands: {
 			'commands': {
@@ -141,7 +139,7 @@ module.exports = {
 			'performance': {
 				info: 'Displays uptime, pint, and memory usage.',
 				fn({client, channelID}) {
-					return client.ping(channelID).then(p => ({fields: performance(client, p)}));
+					return {fields: performance(client)};
 				}
 			},
 			'uptime': {
@@ -155,7 +153,7 @@ module.exports = {
 				aliases: ['ms'],
 				info: 'Checks bot latency.',
 				fn({client, channelID}) {
-					return client.ping(channelID).then(p => ({fields: ping(client, p)}));
+					return {fields: ping(client)};
 				}
 			},
 			'memory': {
@@ -182,6 +180,24 @@ module.exports = {
 				info: 'Shows how many guilds, channels, and users the bot is connected to.',
 				fn({client}) {
 					return {fields: stats(client)};
+				}
+			},
+			'commits': {
+				aliases: ['commit'],
+				info: 'Get commit history on the bot.',
+				parameters: ['[commitID]'],
+				fn({client, args}) {
+					if (args[0]) {
+						return client.SOURCE_CODE + 'commit/' + args[0];
+					} else {
+						return client.SOURCE_CODE + 'commits/master';
+					}
+				}
+			},
+			'shard': {
+				info: 'Get shard ID, not that it really matters at the moment...',
+				fn({client}) {
+					return client._shard ? `Shard ${client._shard[0]}/${client._shard[1]}` : 'No sharding.';
 				}
 			}
 		}
@@ -273,6 +289,64 @@ module.exports = {
 						return 'Invalid Invite Code: ' + inviteCode;
 					});
 				}
+			},
+			'snowflake': {
+				aliases: ['id'],
+				title: 'Info | Snowflake',
+				info: 'Analyze and identify information about a snowflake ID.',
+				parameters: ['id'],
+				permissions: 'private',
+				fn({client, args}) {
+					let id      = args[0];
+					let user    = client.users[id];
+					let channel = client.channels[id];
+					let server  = client.servers[id];
+					return {
+						description: 'ID: ' + md.code(id),
+						timestamp: DiscordUtils.getCreationTime(id),
+						fields: [
+							{
+								name: 'User',
+								value: user ? md.mention(user) : 'No match'
+							},
+							{
+								name: 'Channel',
+								value: channel ? (md.atChannel(channel) + ' in ' + client.servers[channel.guild_id].name ) : 'No match'
+							},
+							{
+								name: 'Server',
+								value: server ? server.name : 'No match'
+							}
+						]
+					};
+				}
+			},
+			'token': {
+				title: 'Info | Token',
+				info: 'Analyze and identify information about a Discord Token',
+				parameters: ['token'],
+				permissions: 'private',
+				fn({client, args}) {
+					let token = args[0];
+					let tokenInfo = DiscordUtils.decodeToken(token);
+					let user = client.users[tokenInfo.id];
+					return {
+						fields: [
+							{
+								name: 'ID',
+								value: md.code(tokenInfo.id) + ' -> ' + (user ? md.mention(user) : 'no matching user')
+							},
+							{
+								name: 'Timestamp',
+								value: md.code(tokenInfo.time.getTime()) + ' -> ' + tokenInfo.time.toString()
+							},
+							{
+								name: 'HMAC (not verifiable)',
+								value: md.code(tokenInfo.hmac)
+							}
+						]
+					};
+				}
 			}
 		}
 	},
@@ -323,12 +397,12 @@ module.exports = {
 						info: 'List all users the bot has access to. Optionally, filter by server ID.',
 						parameters: ['[serverID]', '[page]'],
 						fn({client, args, server: thisServer}) {
-							var [serverID, page] = args;
+							let [serverID, page] = args;
 							if (typeof(serverID) === 'number') {
 								page = serverID;
 								serverID = '';
 							}
-							var users;
+							let users;
 							if (client.servers[serverID]) {
 								users = DiscordUtils.getServerUsers(client.users, client.servers[serverID]);
 							} else {
@@ -336,7 +410,7 @@ module.exports = {
 							}
 							return list(users, page, user => {
 								// find the servers this user is in
-								var userServers = DiscordUtils.getServersByUser(client.servers, user);
+								let userServers = DiscordUtils.getServersByUser(client.servers, user);
 								return (userServers.includes(thisServer) ?
 									md.mention(user) :
 									md.atUser(user)) + ' (Servers: ' + userServers.map(s => s.name).join(', ') + ')';
@@ -348,12 +422,12 @@ module.exports = {
 						info: 'List all roles the bot has access to. Optionally, filter by server ID.',
 						parameters: ['[serverID]', '[page]'],
 						fn({client, args, server: thisServer}) {
-							var [serverID, page] = args;
+							let [serverID, page] = args;
 							if (typeof(serverID) === 'number') {
 								page = serverID;
 								serverID = '';
 							}
-							var roles;
+							let roles;
 							if (client.servers[serverID]) {
 								roles = DiscordUtils.getServerRoles(client.servers[serverID]);
 							} else {
@@ -372,19 +446,19 @@ module.exports = {
 						info: 'List all channels the bot has access to. Optionally, filter by server ID.',
 						parameters: ['[serverID]', '[page]'],
 						fn({client, args, server: thisServer}) {
-							var [serverID, page] = args;
+							let [serverID, page] = args;
 							if (typeof(serverID) === 'number') {
 								page = serverID;
 								serverID = '';
 							}
-							var channels;
+							let channels;
 							if (client.servers[serverID]) {
 								channels = DiscordUtils.getServerChannels(client.servers[serverID]);
 							} else {
 								channels = DiscordUtils.getObjects(client.channels);
 							}
 							return list(channels, page, channel => {
-								var server = DiscordUtils.getServerByChannel(client.servers, channel);
+								let server = DiscordUtils.getServerByChannel(client.servers, channel);
 								return (server === thisServer ?
 									md.channel(channel) :
 									md.atChannel(channel)) + ' (Server: ' + server.name + ')';
@@ -397,7 +471,7 @@ module.exports = {
 						info: 'List all servers the bot has access to. Optionally, filter by servers that a user is in.',
 						parameters: ['[userID]', '[page]'],
 						fn({client, args, server: thisServer}) {
-							var [user, page] = args;
+							let [user, page] = args;
 							if (typeof(user) === 'number') {
 								page = user;
 								user = '';
@@ -405,15 +479,15 @@ module.exports = {
 								user = md.userID(user) || user;
 							}
 							user = client.users[user];
-							var servers;
+							let servers;
 							if (user) {
 								servers = DiscordUtils.getServersByUser(client.servers, user);
 							} else {
 								servers = DiscordUtils.getObjects(client.servers);
 							}
 							return list(servers, page, server => {
-								var owner = client.users[server.owner_id];
-								var size  = Object.keys(server.members).length;
+								let owner = client.users[server.owner_id];
+								let size  = Object.keys(server.members).length;
 								return server.name + ' (Owner: ' +
 									(owner.id in thisServer.members ?
 										md.mention(owner) :
@@ -434,9 +508,9 @@ module.exports = {
 		parameters: ['...keywords'],
 		permissions: 'public',
 		fn({client, args, channelID}) {
-			var [index, ...keywords] = args;
-			var limit = 0;
-			var isSearching = false;
+			let [index, ...keywords] = args;
+			let limit = 0;
+			let isSearching = false;
 			
 			if (isNaN(index)) {
 				limit = 100;
@@ -450,9 +524,9 @@ module.exports = {
 			
 			return client.getAll(channelID, limit)
 			.then(messages => {
-				var foundIndex;
+				let foundIndex;
 				if (isSearching) {
-					for (var m = 1; m < messages.length; m++) {
+					for (let m = 1; m < messages.length; m++) {
 						if (substrcmp(messages[m].content, keywords)) {
 							foundIndex = m;
 							break;
@@ -478,18 +552,18 @@ module.exports = {
 				info: 'Search for usernames with the given keywords in their name OR discriminator.',
 				parameters: ['discriminator | keyword','[...more keywords]'],
 				fn({client, args, server}) {
-					var [disc, ...keywords] = args;
-					if (isNaN(disc) || String(disc).length !== 4) {
-						keywords.unshift(disc);
-						disc = '';
+					let [discrim, ...keywords] = args;
+					if (isNaN(discrim) || String(discrim).length !== 4) {
+						keywords.unshift(discrim);
+						discrim = '';
 					}
 					keywords = keywords.join(' ');
 					
-					var users = DiscordUtils.getServerUsers(client.users, server);
-					var matches = DiscordUtils.search(users, user => {
-						var member = server.members[user.id];
-						var nick = member.nick;
-						return user.discriminator == disc || substrcmp(user.username, keywords) || (nick && substrcmp(nick, keywords));
+					let users = DiscordUtils.getServerUsers(client.users, server);
+					let matches = DiscordUtils.search(users, user => {
+						let member = server.members[user.id];
+						let nick = member.nick;
+						return user.discriminator == discrim || substrcmp(user.username, keywords) || (nick && substrcmp(nick, keywords));
 					});
 					return list(matches, 1, md.mention);
 				}
@@ -500,7 +574,7 @@ module.exports = {
 				info: 'Search for roles with the given keywords in their name.',
 				parameters: ['...keywords'],
 				fn({client, arg: keywords, server}) {
-					var matches = DiscordUtils.search(server.roles, role => {
+					let matches = DiscordUtils.search(server.roles, role => {
 						return substrcmp(role.name, keywords);
 					});
 					return list(matches, 1, md.role);
@@ -512,10 +586,22 @@ module.exports = {
 				info: 'Search for channels with the given keywords in their name.',
 				parameters: ['[...keywords]'],
 				fn({client, arg: keywords, server}) {
-					var matches = DiscordUtils.search(server.channels, channel => {
+					let matches = DiscordUtils.search(server.channels, channel => {
 						return substrcmp(channel.name, keywords);
 					});
 					return list(matches, 1, md.channel);
+				}
+			},
+			'status': {
+				title: 'Search | Users by Status',
+				info: 'Search users with the given discriminator.',
+				parameters: ['<online|offline|idle|invisible|dnd>'],
+				fn({client, args, server}) {
+					let status = args[0];
+					let matches = DiscordUtils.search(server.members, member => {
+						return strcmp(member.status, status);
+					});
+					return list(matches, 1, md.mention);
 				}
 			},
 			'all': {

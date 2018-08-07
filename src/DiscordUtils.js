@@ -1,4 +1,5 @@
-const {Markdown:md,strcmp,DiscordEmbed,truncate} = require('./Utils');
+const {Markdown:md,strcmp,DiscordEmbed,truncate,Base64} = require('./Utils');
+const crypto = require('crypto');
 
 const CHANNEL_TYPES = [
 	'Text',
@@ -24,6 +25,8 @@ const VERIFICATION_LEVELS = [
 	'(╯°□°）╯︵ ┻━┻ - Member of the server for longer than 10 minutes',
 	'┻━┻ミヽ(ಠ益ಠ)ﾉ彡┻━┻ - Verified phone number'
 ];
+const DISCORD_EPOCH = 1420070400000;
+const TOKEN_EPOCH   = 1293840000;
 
 function yes(x) {
 	return x ? 'Yes' : 'No';
@@ -45,6 +48,9 @@ class DiscordUtils {
 		} else {
 			return `https://cdn.discordapp.com/avatars/${user.id}/${user.avatar}.png`;
 		}
+	}
+	static getCreationTime(id) {
+		return new Date((+id >> 22) + DISCORD_EPOCH);
 	}
 	static find(o,a,x) {
 		for (var id in o) {
@@ -123,6 +129,9 @@ class DiscordUtils {
 	}
 	static getAllEmojis(servers) {
 		return this.getObjects(servers).map(this.getServerEmojis).reduce((a,x) => a.concat(x), []);
+	}
+	static getUsersByStatus(server, status = 'online') {
+		return this.search(server.members, member => member.status == status);
 	}
 	static search(objects, filter) {
 		return this.getObjects(objects).filter(filter);
@@ -418,6 +427,34 @@ class DiscordUtils {
 				height: 100
 			}
 		};
+	}
+	/**
+		Cast the message object to a simple, readable string
+	*/
+	static debugMessage(message) {
+		let embed = this.embedMessage(message);
+		return DiscordEmbed.stringify(embed);
+	}
+	/**
+		Return the snowflake ID, the time of generation, and the HMAC of a token
+	*/
+	static decodeToken(token) {
+		let [id,time,hmac] = token.split('.');
+		id   = Base64.from(id); // snowflake ID of user
+		time = Base64.from(time, 'number'); // time of token generation
+		time = new Date((time + TOKEN_EPOCH) * 1000); // unix time
+		return {id, time, hmac};
+	}
+	/**
+		Create a fake Discord token with valid structure
+	*/
+	static generateFakeToken(id = '123456789012345') {
+		let time = Math.floor(Date.now() / 1000) - TOKEN_EPOCH;
+		let hmac = crypto.createHmac('sha256', id);
+		hmac.update(time.toString(16));
+		hmac.update('poop');
+		return [Base64.to(String(id)), Base64.to(time), hmac.digest('base64')].join('.')
+		.replace(/+/g,'-').replace(/\//g,'_').replace(/=/g,'');
 	}
 }
 

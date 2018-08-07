@@ -1,3 +1,4 @@
+const Discord = require('discord.io');
 const Resource = require('../Resource');
 const DiscordUtils = require('../DiscordUtils');
 const {Markdown:md} = require('../Utils');
@@ -268,7 +269,7 @@ module.exports = {
 				info: 'Makes role(s) self-assignable.',
 				parameters: ['...roles'],
 				permissions: 'privileged',
-				fn({client,server,args}) {
+				fn({client, server, args}) {
 					var roleTable = client.database.get('roles');
 					var roles = resolveRoles(args, server);
 					for (var role of roles) {
@@ -289,7 +290,7 @@ module.exports = {
 				info: 'Makes role(s) un-self-assignable.',
 				parameters: ['...roles'],
 				permissions: 'privileged',
-				fn({client,server,args}) {
+				fn({client, server, args}) {
 					var roleTable = client.database.get('roles');
 					var roles = resolveRoles(args, server);
 					for (var role of roles) {
@@ -301,6 +302,39 @@ module.exports = {
 					}
 					roleTable.save();
 					return `Roles saved:\n${roles.map(r => md.bold(r.name)).join('\n')}`;
+				}
+			},
+			'permissions': {
+				aliases: ['perms'],
+				category: 'Admin',
+				title: 'Roles | Set Permissions',
+				info: 'Override role permissions. Use ! in front of permission flags to disable them.',
+				parameters: ['role', '...flags'],
+				permissions: 'privileged',
+				fn({client, server, args}) {
+					let [role,...flags] = args;
+					role = findRole(server, role);
+					if (!role) {
+						throw 'Invalid role ID.';
+					}
+					let permissions = {};
+					for (let flag of flags) {
+						let allow = flag[0] != '!';
+						if (!allow) flag = flag.substring(1);
+						flag = flag.toUpperCase();
+						if (!(flag in Discord.Permissions)) {
+							throw 'Invalid permission: ' + md.code(flag) + '. Valid values: ' + Object.keys(Discord.Permissions).join(', ');
+						}
+						permissions[flag] = allow;
+					}
+					return client.editRole({
+						serverID: server.id,
+						roleID: role.id,
+						permissions
+					})
+					.then(() => {
+						return md.bold(role.name) + ' permissions successfully updated. :white_check_mark:';
+					});
 				}
 			}
 		}

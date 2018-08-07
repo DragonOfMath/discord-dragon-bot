@@ -50,6 +50,14 @@ class Context {
 			this.message   = message.content;
 		}
 	}
+	debug() {
+		let debugInfo = '';
+		debugInfo += 'Server: ' + (this.server ? (this.server.name + ` (${this.serverID})`) : 'N/A') + '\n';
+		debugInfo += 'Channel: ' + (this.isDM ? 'DM' : this.channel.name) + ` (${this.channelID})` + '\n';
+		debugInfo += 'User: ' + this.user.name + ` (${this.userID})` + '\n';
+		debugInfo += 'Input: ' + this.message;
+		return debugInfo;
+	}
 }
 
 module.exports = Context;

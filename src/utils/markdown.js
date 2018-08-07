@@ -42,10 +42,10 @@ class Markdown {
 		}
 	}
 	static emoji(e,id) {
-		if (typeof(e) === 'string' && e.startsWith(':') && e.endsWith(':')) {
+		if (typeof(e) === 'string' && ((e.startsWith(':') && e.endsWith(':')) || e.charCodeAt(0) > 127)) {
 			return e;
 		} else {
-			return id ? `<:${e.name||e}:${e.id||id}>` : `:${e.name||e}:`;
+			return (e.id || id) ? `<:${e.name||e}:${e.id||id}>` : `:${e.name||e}:`;
 		}
 	}
 	static preventEmbed(x) {

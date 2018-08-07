@@ -1,7 +1,10 @@
-const {Markdown:md,random} = require('../Utils');
+const {Markdown:md,random,Base64} = require('../Utils');
 const SOUL = require('../static/zalgo.json');
 const ALL  = [].concat(SOUL.UP, SOUL.DOWN, SOUL.MID);
 const EmojiNames = require('../static/emoji.json');
+const NATO = require('../static/nato.json');
+const crypto = require('crypto');
+const HashTypes = crypto.getHashes();
 
 /*
 	Zalgorithm from https://github.com/Marak/zalgo.js/blob/master/zalgo.js
@@ -148,105 +151,15 @@ const LEET = {
 function leet(x) {
 	return x.split('').map(c => c in LEET ? random(LEET[c]) : c).join('');
 }
+function hash(text, algorithm = 'md5', format = 'hex') {
+	let h = crypto.createHash(algorithm);
+	h.update(text);
+	return h.digest(format);
+}
 
 const SHERIFF = `⠀ ⠀ ⠀  🤠\n　   ???\n    ?   ?　?\n   👇   ?? 👇\n  　  ?　?\n　   ?　 ?\n　   👢     👢`;
 
 module.exports = {
-	'b': {
-		aliases: ['bemoji', '\uD83C\uDD71'],
-		category: 'Fun',
-		info: 'Adds :b: emojis to your text fam.',
-		parameters: ['...text'],
-		permissions: 'inclusive',
-		fn({arg, userID}) {
-			let consonants = 'bvpdrmcsfh'.split('');
-			let vowels = 'aeiou'.split('');
-			return arg.split(' ').map(word => {
-				let first = word[0].toLowerCase();
-				if (consonants.includes(first)) {
-					return word.replace(new RegExp(first,'gi'),':b:');
-				} else if (word.length > 3) {
-					return word.replace(/[bvdpg]/gi,':b:');
-				} else {
-					return word;
-				}
-			}).join(' ');
-		}
-	},
-	'regional': {
-		aliases: ['reg','remoji'],
-		category: 'Fun',
-		info: 'Turns your text into :regional_indicator_a: emojis.',
-		parameters: ['...text'],
-		permissions: 'inclusive',
-		fn({arg, userID}) {
-			let letters = 'abcdefghijklmnopqrstuvwxyz'.split('');
-			return arg.split('').map(letter => {
-				let lower = letter.toLowerCase();
-				if (letters.includes(lower)) {
-					return `:regional_indicator_${lower}:`;
-				} else {
-					return letter;
-				}
-			}).join('');
-		}
-	},
-	'clap': {
-		aliases: ['clapemoji', 'clapping', 'preach'],
-		category: 'Fun',
-		info: ':clap:Can:clap:you:clap:feel:clap:the:clap:memes:clap:tonight?:clap:',
-		parameters: ['...text'],
-		permissions: 'inclusive',
-		fn({args}) {
-			return ':clap:' + args.join(':clap:') + ':clap:';
-		}
-	},
-	'greentext': {
-		aliases: ['gt', 'tfw', 'mfw', 'mrw'],
-		category: 'Fun',
-		info: '```css\n>Turns your text into greentext\n```',
-		parameters: ['...text'],
-		permissions: 'inclusive',
-		fn({arg}) {
-			return '```css\n' + arg.split('\n').map(x => '>' + x).join('\n') + '\n```';
-		}
-	},
-	'zalgo': {
-		aliases: ['justfuckmyshitup', 'zuul'],
-		category: 'Fun',
-		info: 'HE COMES',
-		parameters: ['...text'],
-		permissions: 'inclusive',
-		fn({client, arg}) {
-			return zalgo(arg);
-		}
-	},
-	'caps': {
-		aliases: ['mixedcaps','mcaps','mock'],
-		category: 'Fun',
-		info: 'SuPer WacKY aND zAnY tExT!1!',
-		parameters: ['...text'],
-		permissions: 'inclusive',
-		fn({client, arg}) {
-			return arg.split('').map(c => {
-				if (c == '!') {
-					return random('1', c);
-				} else {
-					return random(c.toUpperCase(), c.toLowerCase());
-				}
-			}).join('');
-		}
-	},
-	'owo': {
-		aliases: ['uwu', 'hewwo', 'babytalk'],
-		category: 'Fun',
-		info: 'H-hewwo?! ',
-		parameters: ['...text'],
-		permissions: 'inclusive',
-		fn({client, arg}) {
-			return owoify(arg);
-		}
-	},
 	'emoji': {
 		aliases: ['emojis','nitro','nitropls'],
 		category: 'Fun',
@@ -273,9 +186,104 @@ module.exports = {
 			return emojis.join(' ');
 		}
 	},
+	'b': {
+		aliases: ['bemoji', '\uD83C\uDD71'],
+		category: 'Text',
+		info: 'Adds :b: emojis to your text fam.',
+		parameters: ['...text'],
+		permissions: 'inclusive',
+		fn({arg, userID}) {
+			let consonants = 'bvpdrmcsfh'.split('');
+			let vowels = 'aeiou'.split('');
+			return arg.split(' ').map(word => {
+				let first = word[0].toLowerCase();
+				if (consonants.includes(first)) {
+					return word.replace(new RegExp(first,'gi'),':b:');
+				} else if (word.length > 3) {
+					return word.replace(/[bvdpg]/gi,':b:');
+				} else {
+					return word;
+				}
+			}).join(' ');
+		}
+	},
+	'regional': {
+		aliases: ['reg','remoji'],
+		category: 'Text',
+		info: 'Turns your text into :regional_indicator_a: emojis.',
+		parameters: ['...text'],
+		permissions: 'inclusive',
+		fn({arg, userID}) {
+			let letters = 'abcdefghijklmnopqrstuvwxyz'.split('');
+			return arg.split('').map(letter => {
+				let lower = letter.toLowerCase();
+				if (letters.includes(lower)) {
+					return `:regional_indicator_${lower}:`;
+				} else {
+					return letter;
+				}
+			}).join('');
+		}
+	},
+	'clap': {
+		aliases: ['clapemoji', 'clapping', 'preach'],
+		category: 'Text',
+		info: ':clap:Can:clap:you:clap:feel:clap:the:clap:memes:clap:tonight?:clap:',
+		parameters: ['...text'],
+		permissions: 'inclusive',
+		fn({args}) {
+			return ':clap:' + args.join(':clap:') + ':clap:';
+		}
+	},
+	'greentext': {
+		aliases: ['gt', 'tfw', 'mfw', 'mrw'],
+		category: 'Text',
+		info: '```css\n>Turns your text into greentext\n```',
+		parameters: ['...text'],
+		permissions: 'inclusive',
+		fn({arg}) {
+			return '```css\n' + arg.split('\n').map(x => '>' + x).join('\n') + '\n```';
+		}
+	},
+	'zalgo': {
+		aliases: ['justfuckmyshitup', 'zuul'],
+		category: 'Text',
+		info: 'HE COMES',
+		parameters: ['...text'],
+		permissions: 'inclusive',
+		fn({client, arg}) {
+			return zalgo(arg);
+		}
+	},
+	'caps': {
+		aliases: ['mixedcaps','mcaps','mock'],
+		category: 'Text',
+		info: 'SuPer WacKY aND zAnY tExT!1!',
+		parameters: ['...text'],
+		permissions: 'inclusive',
+		fn({client, arg}) {
+			return arg.split('').map(c => {
+				if (c == '!') {
+					return random('1', c);
+				} else {
+					return random(c.toUpperCase(), c.toLowerCase());
+				}
+			}).join('');
+		}
+	},
+	'owo': {
+		aliases: ['uwu', 'hewwo', 'babytalk'],
+		category: 'Text',
+		info: 'H-hewwo?! ',
+		parameters: ['...text'],
+		permissions: 'inclusive',
+		fn({client, arg}) {
+			return owoify(arg);
+		}
+	},
 	'leet': {
 		aliases: ['l33t','1337'],
-		category: 'Fun',
+		category: 'Text',
 		info: 'Change your text into leetspeak. -> Ch4ng3 y0ur +3x+ !n+0 13375p34k.',
 		parameters: ['...text'],
 		permissions: 'inclusive',
@@ -285,7 +293,7 @@ module.exports = {
 	},
 	'reverse': {
 		aliases: ['esrever','backwards'],
-		category: 'Fun',
+		category: 'Text',
 		info: 'Reverses your text.',
 		parameters: ['...text'],
 		permissions: 'inclusive',
@@ -295,13 +303,66 @@ module.exports = {
 	},
 	'sheriff': {
 		aliases: ['howdy'],
-		category: 'Fun',
+		category: 'Text',
 		info: 'Creates an Emoji Sheriff meme.',
 		parameters: ['[emoji]'],
 		permissions: 'inclusive',
 		fn({client, args}) {
 			var emoji = args[0] || random(Object.keys(EmojiNames));
 			return SHERIFF.replace(/\?/g, emoji) + '\nhowdy. i\'m the sheriff of ' + (EmojiNames[emoji] || md.emojiName(emoji) || emoji);
+		}
+	},
+	'nato': {
+		category: 'Text',
+		info: 'Convert to and from the NATO phonetic alphabet. (See <https://en.wikipedia.org/wiki/NATO_phonetic_alphabet>)',
+		parameters: ['[from]', '...text'],
+		permissions: 'inclusive',
+		fn({client, args}) {
+			let [first, ...text] = args;
+			if (first == 'from') {
+				return text.map(t => t[0] in NATO ? t[0] : t).join('');
+			} else {
+				text.unshift(first);
+				return text.join(' ').split('').map(t => NATO[t[0].toUpperCase()]||t).join(' ');
+			}
+		}
+	},
+	'base64': {
+		aliases: ['b64'],
+		category: 'Text',
+		info: 'Convert to and from Base 64.',
+		parameters: ['[from]', '...text'],
+		permissions: 'inclusive',
+		fn({client, args}) {
+			let [first, ...text] = args;
+			if (first == 'from') {
+				text = text.join(' ');
+				return Base64.from(text);
+			} else {
+				text.unshift(first);
+				text = text.join(' ');
+				return Base64.to(text);
+			}
+		}
+	},
+	'hash': {
+		aliases: ['crypto',...HashTypes],
+		category: 'Text',
+		info: 'Get the specified hash of some text. Specify the algorithm with a command alias or with a parameter, default is `md5`.',
+		parameters: ['[algorithm]','...text'],
+		permissions: 'inclusive',
+		fn({client, cmds, args}) {
+			let [algorithm, ...text] = args;
+			if (HashTypes.includes(algorithm)) {
+				// all is well
+			} else if (HashTimes.includes(cmds[cmds.length-1])) {
+				text.unshift(algorithm);
+				algorithm = cmd[cmds.length-1];
+			} else {
+				algorithm = 'md5';
+			}
+			text = text.join(' ');
+			return hash(text, algorithm);
 		}
 	}
 };

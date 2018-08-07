@@ -54,6 +54,23 @@ module.exports = {
 			return Moderation.snipe(client, channelID, args[0]);
 		}
 	},
+	'zip': {
+		aliases: ['record','collect'],
+		category: 'Moderation',
+		title: 'Zip Channel History',
+		info: 'Collect channel history up to a number of messages, then sends you a .zip file of the contents if possible. Maximum of 10000 messages, default of 1000. Format can be json or text, default is json. Flags are for filtering messages.',
+		parameters: ['[channel]', '[limit]', '[format]', '[...flags]'],
+		permissions: 'privileged',
+		fn({client, server, channelID, userID, args}) {
+			let chan = md.channelID(args[0]);
+			if (chan) {
+				channelID = chan;
+				args.shift();
+			}
+			let [limit, format, ...flags] = args;
+			return Moderation.collectMessages(client, channelID, limit, flags);
+		}
+	},
 	'mod': {
 		aliases: ['moderation'],
 		category: 'Moderation',

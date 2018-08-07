@@ -10,6 +10,9 @@ function random() {
 		case 0:
 			return Math.random();
 		case 1:
+			if (typeof(arguments[0]) === 'boolean') {
+				return Math.random() < 0.5;
+			}
 			if (typeof(arguments[0]) === 'number') {
 				var x = arguments[0] * Math.random();
 				if (isInt(arguments[0])) {

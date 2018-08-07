@@ -1,3 +1,4 @@
+const Zlib = require('zlib');
 const Constants    = require('./Constants');
 const Resource     = require('./Resource');
 const DiscordUtils = require('./DiscordUtils');
@@ -503,6 +504,27 @@ class Moderation {
 		.catch(err => {
 			// pay no attention to errors like these, they aren't useful yet
 			//client.error(err);
+		});
+	}
+	
+	static collectMessages(client, channelID, limit = 1000, format = 'json', flags = []) {
+		let limit = Math.min(limit, 10000);
+		return client.getMessages({
+			channelID,
+			limit,
+			before: client.channels[channelID].last_message_id
+		})
+		.then(messages => {
+			let buffer = '';
+			if (format.toLowerCase() == 'json') {
+				buffer = JSON.stringify(messages);
+			} else {
+				buffer = messages.map(m => `[ID:${m.id}]\n`+DiscordUtils.debugMessage(m)).join('\n');
+			}
+			return {
+				file: Zlib.deflateSync(buffer),
+				filename: `${channelID}-${client.channels[channelID].name}.${format}.zip`
+			};
 		});
 	}
 }

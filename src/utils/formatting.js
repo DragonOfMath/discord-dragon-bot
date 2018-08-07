@@ -65,7 +65,8 @@ class Format {
 		return time.join(' ');
 	}
 	static timestamp(t) {
-		t = Math.floor(t);
+		let sign = t < 0 ? '-' : '';
+		t = Math.floor(Math.abs(t));
 		let ms = (t % 1000);
 		t = Math.floor(t/1000);
 		let sec = t % 60;
@@ -76,11 +77,11 @@ class Format {
 		t = Math.floor(t/24);
 		let dd = t;
 		if (dd) {
-			return `${this.padding(dd,2)}:${this.padding(hr,2)}:${this.padding(min,2)}:${this.padding(sec,2)}`;
+			return `${sign}${this.padding(dd,2)}:${this.padding(hr,2)}:${this.padding(min,2)}:${this.padding(sec,2)}`;
 		} else if (hr) {
-			return `${this.padding(hr,2)}:${this.padding(min,2)}:${this.padding(sec,2)}`;
+			return `${sign}${this.padding(hr,2)}:${this.padding(min,2)}:${this.padding(sec,2)}`;
 		} else {
-			return `${this.padding(min,2)}:${this.padding(sec,2)}`;
+			return `${sign}${this.padding(min,2)}:${this.padding(sec,2)}`;
 		}
 	}
 	static bytes(b) {

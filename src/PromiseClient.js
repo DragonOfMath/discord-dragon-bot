@@ -22,6 +22,11 @@ class PromiseClient extends Discord.Client {
 		this._messageChunks   = true;
 	}
 	
+	_censorPrivateInfo(payload) {
+		// remove my name and client token if it EVER shows up
+		return payload.replaceAll(MY_NAME, '[REDACTED]').replaceAll(this.internals.token, '[REDACTED]');
+	}
+	
 	/* Utility methods */
 	wait(time, event, ...args) {
 		let client = this;
@@ -83,8 +88,7 @@ class PromiseClient extends Discord.Client {
 		}
 		payload.to = channelID;
 		
-		// remove my name if it EVER shows up
-		payload.replaceAll(MY_NAME, 'X');
+		this._censorPrivateInfo(payload);
 		
 		if (!this._enableEmbedding) {
 			payload.message = payload.toString();
@@ -148,7 +152,7 @@ class PromiseClient extends Discord.Client {
 			return this.delete(channelID, messageID);
 		}
 		
-		payload.replaceAll(MY_NAME, 'X');
+		this._censorPrivateInfo(payload);
 		
 		if (!this._enableEmbedding) {
 			payload.message = payload.toString();

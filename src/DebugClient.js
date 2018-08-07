@@ -14,6 +14,7 @@ class DebugClient extends Logger(PromiseClient) {
 		this._suspend      = false;
 		this._ignoreUsers  = true;
 		this._ignoreBots   = true;
+		this._handleErrors = 1; // send to DMs
 		
 		//this.on('log',        this.info);
 		//this.on('ready',      this._connected);

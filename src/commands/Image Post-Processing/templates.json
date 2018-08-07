@@ -431,8 +431,25 @@
 				"y": 355,
 				"width": 190,
 				"height": 120,
-				"rotate": -30,
+				"rotate": 30,
 				"size": 16,
+				"alignmentX": "left",
+				"alignmentY": "top"
+			}
+		]
+	},
+	"byemom": {
+		"filename": "byemom.png",
+		"placeholders": [
+			{
+				"id": 0,
+				"type": "text",
+				"x": 354,
+				"y": 586,
+				"width": 326,
+				"height": 32,
+				"rotate": -30,
+				"size": 32,
 				"alignmentX": "left",
 				"alignmentY": "top"
 			}

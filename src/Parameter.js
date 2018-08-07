@@ -42,6 +42,9 @@ class Parameter {
 		if (this.optional) n = '[' + n + ']';
 		return n;
 	}
+	static toChoice(array) {
+		return '<' + array.join('|') + '>';
+	}
 }
 
 /* Concept classes, not for use

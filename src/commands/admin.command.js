@@ -1,5 +1,6 @@
 const Constants = require('../Constants');
 const {Markdown:md} = require('../Utils');
+const ErrorHandling = ['off','on','dm'];
 
 /**
 	Command file for private (owner-only) bot commands.
@@ -151,6 +152,17 @@ module.exports = {
 		fn({client, args}) {
 			client._simulateTyping = typeof args[0] !== 'undefined' ? Boolean(args[0]) : !client._simulateTyping;
 			return 'Typing simulation is now ' + (client._simulateTyping ? 'enabled' : 'disabled');
+		}
+	},
+	'errors': {
+		category: 'Admin',
+		info: 'Toggle handling of errors.',
+		parameters: ['<on|dm|off>'],
+		permissions: 'private',
+		suppress: true,
+		fn({client, args}) {
+			client._handleErrors = ErrorHandling.indexOf(args[0].toLowerCase());
+			return 'Error handling is now set to ' + md.bold(ErrorHandling[client._handleErrors]);
 		}
 	},
 	'echo': {

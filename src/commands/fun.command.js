@@ -4,6 +4,8 @@
 */
 
 const {Markdown:md,random,fetch} = require('../Utils');
+const DiscordUtils = require('../DiscordUtils');
+const EmojiNames = require('../static/emoji.json');
 
 function randomDistribution(o,i) {
 	o = Number(o) || 2;
@@ -238,7 +240,7 @@ module.exports = {
 		permissions: 'inclusive',
 		fn({client, server, user, arg}) {
 			setTimeout(() => {
-				let onlineUsers = Object.values(server.members).filter(user => user.status === 'online');
+				let onlineUsers = DiscordUtils.getUsersByStatus(server, 'online');
 				let recipient = random(onlineUsers);
 				client.log('Message in a bottle sent by',md.atUser(user),'has been received by',md.atUser(recipient));
 				let message = ':ocean: :newspaper2: | You got a message in a bottle! It reads... ' + md.code(arg);
@@ -270,6 +272,7 @@ module.exports = {
 		category: 'Fun',
 		info: 'Random',
 		permissions: 'inclusive',
+		analytics: false,
 		subcommands: {
 			'integer': {
 				aliases: ['int','i'],
@@ -322,11 +325,11 @@ module.exports = {
 				info: 'Pick a random user on the server and mention them (lol). Optionally, you can specify if you want to pick from only online users or everyone.',
 				parameters: ['[<everyone|here>]'],
 				fn({server, args}) {
-					let [scope = 'everyone'] = args;
+					let [scope = 'here'] = args;
 					if (scope.toLowerCase() == 'everyone') {
-						return md.mention(random(Object.keys(server.members)));
+						return md.mention(random(DiscordUtils.getServerMembers(server)));
 					} else if (scope.toLowerCase() == 'here') {
-						let onlineUsers = Object.keys(server.members).filter(id => server.members[id].status == 'online');
+						let onlineUsers = DiscordUtils.getUsersByStatus(server, 'online');
 						return md.mention(random(onlineUsers));
 					}
 				}
@@ -336,7 +339,46 @@ module.exports = {
 				title: 'Random | Channel',
 				info: 'Pick a random channel on the server.',
 				fn({server}) {
-					return md.channel(random(Object.keys(server.channels)));
+					return md.channel(random(DiscordUtils.getServerChannels(server)));
+				}
+			},
+			'emoji': {
+				aliases: ['e'],
+				title: 'Random | Emoji',
+				info: 'Pick a random emoji, either from Discord emojis, custom emojis, or any.',
+				parameters: ['[<discord|custom|any>]'],
+				fn({client, server, args}) {
+					switch (args[0]) {
+						case 'discord':
+							return md.emoji(random(Object.keys(EmojiNames)));
+						case 'custom':
+							return md.emoji(random(Object.values(server.emojis)));
+						default:
+							return md.emoji(random(Object.keys(EmojiNames).concat(Object.values(server.emojis))));
+					}
+				}
+			},
+			'command': {
+				aliases: ['cmd'],
+				title: 'Random | Command',
+				info: 'Pick a random command.',
+				fn({client,userID}) {
+					let cmds = client.commands.items;
+					if (userID != client.ownerID) {
+						cmds = cmds.filter(c => !c.suppress);
+					}
+					let cmd = random(cmds);
+					while (random(true) && cmd.hasSubcommands) {
+						cmd = random(cmd.subcommands.items);
+					}
+					return cmd.usage;
+				}
+			},
+			'token': {
+				title: 'Random | Token',
+				info: 'Generate a random fake Discord Token.',
+				fn({userID}) {
+					return md.code(DiscordUtils.generateFakeToken(userID));
 				}
 			}
 		}

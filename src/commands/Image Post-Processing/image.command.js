@@ -2,6 +2,7 @@ const {
 	Markdown:md,
 	random,
 	Jimp,
+	QR,
 	Math,
 	Color,
 	Perlin2,
@@ -846,7 +847,7 @@ module.exports = {
 			},
 			'ohfuck': {
 				aliases: ['mindblown'],
-				info: 'Create an "oh fuck" meme with 1 text.',
+				info: 'Create an "oh fuck" meme with text.',
 				parameters: ['text'],
 				fn({client, arg, channelID}) {
 					client.type(channelID);
@@ -856,12 +857,22 @@ module.exports = {
 			},
 			'fact': {
 				alises: ['facts','fax'],
-				info: 'Create a fact meme with 1 text.',	
+				info: 'Create a fact meme with text.',	
 				parameters: ['text'],
 				fn({client, arg, channelID}) {
 					client.type(channelID);
 					return applyTemplate('fact', [arg])
 					.then(getBufferAs('fact.jpg'));
+				}
+			},
+			'byemom': {
+				aliases: ['google'],
+				info: 'Google something bad while mom is away.',
+				parameters: ['text'],
+				fn({client, arg, channelID}) {
+					client.type(channelID);
+					return applyTemplate('byemom', [arg])
+					.then(getBufferAs('byemom.jpg'));
 				}
 			},
 			'watermark': {
@@ -880,6 +891,34 @@ module.exports = {
 						}
 						return applyWatermark(watermark, image, text.join(' '));
 					});
+				}
+			}
+		}
+	},
+	'qr': {
+		category: 'Fun',
+		title: 'QR Code',
+		info: 'https://en.wikipedia.org/wiki/QR_code',
+		permissions: 'inclusive',
+		analytics: false,
+		subcommands: {
+			'decode': {
+				aliases: ['read','decrypt','unhack'],
+				title: 'QR Reader',
+				info: 'Read a QR code from the input image.',
+				parameters: ['[imageURL]'],
+				fn({client, channelID, args}) {
+					return processImage(client, channelID, args, '', QR.read);
+				}
+			},
+			'encode': {
+				aliases: ['write','encrypt','hack'],
+				title: 'QR Writer',
+				info: 'Write input text to a QR image file. (Note: emojis will not be preserved)',
+				parameters: ['...text'],
+				fn({client, channelID, arg}) {
+					return QR.write(arg)
+					.then(getBufferAs('qr.png'));
 				}
 			}
 		}
