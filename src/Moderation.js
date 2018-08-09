@@ -1,22 +1,48 @@
-const Zlib = require('zlib');
+const Zlib         = require('zlib');
+const emojiRegex   = require('emoji-regex')();
 const Constants    = require('./Constants');
 const Resource     = require('./Resource');
 const DiscordUtils = require('./DiscordUtils');
-const {Markdown:md,Format:fmt,escapeRegExp,isUpperCase,forEachAsync,mapAsync,diff,union} = require('./Utils');
+const {
+	Markdown:md,
+	Format:fmt,
+	escapeRegExp,
+	isUpperCase,
+	findEmojis,
+	forEachAsync,
+	mapAsync,
+	diff,
+	union
+} = require('./Utils');
 
 const Vulgarity = require('./static/vulgarity.json');
 const Spam = {
+	// bit 0 = 1
+	mentionspam(x) {
+		// using a global mention or 3+ single mentions
+		return /@[here|everyone]/.test(x) || x.match(/<@!?\d+>/g).length >= 3;
+	},
+	// bit 1 = 2
 	linkspam(x) {
 		// matches bit.ly and adf.ly links
 		return /\w+\.ly\//.test(x);
 	},
+	// bit 2 = 4
 	letterspam(x) {
 		return x.length > 30 && /(.)\1{9,}/.test(x);
 	},
+	// bit 3 = 8
 	capsspam(x) {
+		// SPEAKING IN ALL CAPS FOR A LONG MESSAGE
 		return x.length > 30 && /\w+/.test(x) && isUpperCase(x);
+	},
+	// bit 4 = 16
+	emojispam(x) {
+		// text must not contain more than 20 emojis
+		return x.length > 40 && (x.match(/<:\w+:\d+>/g).length + x.match(emojiRegex).length) > 20;
 	}
 };
+const SPAM_FILTERS = ['mentions','links','letters','caps','emojis'];
 
 function validateTargetUser(client, server, userID, modID) {
 	userID = md.userID(userID) || userID;
@@ -77,29 +103,15 @@ class ModerationSettings extends Resource {
 		this.vulgarity = Constants.Moderation.LEVELS[level];
 		return level;
 	}
-	setSpamLevel(level) {
-		switch (String(level)) {
-			case '0':
-			case 'none':
-				level = 'NONE';
-				break;
-			case '1':
-			case 'low':
-			case 'light':
-				level = 'LIGHT';
-				break;
-			case '2':
-			case 'medium':
-				level = 'MEDIUM';
-				break;
-			case '3':
-			case 'heavy':
-			case 'high':
-				level = 'HEAVY';
-				break;
+	setSpamFilters(filters = []) {
+		this.spam = 0;
+		for (let f of filters) {
+			let i = SPAM_FILTERS.indexOf(f.toLowerCase());
+			if (i > -1) {
+				this.spam |= 1 << i;
+			}
 		}
-		this.spam = Constants.Moderation.LEVELS[level];
-		return level;
+		return this.spam;
 	}
 	setActions(actions) {
 		actions = actions instanceof Array ? actions : actions.split('+');
@@ -132,7 +144,7 @@ class ModerationSettings extends Resource {
 		levels = Object.keys(Spam);
 		for (let i = 0, level; i < levels.length; i++) {
 			level = levels[i];
-			if (this.spam > i && Spam[level](message)) {
+			if ((this.spam & (1 << i)) && Spam[level](message)) {
 				return level;
 			}
 		}
@@ -194,12 +206,16 @@ class Moderation {
 	}
 	static modify(client, server, callback) {
 		let message;
-		client.database.get('servers').modify(server.id, _server => {
+		let table = client.database.get('servers');
+		table.modify(server.id, _server => {
 			_server.moderation = new ModerationSettings(_server.moderation);
 			message = callback(_server.moderation, _server);
 			return _server;
-		}).save();
-		return message;
+		});
+		return Promise.resolve(message).then(m => {
+			table.save();
+			return m;
+		});
 	}
 	
 	static getArchiveChannel(client, server) {
@@ -406,7 +422,27 @@ class Moderation {
 			.then(() => `${md.mention(userID)} has been unbanned.`);
 		});
 	}
+	static softban(client, server, userID, modID, reason) {
+		userID = validateTargetUser(client, server, userID, modID);
+		return this.modify(client, server, s => {
+			return client.ban({serverID: server.id, userID, reason})
+			.then(() => s.modlog(client, modID, userID, 'Softban'))
+			.then(() => client.unban({serverID: server.id, userID}))
+			.then(() => `${md.mention(userID)} has been softbanned for ${md.bold(reason)}.`);
+		});
+	}
 	
+	static setLockdownMode(client, server, mode = false) {
+		return this.modify(client, server, s => {
+			s.lockdown = mode;
+			if (s.lockdown) {
+				// observe the rate at which users post messages
+				s.observer = {};
+			} else {
+				delete s.observer;
+			}
+		});
+	}
 	static setActions(client, server, actions) {
 		return this.modify(client, server, s => {
 			s.setActions(actions);
@@ -419,10 +455,10 @@ class Moderation {
 			return 'Set to ' + md.bold(level);
 		});
 	}
-	static setSpamLevel(client, server, level) {
+	static setSpamFilters(client, server, filters) {
 		return this.modify(client, server, s => {
-			level = s.setSpamLevel(level);
-			return 'Set to ' + md.bold(level);
+			s.setsSpamFilters(filters);
+			return 'Set to ' + md.bold(filters.join(' + ')||'none');
 		});
 	}
 	

@@ -33,8 +33,8 @@ class FilePromise {
 	static getDir(filepath) {
 		return path.dirname(filepath);
 	}
-	static getName(filepath) {
-		return path.basename(filepath);
+	static getName(filepath, ext) {
+		return path.basename(filepath, ext);
 	}
 	static getExtension(filepath) {
 		return path.extname(filepath);
@@ -283,7 +283,7 @@ class FilePromise {
 		@arg {String} filepath
 	*/
 	static readDirSync(filepath) {
-		filepath = this.resolve(path);
+		filepath = this.resolve(filepath);
 		return fs.readdirSync(filepath);
 	}
 }

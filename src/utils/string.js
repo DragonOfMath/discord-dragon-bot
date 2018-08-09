@@ -116,6 +116,37 @@ function md5(text) {
 	return text.match(/[0-9a-f]{32}/i);
 }
 
+/**
+	Convert text such as "Sample Text!" into keywords = ["sample","text"]
+*/
+function keywordify(text) {
+	return text.toLowerCase().match(/[\w\d&]+/g);
+}
+/**
+	Perform keyword search using an array of items and a query, returning the results by relevancy
+*/
+function kwsearch(items, query, iteratee = x => x) {
+	query = keywordify(query);
+	return items.map(item => {
+		let score;
+		if (query.length) {
+			let text = iteratee(item);
+			let kwds = typeof(text) == 'string' ? keywordify(text) : text;
+			score = query.reduce((s,q) => {
+				if (kwds.includes(q)) s += q.length;
+				return s;
+			}, 0);
+		} else {
+			score = 1;
+		}
+		return {score,item};
+	})
+	// remove items with no matches at all
+	.filter(m => m.score)
+	// order by relevancy score
+	.sort((m1,m2) => m1.score > m2.score ? -1 : m2.score > m1.score ? 1 : 0);
+}
+
 module.exports = {
 	strcmp,
 	substrcmp,
@@ -129,5 +160,7 @@ module.exports = {
 	unescapeHTMLEntities,
 	isUpperCase,
 	isLowerCase,
-	md5
+	md5,
+	keywordify,
+	kwsearch
 };

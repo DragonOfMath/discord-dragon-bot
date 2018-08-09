@@ -269,7 +269,7 @@ function applyWatermark(watermarkName, image, text = 'BOTTOM TEXT') {
 module.exports = {
 	'image': {
 		aliases: ['img', 'picture', 'pic'],
-		category: 'Fun',
+		category: 'Image',
 		title: 'Image Post-Processing',
 		info: 'A variety of image-manipulating commands.',
 		permissions: 'inclusive',
@@ -756,7 +756,7 @@ module.exports = {
 	},
 	'meme': {
 		aliases: ['maymay','dankify'],
-		category: 'Fun',
+		category: 'Image',
 		title: 'Meme Generator',
 		info: 'Interface for creating memes.',
 		permissions: 'inclusive',
@@ -896,7 +896,7 @@ module.exports = {
 		}
 	},
 	'qr': {
-		category: 'Fun',
+		category: 'Image',
 		title: 'QR Code',
 		info: 'https://en.wikipedia.org/wiki/QR_code',
 		permissions: 'inclusive',

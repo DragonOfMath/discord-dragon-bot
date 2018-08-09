@@ -1,3 +1,5 @@
+const DiscordUtils = require('./DiscordUtils');
+
 class Context {
 	constructor(client, userID, channelID, message, WSMessage) {
 		if (typeof(client) !== 'object') {
@@ -43,19 +45,29 @@ class Context {
 		
 		// if the WebSocket message is passed, it contains the correct message ID
 		if (typeof(message) === 'string') {
-			this.messageID = WSMessage ? WSMessage.d.id : this.channel.last_message_id;
-			this.message   = message;
+			this.message     = message;
+			this.messageID   = WSMessage ? WSMessage.d.id : this.channel.last_message_id;
+			this.attachments = WSMessage ? WSMessage.d.attachments : [];
+			this.embeds      = WSMessage ? WSMessage.d.embeds : [];
+			this.mentions    = WSMessage ? WSMessage.d.mentions : [];
+			this.messageObj  = WSMessage || null;
 		} else if (typeof(message) === 'object') {
-			this.messageID = message.id;
-			this.message   = message.content;
+			this.message     = message.content;
+			this.messageID   = message.id;
+			this.attachments = message.attachments;
+			this.embeds      = message.embeds;
+			this.mentions    = message.mentions;
+			this.messageObj  = message;
 		}
+		// calculate the time the message was made
+		this.timestamp = DiscordUtils.getCreationTime(this.messageID);
 	}
 	debug() {
 		let debugInfo = '';
-		debugInfo += 'Server: ' + (this.server ? (this.server.name + ` (${this.serverID})`) : 'N/A') + '\n';
+		debugInfo += 'Server: '  + (this.server ? (this.server.name + ` (${this.serverID})`) : 'N/A') + '\n';
 		debugInfo += 'Channel: ' + (this.isDM ? 'DM' : this.channel.name) + ` (${this.channelID})` + '\n';
-		debugInfo += 'User: ' + this.user.name + ` (${this.userID})` + '\n';
-		debugInfo += 'Input: ' + this.message;
+		debugInfo += 'User: '    + this.user.name + ` (${this.userID})` + '\n';
+		debugInfo += 'Input: '   + this.message;
 		return debugInfo;
 	}
 }

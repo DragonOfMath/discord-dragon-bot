@@ -326,4 +326,8 @@ Date.getTimezoneTimeString = function (timezone, time = Date.now()) {
 	}
 };
 
+Date.prototype.difference = function (date = 0) {
+	return this.getTime() - (date instanceof Date ? date.getTime() : date);
+};
+
 module.exports = {Date};

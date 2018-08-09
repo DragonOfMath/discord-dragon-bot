@@ -1,5 +1,5 @@
 const Discord = require('discord.io');
-const Promise = require('bluebird');
+const Promise = require('bluebird'); // needed for Promise.delay()
 
 const {DiscordEmbed} = require('./Utils');
 

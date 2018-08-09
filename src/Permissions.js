@@ -178,7 +178,7 @@ class Permissions {
 				return Grant.granted();
 			}
 			if (context.server && context.member) {
-				if (Permissions.memberHasPermission(context.server, context.member, Constants.PRIVILEGED_PERMISSION)) {
+				if (Permissions.memberHasPrivilege(context.server, context.member)) {
 					return Grant.granted();
 				} else {
 					return Grant.denied(`${md.mention(context.user)} does not have ${Constants.PRIVILEGED_PERMISSION}.`);
@@ -414,6 +414,9 @@ class Permissions {
 		if (member.id == server.owner_id) return true;
 		var bitValue = this.getPermissionValue(flag);
 		return member.roles.some(r => server.roles[r].permissions & bitValue === bitValue);
+	}
+	static memberHasPrivilege(server, member) {
+		return this.memberHasPermission(server, member, Constants.PRIVILEGED_PERMISSION);
 	}
 }
 

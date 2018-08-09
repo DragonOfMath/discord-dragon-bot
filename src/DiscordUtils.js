@@ -1,32 +1,6 @@
+const Constants = require('./Constants').Discord;
 const {Markdown:md,strcmp,DiscordEmbed,truncate,Base64} = require('./Utils');
 const crypto = require('crypto');
-
-const CHANNEL_TYPES = [
-	'Text',
-	'DM',
-	'Voice',
-	'Group DM',
-	'Category'
-];
-const MESSAGE_TYPES = [
-	'Default',
-	'Add Recipient',
-	'Remove Recipient',
-	'Call',
-	'Channel Name Change',
-	'Channel Icon Change',
-	'Channel Pinned Message',
-	'Guild Member Joined'
-];
-const VERIFICATION_LEVELS = [
-	'None',
-	'Verified Email',
-	'Registered for at least 5 minutes',
-	'(╯°□°）╯︵ ┻━┻ - Member of the server for longer than 10 minutes',
-	'┻━┻ミヽ(ಠ益ಠ)ﾉ彡┻━┻ - Verified phone number'
-];
-const DISCORD_EPOCH = 1420070400000;
-const TOKEN_EPOCH   = 1293840000;
 
 function yes(x) {
 	return x ? 'Yes' : 'No';
@@ -50,7 +24,7 @@ class DiscordUtils {
 		}
 	}
 	static getCreationTime(id) {
-		return new Date((+id >> 22) + DISCORD_EPOCH);
+		return new Date((+id >> 22) + Constants.EPOCH);
 	}
 	static find(o,a,x) {
 		for (var id in o) {
@@ -185,12 +159,12 @@ class DiscordUtils {
 		}
 		embed.description = truncate(embed.description, 2000);
 		
-		switch (MESSAGE_TYPES[message.type]) {
+		switch (Constants.MESSAGE_TYPES[message.type]) {
 			case 'Default':
 				embed.title = md.atUser(message.author);
 				break;
 			default:
-				embed.title = MESSAGE_TYPES[message.type];
+				embed.title = Constants.MESSAGE_TYPES[message.type];
 				break;
 		}
 		
@@ -223,7 +197,7 @@ class DiscordUtils {
 				},
 				{
 					name: ':speech_balloon: Type',
-					value: 	CHANNEL_TYPES[channel.type],
+					value: 	Constants.CHANNEL_TYPES[channel.type],
 					inline: true
 				},
 				{
@@ -277,7 +251,7 @@ class DiscordUtils {
 				},
 				{
 					name: ':white_check_mark: Verification',
-					value: VERIFICATION_LEVELS[server.verification_level],
+					value: Constants.VERIFICATION_LEVELS[server.verification_level],
 					inline: true
 				},
 				{
@@ -442,14 +416,14 @@ class DiscordUtils {
 		let [id,time,hmac] = token.split('.');
 		id   = Base64.from(id); // snowflake ID of user
 		time = Base64.from(time, 'number'); // time of token generation
-		time = new Date((time + TOKEN_EPOCH) * 1000); // unix time
+		time = new Date((time + Constants.TOKEN_EPOCH) * 1000); // unix time
 		return {id, time, hmac};
 	}
 	/**
 		Create a fake Discord token with valid structure
 	*/
 	static generateFakeToken(id = '123456789012345') {
-		let time = Math.floor(Date.now() / 1000) - TOKEN_EPOCH;
+		let time = Math.floor(Date.now() / 1000) - Constants.TOKEN_EPOCH;
 		let hmac = crypto.createHmac('sha256', id);
 		hmac.update(time.toString(16));
 		hmac.update('poop');

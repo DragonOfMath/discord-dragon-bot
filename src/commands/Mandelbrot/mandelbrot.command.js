@@ -28,7 +28,7 @@ function toID(x) {
 module.exports = {
 	'mset': {
 		aliases: ['mandelbrot','fractal'],
-		category: 'Fun',
+		category: 'Image',
 		title: 'Mandelbrot Viewer',
 		info: 'Renders the current view of the Mandelbrot Set. Optionally, you may specify the width and height of the render (max 2000x2000).',
 		parameters: ['[width]','[height]'],
@@ -354,7 +354,7 @@ module.exports = {
 	},
 	'mshader': {
 		aliases: ['mstyle','mcolors', 'mcolor'],
-		category: 'Fun',
+		category: 'Image',
 		title: 'Mandelbrot Shader',
 		info: 'Displays the shader settings for rendering the Mandelbrot Set.',
 		permissions: 'inclusive',

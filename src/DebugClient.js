@@ -1,4 +1,4 @@
-const PromiseClient = require('./PromiseClient');
+const Client        = require('./PromiseClient');
 const Logger        = require('./LoggerMixin');
 const FilePromise   = require('./FilePromise');
 const {decircularize} = require('./Utils');
@@ -6,9 +6,9 @@ const {decircularize} = require('./Utils');
 /**
 	Debug Client helps log useful debugging information
 */
-class DebugClient extends Logger(PromiseClient) {
-	constructor(token, autorun) {
-		super(token, autorun);
+class DebugClient extends Logger(Client) {
+	constructor() {
+		super(...arguments);
 		this.STARTED = this.milliseconds;
 		this._tryReconnect = false;
 		this._suspend      = false;
@@ -16,7 +16,7 @@ class DebugClient extends Logger(PromiseClient) {
 		this._ignoreBots   = true;
 		this._handleErrors = 1; // send to DMs
 		
-		//this.on('log',        this.info);
+		//this.on('log',        this.log);
 		//this.on('ready',      this._connected);
 		this.on('disconnect', this._disconnected);
 	}
@@ -31,9 +31,17 @@ class DebugClient extends Logger(PromiseClient) {
 		return process.memoryUsage();
 	}
 	
-	ping(channelID) {
+	get hb() {
+		return this.internals._lastHB;
+	}
+	get ping() {
+		return this.internals.ping;
+	}
+	latency(channelID) {
 		let ref = this.milliseconds;
-		return this.getLastMessage(channelID).catch(console.error).then(() => this.milliseconds - ref);
+		return this.getLastMessage(channelID)
+		.catch(() => {})
+		.then(() => this.milliseconds - ref);
 	}
 	
 	stop() {

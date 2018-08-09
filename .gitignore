@@ -5,6 +5,7 @@ debug/
 src/deprecated/
 src/static/
 src/commands/WIP/
+*.lnk
 *.log
 *.bat
 *.txt

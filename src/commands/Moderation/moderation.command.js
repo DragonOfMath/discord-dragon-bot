@@ -58,7 +58,7 @@ module.exports = {
 		aliases: ['record','collect'],
 		category: 'Moderation',
 		title: 'Zip Channel History',
-		info: 'Collect channel history up to a number of messages, then sends you a .zip file of the contents if possible. Maximum of 10000 messages, default of 1000. Format can be json or text, default is json. Flags are for filtering messages.',
+		info: 'Collect channel history (for securing evidence) up to a number of messages, then sends you a .zip file of the contents if possible. Maximum of 10000 messages to scan, default of 1000. Format can be json or text, default is json. Flags are for filtering messages.',
 		parameters: ['[channel]', '[limit]', '[format]', '[...flags]'],
 		permissions: 'privileged',
 		fn({client, server, channelID, userID, args}) {
@@ -172,6 +172,24 @@ module.exports = {
 					return Moderation.unban(client, server, user, userID);
 				}
 			},
+			'softban': {
+				title: 'Moderation | Softban',
+				info: 'Ban and then unban a user.',
+				parameters: ['user','...reason'],
+				fn({client, args, server, userID}) {
+					let [user, ...reason] = args;
+					reason = reason.join(' ');
+					return Moderation.softban(client, server, user, userID, reason);
+				}
+			},
+			'lockdown': {
+				title: 'Moderation | Lockdown',
+				info: 'In the event of a raid/attack, lockdown mode will delete recent invites, set the server to maximum verification level (TODO: monkey-patch this in discord.io?), and observe new members. Should any user spam messages in a short amount of time or mention anyone, they will be kicked immediately.',
+				parameters: ['<on|off>'],
+				fn({client, args, server, userID}) {
+					return Moderation.setLockdownMode(client, server, args[0] == 'on');
+				}
+			},
 			'actions': {
 				title: 'Moderation | Automod Actions',
 				info: 'Specify what actions the bot should take when it finds an inappropriate message: `remind` to reply to the user, `delete` to delete the message, and `strike` to add a strike to the user.',
@@ -191,9 +209,9 @@ module.exports = {
 			'spam': {
 				title: 'Moderation | Spam Level',
 				info: 'Allow the bot the filter spam messages, including all caps, repetitive letters, global mentions, and untrusted links.',
-				parameters: ['<0|none|1|low|2|medium|3|high>'],
+				parameters: ['[...<mentions|links|letters|caps|emojis>]'],
 				fn({client, args, server}) {
-					return Moderation.setSpamLevel(client, server, args[0]);
+					return Moderation.setSpamLevel(client, server, args);
 				}
 			},
 			'urls': {

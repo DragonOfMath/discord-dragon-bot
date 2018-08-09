@@ -1,4 +1,4 @@
-const DebugClient   = require('./DebugClient');
+const Client        = require('./DJClient');
 const Utils         = require('./Utils');
 const Database      = require('./Database');
 const Commands      = require('./Commands');
@@ -10,10 +10,11 @@ const Context       = require('./Context');
 const Parser        = require('./Parser');
 const Handler       = require('./Handler');
 const Moderation    = require('./Moderation');
+const DiscordUtils  = require('./DiscordUtils');
 
 const {Markdown:md} = Utils;
 
-class DragonBot extends DebugClient {
+class DragonBot extends Client {
 	/**
 		DragonBot constructor
 		@arg {Object}    input
@@ -21,8 +22,8 @@ class DragonBot extends DebugClient {
 		@arg {Snowflake} input.ownerID     - my user ID
 		@arg {Number}    input.permissions - calculated permissions number
 	*/
-	constructor({token,ownerID,source,permissions}) {
-		super(token, false);
+	constructor({token,ownerID,source,permissions,autorun=false}) {
+		super(token, autorun);
 		this.ownerID     = ownerID;
 		this.PERMISSIONS = permissions;
 		this.PREFIX      = Constants.Symbols.PREFIX;
@@ -173,6 +174,7 @@ class DragonBot extends DebugClient {
 			channelID:   context.channelID,
 			serverID:    context.serverID,
 			user:        md.bold(context.user ? context.user.username : '?'),
+			nick:        md.bold(context.member ? context.member.nick || context.user.username : '?'),
 			mention:     md.mention(context.user ? context.user.id : '@?'),
 			channelname: md.bold(context.channel ? context.channel.name : '?'),
 			channel:     md.channel(context.channel ? context.channel.id : '#?'),
@@ -190,6 +192,8 @@ class DragonBot extends DebugClient {
 			source:      md.bold(this.SOURCE_CODE),
 			prefix:      md.code(this.PREFIX),
 			random:      String(Math.random()),
+			avatar:      DiscordUtils.getAvatarURL(context.user),
+			icon:        DiscordUtils.getIconURL(context.server),
 			// special characters
 			lb: '{',
 			rb: '}',
@@ -215,11 +219,16 @@ class DragonBot extends DebugClient {
 			this.log(md.atUser(user),'has joined',server.name);
 			
 			// moderate incoming users to prevent raids
-			let bannedName = Moderation.get(this, server).checkUser(user);
+			let M = Moderation.get(this, server);
+			let bannedName = M.checkUser(user);
 			if (bannedName) {
-				return Moderation.ban(this, server, user.id, this.id, `Auto-banned for ${md.code(bannedName)} in name.`)
+				return Moderation.ban(this, server, user.id, this.id, 'Name contains ' + md.code(bannedName))
 				.then(msg => this.notice(msg))
 				.catch(err => this.error(err));
+			}
+			if (M.lockdown) {
+				// skip welcome messages while in lockdown mode
+				return;
 			}
 			
 			// generate a custom welcome message for the user
@@ -249,6 +258,12 @@ class DragonBot extends DebugClient {
 				user = this.users[data.user.id];
 			
 			this.log(md.atUser(user),'has left',server.name);
+			
+			let M = Moderation.get(this, server);
+			if (M.lockdown) {
+				// skip goodbye messages while in lockdown mode
+				return;
+			}
 			
 			var welcome = this.database.get('servers').get(serverID).welcome;
 			if (!welcome) return;
