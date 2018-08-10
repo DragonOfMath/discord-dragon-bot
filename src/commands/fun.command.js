@@ -235,23 +235,39 @@ module.exports = {
 		aliases: ['messageinabottle','miab'],
 		category: 'Fun',
 		title: ':ocean: :newspaper2:',
-		info: 'Send an anonymous message in a bottle to a random online user on the server.',
-		parameters: ['...message'],
+		info: 'Send an anonymous message in a bottle to a random online user on the server. Or opt-in/opt-out from receiving bottles. (You automatically opt-in when sending)',
+		parameters: ['[opt-in|opt-out|...message]'],
 		permissions: 'inclusive',
 		fn({client, server, user, arg}) {
-			setTimeout(() => {
-				let onlineUsers = DiscordUtils.getUsersByStatus(server, 'online');
-				let recipient = random(onlineUsers);
-				client.log('Message in a bottle sent by',md.atUser(user),'has been received by',md.atUser(recipient));
-				let message = ':ocean: :newspaper2: | You got a message in a bottle! It reads... ' + md.code(arg);
-				client.send(recipient.id, message)
-				.catch(err => client.error(err));
-			}, random(5000, 60000));
-			return 'Message in a bottle sent!';
+			let userTable = client.database.get('users');
+			if (arg === 'opt-out') {
+				userTable.modify(user.id, u => {return u.miab = false, u}).save();
+				return 'You opted-out of receiving bottles from strangers.';
+			} else {
+				userTable.modify(user.id, u => {return u.miab = true, u}).save();
+				if (arg === 'opt-in') {
+					return 'You opted-in to receive bottles from strangers.';
+				}
+				setTimeout(() => {
+					let onlineUsers = DiscordUtils.getUsersByStatus(server, 'online').filter(u => !u.bot && userTable.get(u.id).miab);
+					let recipient = random(onlineUsers) || user;
+					client.log('Message in a bottle sent by',md.atUser(user),'has been received by',md.atUser(recipient));
+					let message;
+					if (recipient.id == user.id) {
+						message = 'Your message in a bottle found its way back to you... ';
+					} else {
+						message = 'You got a message in a bottle! It reads... ';
+					}
+					client.send(recipient.id, message, {title: ':ocean: :newspaper2:', description: arg})
+					.catch(err => client.error(err));
+				}, random(5000, 60000));
+				return 'Message in a bottle sent!';
+			}
 		}
 	},
 	'xkcd': {
 		category: 'Fun',
+		title: 'XKCD Comic',
 		info: 'Shows you a random XKCD comic.',
 		parameters: ['[number]'],
 		permissions: 'inclusive',

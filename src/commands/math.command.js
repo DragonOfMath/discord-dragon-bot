@@ -2,88 +2,7 @@
 	Command file for math-related commands.
 */
 
-const {Markdown:md} = require('../Utils');
-
-function summation(a,b,f) {
-	let sum = 0;
-	for (let x = a; x <= b; x++) {
-		sum += f(x);
-	}
-	return sum;
-}
-function integration(a,b,f,dx = 0.01) {
-	let sum = 0;
-	for (let x = a; x <=b; x += dx) {
-		sum += f(x) * dx;
-	}
-	return sum;
-}
-function product(a,b,f) {
-	let prod = 1;
-	for (let x = a; x <= b; x++) {
-		prod *= f(x);
-	}
-	return prod;
-}
-function factorial(x) {
-	let f = 1;
-	if (x) while (f *= x, --x);
-	return f;
-}
-function factorize(x) {
-	let f = [];
-	let p = 2;
-	while (x > 1) {
-		if (x % p == 0) {
-			f.push(p);
-			x /= p;
-		} else {
-			p++;
-		}
-	}
-	return f;
-}
-function prime(x) {
-	if (x % 2 == 0) {
-		return false;
-	}
-	var root = Math.ceil(Math.sqrt(x));
-	for (var n = 3; n < root; n += 2) {
-		if (x % n == 0) {
-			return false;
-		}
-	}
-	return true;
-}
-function primesUpTo(x) {
-	for (var n = 3, primes = [2], factor; n <= x; n += 2) {
-		if (primes.every(p => n % p)) {
-			primes.push(n);
-		}
-	}
-	return primes;
-}
-function gcd(a,b) {
-	// Euclidean algorithm
-	while (a != b) {
-		if (a > b)
-			a -= b;
-		else
-			b -= a;
-	}
-	return a;
-}
-function pascalsTriangle(N) {
-	var rows = [[1]];
-	for (var n = 0, k, lastRow, row; n < N; ++n) {
-		lastRow = rows[n];
-		for (k = 0, row = []; k < lastRow.length + 1; ++k) {
-			row.push((lastRow[k-1]|0) + (lastRow[k]|0));
-		}
-		rows.push(row);
-	}
-	return rows;
-}
+const {Markdown:md,Math,pascalsTriangle} = require('../Utils');
 
 module.exports = {
 	'math': {
@@ -108,7 +27,7 @@ module.exports = {
 					}
 					funcstr = funcstr.join(' ');
 					let step = (from % 1 > 0 || to % 1 > 0) ? 0.01 : 1;
-					let sum = integration(from, to, new Function('x',`return ${funcstr}`), step);
+					let sum = Math.integration(from, to, new Function('x',`return ${funcstr}`), step);
 					return `The sum of f(x) = ${funcstr} from ${from} to ${to} is **${sum}**.`;
 				}
 			},
@@ -131,7 +50,7 @@ module.exports = {
 						[to, from] = [from, to];
 					}
 					functstr = funcstr.join(' ');
-					let prod = product(from, to, new Function('x',`return ${funcstr}`));
+					let prod = Math.product(from, to, new Function('x',`return ${funcstr}`));
 					return `The product of f(x) = ${funcstr} from ${from} to ${to} is **${prod}**.`;
 				}
 			},
@@ -152,7 +71,7 @@ module.exports = {
 						throw 'Number must be an integer. I know, you want to see if the gamma function is implemented, well it\'s not.';
 					}
 					
-					let f = factorial(n);
+					let f = Math.factorial(n);
 					return `${n}! = **${f}**.`;
 				}
 			},
@@ -170,7 +89,7 @@ module.exports = {
 					if (a < 4) {
 						throw 'Pick a higher number please.';
 					}
-					let factors = factorize(a);
+					let factors = Math.factorize(a);
 					if (factors.length > 0) {
 						return `Factors of ${a}: ${factors.join(' * ')}`;
 					} else {
@@ -195,7 +114,7 @@ module.exports = {
 					if (a % 2 == 0) {
 						return `${a} is **an even number**.`;
 					}
-					if (prime(a)) {
+					if (Math.prime(a)) {
 						return `${a} is **prime**.`;
 					} else {
 						return `${a} is **not prime**.`;
@@ -214,8 +133,40 @@ module.exports = {
 					if (isNaN(a) || isNaN(b)) {
 						throw 'Arguments must be numeric.';
 					}
-					let g = gcd(a,b);
-					return `The GCD of both ${a} and ${b} is **${g}**.`;
+					let g = Math.gcd(a,b);
+					return `The GCD of both ${a} and ${b} is ${md.bold(g)}.`;
+				}
+			},
+			'pow': {
+				aliases: ['power','powerof','^','exp','exponent','exponentiation'],
+				title: 'Math:1234: | Exponentiation',
+				info: 'Calculate a base number raised to an exponent. Default is the square n = 2.',
+				parameters: ['base','[exponent]'],
+				fn({args}) {
+					let [base,exp=2] = args;
+					base = Number(base);
+					exp = Number(exp);
+					if (isNaN(base) || isNaN(exp)) {
+						throw 'Arguments must be numeric.';
+					}
+					let pow = Math.pow(base,exp);
+					return `${base}^${exp} = ${md.bold(pow)}.`;
+				}
+			},
+			'root': {
+				aliases: ['sqrt','cbrt','nthroot','nroot'],
+				title: 'Math:1234: | Root',
+				info: 'Calculate the nth root of a number. Default is the square root n = 2.',
+				parameters: ['base','[n]'],
+				fn({args}) {
+					let [base,n=2] = args;
+					base = Number(base);
+					n = Number(n);
+					if (isNaN(base) || isNaN(n)) {
+						throw 'Arguments must be numeric.';
+					}
+					let root = Math.root(base,n);
+					return `The ${n}th root of ${base} is ${md.bold(root)}.`;
 				}
 			},
 			'fraction': {
@@ -237,7 +188,7 @@ module.exports = {
 					denominator = Math.round(denominator);
 					
 					// find the greatest common factor
-					let factor = gcd(numerator,denominator);
+					let factor = Math.gcd(numerator,denominator);
 					
 					// divide the parts by their greatest common factor
 					numerator   /= factor;

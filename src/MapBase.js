@@ -38,7 +38,7 @@ class MapBase {
 			throw new Error(`${this.constructor.name}.${key} cannot be overridden.`);
 		}
 		if (typeof(value) === 'undefined') {
-			throw new TypeError(`value is undefined`);
+			throw new TypeError(`value of ${key} is undefined`);
 		}
 		this[key] = value;
 		return this;
@@ -136,7 +136,7 @@ class MapBase {
 			throw new TypeError('key must be a string');
 		}
 		if (typeof(value) === 'undefined') {
-			throw new TypeError('value is undefined');
+			throw new TypeError(`value of ${key} is undefined`);
 		}
 		Object.defineProperty(this, key, {
 			value,

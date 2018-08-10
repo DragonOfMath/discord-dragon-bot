@@ -1,4 +1,4 @@
-const {quote,kwsearch} = require('../Utils');
+const {quote,kwsearch,paginate} = require('../Utils');
 
 /*
 	{
@@ -31,11 +31,11 @@ module.exports = {
 				if (matches.length == 1) {
 					// if there is exactly one match, display this alone
 					let doc = matches[0].item;
-					return md.bold(doc.title) + '\n' + doc.url;
+					return md.bold(doc.topic) + '\n' + doc.url;
 				}
-				let embed = paginate(matches, 1, 20, match => {
+				let embed = paginate(matches, 1, 20, (matches, i, match) => {
 					return {
-						name: `[+${match.score}] ${match.item.title}`,
+						name: `[+${match.score}] ${match.item.topic}`,
 						value: match.item.url
 					};
 				});

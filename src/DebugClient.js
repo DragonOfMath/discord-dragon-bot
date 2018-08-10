@@ -10,11 +10,15 @@ class DebugClient extends Logger(Client) {
 	constructor() {
 		super(...arguments);
 		this.STARTED = this.milliseconds;
+		
 		this._tryReconnect = false;
 		this._suspend      = false;
 		this._ignoreUsers  = true;
 		this._ignoreBots   = true;
 		this._handleErrors = 1; // send to DMs
+		
+		this.MAX_RECONNECT_TRIES = 3;
+		this._reconnectTries = 0;
 		
 		//this.on('log',        this.log);
 		//this.on('ready',      this._connected);
@@ -49,6 +53,7 @@ class DebugClient extends Logger(Client) {
 		this._suspend      = false;
 		this._ignoreUsers  = true;
 		this._ignoreBots   = true;
+		this._reconnectTries = 0;
 	}
 	suspend(time) {
 		this._tryReconnect = false;
@@ -59,9 +64,10 @@ class DebugClient extends Logger(Client) {
 	_connected() {
 		this.info('Client connected.');
 		this._ignoreUsers  = false;
-		this._ignoreBots   = false;
+		//this._ignoreBots   = false;
 		this._tryReconnect = true;
 		this._suspend      = false;
+		this._reconnectTries = 0;
 	}
 	_disconnected() {
 		if (this._suspend) {
@@ -70,12 +76,31 @@ class DebugClient extends Logger(Client) {
 			if (arguments.length) {
 				console.log(...arguments);
 			}
-			this.warn('Client lost connection. Reconnecting...');
-			this.connect();
+			if (this._reconnectTries < this.MAX_RECONNECT_TRIES) {
+				this.warn('Reconnecting...');
+				this._reconnectTries++;
+				this.connect();
+			} else {
+				this.error('Client can\'t connect due to a possible outage.');
+				this._reconnectTries--;
+				this.suspend(60000);
+			}
 		} else {
 			this.info('Client stopped connection.');
 			process.exit(0);
 		}
+	}
+	
+	/**
+		Send a message that expires after a set amount of time.
+	*/
+	sendTemp(channelID, message, embed, timer) {
+		return this.send(channelID, message, embed)
+		.then(m => {
+			let messageID = m.id;
+			return this.wait(timer)
+			.then(() => this.deleteMessage({channelID, messageID}));
+		});
 	}
 	
 	snapshot(dir) {

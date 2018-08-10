@@ -14,14 +14,19 @@ function ID(id) {
 
 class DiscordUtils {
 	static getIconURL(server) {
-		return `https://cdn.discordapp.com/icons/${server.id}/${server.icon}.png`;
+		return `https://cdn.discordapp.com/icons/${server.id}/${server.icon}.png?size=512`;
+	}
+	static getSplashURL(server) {
+		return `https://cdn.discordapp.com/splashes/${server.id}/${server.splash}.png`;
 	}
 	static getAvatarURL(user) {
-		if (user.avatar.startsWith('a_')) {
-			return `https://cdn.discordapp.com/avatars/${user.id}/${user.avatar}.gif`;
-		} else {
-			return `https://cdn.discordapp.com/avatars/${user.id}/${user.avatar}.png`;
-		}
+		return `https://cdn.discordapp.com/avatars/${user.id}/${user.avatar}.${user.avatar.startsWith('a_')?'gif':'png'}?size=512`;
+	}
+	static getDefaultAvatarURL(user) {
+		return `https://cdn.discordapp.com/embed/avatars/${user.discriminator%5}.png`;
+	}
+	static getEmojiURL(emoji) {
+		return `https://cdn.discordapp.com/emojis/${emoji.id}.${emoji.animated?'gif':'png'}?v=1`;
 	}
 	static getCreationTime(id) {
 		return new Date((+id >> 22) + Constants.EPOCH);
@@ -428,7 +433,7 @@ class DiscordUtils {
 		hmac.update(time.toString(16));
 		hmac.update('poop');
 		return [Base64.to(String(id)), Base64.to(time), hmac.digest('base64')].join('.')
-		.replace(/+/g,'-').replace(/\//g,'_').replace(/=/g,'');
+		.replace(/\+/g,'-').replace(/\//g,'_').replace(/=/g,'');
 	}
 }
 

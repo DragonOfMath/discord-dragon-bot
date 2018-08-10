@@ -1,7 +1,7 @@
 const fs = require('fs');
 const {random} = require('./Utils');
 
-class Song {
+class Track {
 	constructor(url, name) {
 		this.url  = url;
 		this.name = name || url.split('/').pop();
@@ -10,7 +10,7 @@ class Song {
 		return '--:--';
 	}
 	toString() {
-		return this.name;
+		return this.name.replace(/\.mp3$/,'');
 	}
 	read() {
 		return fs.createReadStream(this.url);
@@ -22,11 +22,10 @@ class AudioPlayer {
 		// TODO: figure out how to adjust play speed?
 		//this.playSpeed = 1;
 		
-		this.songs     = [];
-		this.index     = 0;
-		this.loopSong  = false;
-		this.loopSongs = false;
-		//this.mute      = false;
+		this.playlist = [];
+		this.index    = 0;
+		this.loopTrack    = false;
+		this.loopPlaylist = false;
 		
 		this.vc             = null;
 		this.readableStream = null;
@@ -40,10 +39,9 @@ class AudioPlayer {
 		if (vc.type != 2) { // 2 = Voice
 			throw new Error(`${vc.name} (${vc.id}) is not a voice channel.`);
 		}
-		this.vc        = vc;
-		this.loopSong  = false;
-		this.loopSongs = false;
-		//this.mute      = false;
+		this.vc = vc;
+		this.loopTrack    = false;
+		this.loopPlaylist = false;
 		
 		return client.joinVoiceChannel(this.vc.id)
 		.then(events => client.getAudioContext(this.vc.id))
@@ -84,24 +82,24 @@ class AudioPlayer {
 		return this.vc.members;
 	}
 	get current() {
-		return this.songs[this.index];
+		return this.playlist[this.index];
 	}
 	get nowPlaying() {
 		return this.current ? this.current.toString() : '[silence]';
 	}
 	
 	clear() {
-		for (let s in this.songs) {
-			delete this.songs[s];
+		for (let s in this.playlist) {
+			delete this.playlist[s];
 		}
-		this.songs.length = 0;
+		this.playlist.length = 0;
 	}
 	add(song) {
 		if (typeof(song) === 'string') {
-			song = new Song(song);
+			song = new Track(song);
 		}
-		this.songs.push(song);
-		if (this.songs.length == 1) {
+		this.playlist.push(song);
+		if (this.playlist.length == 1) {
 			// play music right away
 			this.play();
 		}
@@ -109,14 +107,14 @@ class AudioPlayer {
 	}
 	remove(song) {
 		if (typeof(song) === 'string') {
-			song = this.songs.find(s => s.name.includes(song));
+			song = this.playlist.find(s => s.name.includes(song));
 		} else if (typeof(song) === 'number') {
-			song = this.songs[song];
+			song = this.playlist[song];
 		}
 		if (song) {
-			let idx = this.songs.indexof(idx);
+			let idx = this.playlist.indexof(idx);
 			if (idx > -1) {
-				this.songs.splice(idx, 1);
+				this.playlist.splice(idx, 1);
 				if (this.index >= idx) {
 					// maintain the current song index
 					if (this.index > idx) this.index--;
@@ -126,26 +124,26 @@ class AudioPlayer {
 				return song;
 			}
 		}
-		throw 'Song not found in playlist.';
+		throw 'Track not found in playlist.';
 	}
 	shuffle() {
-		for (let i = 0, j, temp; i < this.songs.length; i++) {
-			j = random(this.songs.length);
+		for (let i = 0, j, temp; i < this.playlist.length; i++) {
+			j = random(this.playlist.length);
 			if (i === this.index || j === this.index) continue;
-			temp = this.songs[i];
-			this.songs[i] = this.songs[j];
-			this.songs[j] = temp;
+			temp = this.playlist[i];
+			this.playlist[i] = this.playlist[j];
+			this.playlist[j] = temp;
 		}
 	}
 	play() {
-		let currentSong = this.current;
-		if (currentSong) {
+		let currentTrack = this.current;
+		if (currentTrack) {
 			if (this.readableStream) {
 				this._disconnect();
 			}
-			this._connect(currentSong.read());
+			this._connect(currentTrack.read());
 		}
-		return currentSong;
+		return currentTrack;
 	}
 	resume() {
 		if (this.paused) {
@@ -173,14 +171,14 @@ class AudioPlayer {
 		return this.play();
 	}
 	skip(skipBy = 1) {
-		skipBy = Math.max(1, Math.min(skipBy, this.songs.length));
+		skipBy = Math.max(1, Math.min(skipBy, this.playlist.length));
 		return this.next(skipBy);
 	}
-	next(s = this.loopSong ? 0 : 1) {
+	next(s = this.loopTrack ? 0 : 1) {
 		this.index = this.index + s;
-		if (this.loopSongs) {
-			this.index = this.index % this.songs.length;
-		} else if (this.index >= this.songs.length) {
+		if (this.loopPlaylist) {
+			this.index = this.index % this.playlist.length;
+		} else if (this.index >= this.playlist.length) {
 			this.clear();
 			return null;
 		}
@@ -207,6 +205,6 @@ class AudioPlayer {
 	}
 }
 
-AudioPlayer.Song = Song;
+AudioPlayer.Track = Track;
 
 module.exports = AudioPlayer;

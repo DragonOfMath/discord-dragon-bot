@@ -401,19 +401,11 @@ class DragonBot extends Client {
 				
 				return (handler.response.file ?
 					this.upload(handler.channelID, handler.response.file, handler.response.filename, handler.response.message) :
-					this.send(handler.channelID, handler.response.message, handler.response.embed))
-				// delete temporary messages after a set duration
-				.then(message => {
-					if (typeof(message) !== 'object') return;
 					// if the message expires, delete it after a set duration (only do this for short messages)
-					if (handler.response.expires && handler.response.message.length < 200) {
-						return this.wait(Constants.DragonBot.TEMP_MSG_LIFETIME)
-						.then(() => this.deleteMessage({
-							channelID: handler.channelID,
-							messageID: message.id
-						}));
-					}
-				});
+					handler.response.expires && handler.response.message.length < 200 ?
+					// delete temporary messages after a set duration
+					this.sendTemp(handler.channelID, handler.response.message, handler.response.embed, Constants.DragonBot.TEMP_MSG_LIFETIME) :
+					this.send(handler.channelID, handler.response.message, handler.response.embed));
 			})
 			// send an error message if applicable
 			.catch(e => {

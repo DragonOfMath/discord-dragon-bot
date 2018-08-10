@@ -126,6 +126,12 @@ Jimp.prototype.deepfry = function () {
 	.quality(random(1,20));
 };
 
+Jimp.prototype.pixelate = function (pixels = 32) {
+	var w = this.bitmap.width;
+	var h = this.bitmap.height;
+	return this.resize(pixels, Jimp.AUTO).resize(w, h, Jimp.RESIZE_NEAREST_NEIGHBOR);
+};
+
 Jimp.prototype.getAntiAliasedPixelColor = Jimp.prototype.getAAPixelColor = function (x,y) {
 	var x0 = x | 0,
 		y0 = y | 0,

@@ -20,7 +20,10 @@ const Spam = {
 	// bit 0 = 1
 	mentionspam(x) {
 		// using a global mention or 3+ single mentions
-		return /@[here|everyone]/.test(x) || x.match(/<@!?\d+>/g).length >= 3;
+		try {
+			let mentions = x.match(/<@!?\d+>/g) || [];
+			return /@[here|everyone]/.test(x) || mentions.length >= 3;
+		} catch (e) { return false; }
 	},
 	// bit 1 = 2
 	linkspam(x) {
@@ -39,7 +42,11 @@ const Spam = {
 	// bit 4 = 16
 	emojispam(x) {
 		// text must not contain more than 20 emojis
-		return x.length > 40 && (x.match(/<:\w+:\d+>/g).length + x.match(emojiRegex).length) > 20;
+		try {
+			let customEmojis  = x.match(/<:\w+:\d+>/g) || [];
+			let defaultEmojis = x.match(emojiRegex) || [];
+			return x.length > 40 && (customEmojis.length + defaultEmojis.length) > 20;
+		} catch (e) { return false; }
 	}
 };
 const SPAM_FILTERS = ['mentions','links','letters','caps','emojis'];

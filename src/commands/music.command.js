@@ -65,8 +65,8 @@ module.exports = {
 								return ':x: Couldn\'t find any matching songs in my library!';
 							}
 						}
-						if (stream.songs.length > 1) {
-							return ':inbox_tray: Added to playlist at ' + md.code(stream.songs.length) + ': ' + md.bold(song.toString());
+						if (stream.playlist.length > 1) {
+							return ':inbox_tray: Added to playlist at ' + md.code(stream.playlist.length) + ': ' + md.bold(song.toString());
 						} else if (stream.resume()) {
 							return ':arrow_forward: Resumed: ' + md.bold(stream.nowPlaying);
 						} else {
@@ -138,22 +138,22 @@ module.exports = {
 			'playlist': {
 				title: MUSIC_TITLE + ' | Playlist',
 				info: 'Get the current playlist.',
-				// display up to 10 songs in the current playlist
+				// display up to 10 playlist in the current playlist
 				fn({client, serverID, member, args}) {
 					if (!client.isStreaming(serverID)) {
 						throw 'I am not playing music!';
 					}
 					let stream = client.getStream(serverID);
-					if (stream.songs.length) {
+					if (stream.playlist.length) {
 						let embed = {
-							description: stream.songs.slice(0, 10).map((song,idx) => {
+							description: stream.playlist.slice(0, 10).map((song,idx) => {
 								let line = `${idx+1} | ${song.name} | ${song.duration}`;
-								if (idx == stream.idx) line = md.bold(line);
+								if (idx == stream.index) line = md.bold(line);
 								return line;
 							}).join('\n')
 						};
-						if (stream.songs.length > 10) {
-							embed.footer = {text: `+${stream.songs.length - 10} more`};
+						if (stream.playlist.length > 10) {
+							embed.footer = {text: `+${stream.playlist.length - 10} more`};
 						}
 						return embed;
 					} else {
@@ -230,10 +230,10 @@ module.exports = {
 					let stream = client.getStream(serverID);
 					if (args[0] == 'song') {
 						stream.loopSong = !stream.loopSong;
-						return ':repeat_one: Song looping is ' + md.bold(stream.loopSong ? 'enabled' : 'disabled');
+						return ':repeat_one: Song looping is ' + md.bold(stream.loopTrack ? 'enabled' : 'disabled');
 					} else {
 						stream.loopSongs = !stream.loopSongs;
-						return ':repeat: Playlist looping is ' + md.bold(stream.loopSongs ? 'enabled' : 'disabled');
+						return ':repeat: Playlist looping is ' + md.bold(stream.loopPlaylist ? 'enabled' : 'disabled');
 					}
 				}
 			},

@@ -57,6 +57,9 @@ module.exports = {
 		racism({client, userID}) {
 			return md.mention(userID) + ' please do not use racial/ethnic slurs.';
 		},
+		mentionspam({client, userID}) {
+			return md.mention(userID) + ' please do not mention more than 2 people.';
+		},
 		linkspam({client, userID}) {
 			return md.mention(userID) + ' please do not spam with untrusted links.';
 		},

@@ -27,7 +27,8 @@
 					"Top 10 Anime Betrayals",
 					"Top 10 Saddest Anime Deaths",
 					"Top 10 Strongest Anime Characters",
-					"Top 10 Photos Taken Seconds Before Disaster"
+					"Top 10 Photos Taken Seconds Before Disaster",
+					"Top 10 Unexplained Images"
 				]
 			}
 		]
@@ -259,7 +260,7 @@
 				"x": 320,
 				"y": 0,
 				"width": 320,
-				"height": 255,
+				"height": 256,
 				"size": 32,
 				"alignmentX": "center",
 				"alignmentY": "middle"
@@ -270,7 +271,7 @@
 				"x": 320,
 				"y": 261,
 				"width": 320,
-				"height": 285,
+				"height": 288,
 				"size": 32,
 				"alignmentX": "center",
 				"alignmentY": "middle"

@@ -198,7 +198,8 @@ class RedditSubscription extends Resource {
 		return Reddit.getSubreddit(this.toRedditString(), this.options)
 		.then(posts => {
 			// eliminate crossposting to avoid as many duplicates as possible
-			posts = posts.filter(post => !Reddit.isXpost(post));
+			// eliminate posts below a score threshold
+			posts = posts.filter(post => !Reddit.isXpost(post) && post.score > 0);
 			if (!posts.length) return undefined;
 			
 			// group the posts by subreddit

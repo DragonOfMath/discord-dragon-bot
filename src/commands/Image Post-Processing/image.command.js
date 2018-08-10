@@ -34,7 +34,7 @@ function processImage(client, channelID, args, filename, callback) {
 	.then(image => (image instanceof Jimp) ? getBufferAs(filename)(image) : image);
 }
 function getImage(client, channelID, args) {
-	var url = args[0];
+	var url = args[0], eid;
 	if (isImage(url)) {
 		args.splice(0,1);
 		return Promise.resolve(url);
@@ -58,12 +58,14 @@ function getBufferAs(filename) {
 	return (image) => (image.getBufferAsync(mime).then(file => ({file, filename})));
 }
 function isImage(img) {
-	return img instanceof Jimp || /^http.+\.(jpg|jpeg|png)$/i.test(img);
+	try {
+		return img instanceof Jimp || ['jpeg','jpg','png'].includes(img.split('.').pop().split('?')[0]);
+	} catch (e) { return false; }
 }
 
 function resolveCSV(args, min = 2, max = Infinity) {
 	let csv = args.join(' ').split(REGEX_CSV);
-	let items = csv.length ? csv : args;
+	let items = csv.length > 1 ? csv : args;
 	if (min && items.length < min) {
 		throw `Need at least ${min} text/image items!`;
 	}
@@ -488,6 +490,14 @@ module.exports = {
 					});
 				}
 			},
+			'pixelate': {
+				aliases: ['8bit','pixelize','pixel'],
+				info: 'Pixelate an image. Default is 32x32 pixels.',
+				parameters: ['[imageURL]', '[pixels]'],
+				fn({client, channelID, args}) {
+					return processImage(client, channelID, args, 'pixelate.jpg', (image,pixels) => image.pixelate(pixels));
+				}
+			},
 			'resize': {
 				info: 'Resize or refit an image to new dimensions.',
 				parameters: ['[imageURL]', '[width]', '[height]', '[fit]'],
@@ -662,6 +672,24 @@ module.exports = {
 					});
 				}
 			},
+			'warp': {
+				aliases: ['distort'],
+				info: 'Warp the image with random vectors.',
+				parameters: ['[imageURL]','[strength]'],
+				fn({client, channelID, args}) {
+					return processImage(client, channelID, args, 'warp.jpg', function (image, strength) {
+						strength = strength === undefined ? random(2,20) : strength;
+						let spacing = Math.floor(image.bitmap.width/10);
+						let perlin = new Perlin2(10);
+						return image.transform((x,y) => {
+							let n = perlin.noise(x/spacing, y/spacing);
+							x += strength * n * Math.cos(strength * n);
+							y += strength * n * Math.sin(strength * n);
+							return {x,y};
+						});
+					});
+				}
+			},
 			'complex': {
 				aliases: ['fractal','wtf'],
 				info: 'Trace the image through iterations of the complex function `f(z) = z^p + c`.',
@@ -755,12 +783,18 @@ module.exports = {
 		}
 	},
 	'meme': {
-		aliases: ['maymay','dankify'],
+		aliases: ['maymay','dankify','whenyou'],
 		category: 'Image',
 		title: 'Meme Generator',
-		info: 'Interface for creating memes.',
+		info: 'Make a simple text+image meme.',
+		parameters: ['[imageURL]','[toptext]'],
+		fn({client, channelID, args}) {
+			return processImage(client, channelID, args, 'meme.jpg', function (image, ...text) {
+				text = text.join(' ');
+				return applyTemplate('blank', {image,text});
+			});
+		},
 		permissions: 'inclusive',
-		analytics: false,
 		subcommands: {
 			'deepfry': {
 				aliases: ['needsmorefrying','needsmoredeepfrying'],
@@ -778,17 +812,6 @@ module.exports = {
 					return processImage(client, channelID, args, 'needsmorejpeg.jpg', function (image, compression = random(1,20)) {
 						compression = Math.minmax(compression, 1, 100);
 						return image.posterize(random(20,70)).quality(compression);
-					});
-				}
-			},
-			'when': {
-				aliases: ['mfw','mrw','tfw','whenyou','blank'],
-				info: 'Make a simple text+image meme.',
-				parameters: ['[imageURL]', '[toptext]'],
-				fn({client, channelID, args}) {
-					return processImage(client, channelID, args, 'meme.jpg', function (image, ...text) {
-						text = text.join(' ');
-						return applyTemplate('blank', {image,text});
 					});
 				}
 			},
