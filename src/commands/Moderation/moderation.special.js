@@ -67,10 +67,13 @@ module.exports = {
 			return md.mention(userID) + ' please do not spam with repeated letters.';
 		},
 		capsspam({client, userID}) {
-			return md.mention(userID) + ' please do not spam with all caps.';
+			return md.mention(userID) + ' please do not spam in all caps.';
 		},
 		emojispam({client, userID}) {
-			return md.mention(userID) + ' please do not spam with emojis.';
+			return md.mention(userID) + ' please do not spam emojis.';
+		},
+		newlinespam({client, userID}) {
+			return md.mention(userID) + ' please do not spam newlines.';
 		},
 		not_whitelisted_url({client, userID}) {
 			return md.mention(userID) + ' please do not use links that are not whitelisted.';

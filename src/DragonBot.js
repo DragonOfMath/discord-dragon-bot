@@ -206,6 +206,10 @@ class DragonBot extends Client {
 			zws: '\u200B'
 		};
 	}
+	getCustomPrefixes(serverID) {
+		// return a copied array to avoid modifying the data
+		return (this.database.get('servers').get(serverID).prefixes || []).slice();
+	}
 	/**
 		Handles a user joining a server.
 	*/
@@ -280,13 +284,15 @@ class DragonBot extends Client {
 		Handles joining a new server.
 	*/
 	_joinedServer(server, WSMessage) {
-		this.log(md.atUser(this),'has joined',server.name);
+		if (server) this.log(md.atUser(this),'has joined',server.name);
+		else this.error(md.atUser(this),'has apparently joined a server, but the server object is undefined.\n',WSMessage);
 	}
 	/**
 		Handles leaving a server.
 	*/
 	_leftServer(server, WSMessage) {
-		this.log(md.atUser(this),'has left',server.name);
+		if (server) this.log(md.atUser(this),'has left',server.name);
+		else this.error(md.atUser(this),'has apparently left a server, but the server object is undefined.\n',WSMessage);
 	}
 	/**
 		Handles connecting the client.
@@ -317,28 +323,41 @@ class DragonBot extends Client {
 		if (WSMessage && (WSMessage.d.webhook_id || WSMessage.d.application)) {
 			return;
 		}
-		// bot shouldn't respond to empty messages
-		if (!message) {
-			return;
-		}
 		
 		try {
-			var context = new Context(this, userID, channelID, message, WSMessage);
+			// create a Context object that describes the who/where/what of the message
+			let context = new Context(this, userID, channelID, message, WSMessage);
 			
-			// a mention at the start of the message will help prevent other bots from using the same message
-			var mention = md.mention(this.id);
-			if (typeof(context.message) === 'string') {
-				if (context.message.startsWith(mention)) {
-					context.message = context.message.substring(mention.length).trim();
-				}
-			}
+			let prefix = this.evalPrefix(context);
 			
-			var input = Parser.parseCommand(context.message);
+			// create an input block from the raw message, and if necessary, interpret it as a command
+			let input = Parser.createBlock(context.message, !!prefix);
 			return this.run(context, input).catch(e => this.error(e));
 		} catch (e) {
 			this.error(e);
 			return Promise.reject(e);
 		}
+	}
+	/**
+		Find the prefix used in a message if there is one. And if so, 
+		@arg {Context} context - the Context object
+		@return The prefix found at the start of the message
+	*/
+	evalPrefix(context) {
+		// a mention at the start of the message will help prevent other bots from using the same message
+		let mention = md.mention(this.id);
+		if (context.message.startsWith(mention)) {
+			context.message = context.message.substring(mention.length).trim();
+		}
+		
+		// check for the default prefix or a custom one
+		let customPrefixes = context.serverID ? this.getCustomPrefixes(context.serverID) : [];
+		let prefix = context.hasPrefix(this.PREFIX) ? this.PREFIX : customPrefixes.find(pfx => context.hasPrefix(pfx));
+		if (prefix) {
+			context.message = context.message.substring(prefix.length).trim();
+		}
+		
+		return prefix;
 	}
 	/**
 		Run input with the given Context

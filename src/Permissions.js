@@ -118,19 +118,22 @@ class Permissions {
 	}
 	
 	get isInclusive() {
-		return this.type == Constants.TYPES.WHITELIST;
+		return this.type === Constants.TYPES.WHITELIST;
 	}
 	get isExclusive() {
-		return this.type == Constants.TYPES.BLACKLIST;
+		return this.type === Constants.TYPES.BLACKLIST;
 	}
 	get isPublic() {
-		return this.type == Constants.TYPES.PUBLIC;
+		return this.type === Constants.TYPES.PUBLIC;
 	}
 	get isPrivate() {
-		return this.type == Constants.TYPES.PRIVATE;
+		return this.type === Constants.TYPES.PRIVATE;
+	}
+	get isDmOnly() {
+		return this.type === Constants.TYPES.DM_ONLY;
 	}
 	get isPrivileged() {
-		return this.type == Constants.TYPES.PRIVILEGED;
+		return this.type === Constants.TYPES.PRIVILEGED;
 	}
 	get isInherited() {
 		return this.type === Constants.TYPES.INHERIT;
@@ -151,9 +154,6 @@ class Permissions {
 		Checks with the current server permissions for the given context.
 	*/
 	check({client, context}, serverStrictness = false) {
-		//console.log('Permissions#check({client,context})');
-		
-		// check inheritance
 		if (this.isInherited) {
 			if (this.binding.supercommand) {
 				return this.inherited.check({client, context});
@@ -161,22 +161,13 @@ class Permissions {
 				throw 'Permissions cannot be inherited from nothing.';
 			} 
 		}
-		
-		// check bot ownership permission
-		if (this.isPrivate) {
-			if (context.user && context.user.id == client.ownerID) {
-				return Grant.granted();
-			} else {
-				return Grant.denied(Constants.STRINGS.PRIVATE);
-			}
+		if (this.isPublic || context.isDM || context.userID == client.ownerID) {
+			return Grant.granted();
 		}
-		
-		// check privileged user permission
+		if (this.isPrivate) {
+			return Grant.denied(Constants.STRINGS.PRIVATE);
+		}
 		if (this.isPrivileged) {
-			// bot owner always has permissions
-			if (context.user && context.user.id == client.ownerID) {
-				return Grant.granted();
-			}
 			if (context.server && context.member) {
 				if (Permissions.memberHasPrivilege(context.server, context.member)) {
 					return Grant.granted();
@@ -187,10 +178,8 @@ class Permissions {
 				return Grant.denied(`This command may only be used in a server by users with ${Constants.PRIVILEGED_PERMISSION}.`);
 			}
 		}
-		
-		// check unconditional, if the message is from a DM, or if the server has no permission settings
-		if (this.isPublic || context.isDM) {
-			return Grant.granted();
+		if (this.isDmOnly) {
+			return Grant.denied(Constants.STRINGS.DM_ONLY);
 		}
 		if (!(context.server.id in this.servers)) {
 			if (serverStrictness) {
@@ -252,6 +241,10 @@ class Permissions {
 			return Constants.STRINGS.PRIVILEGED;
 		}
 		
+		if (this.isDmOnly) {
+			return Constants.STRINGS.DM_ONLY;
+		}
+		
 		if (this.isInherited) {
 			var p = this.inherited;
 			return p.toString(client, server) + `\n(inherited from ${p.id})`;
@@ -280,6 +273,10 @@ class Permissions {
 		if (this.isPrivileged) {
 			return Constants.STRINGS.PRIVILEGED;
 		}
+		if (this.isDmOnly) {
+			return Constants.STRINGS.DM_ONLY;
+		}
+		
 		if (this.isInherited) {
 			var p = this.inherited;
 			var e = p.embed(client, server);
@@ -305,11 +302,6 @@ class Permissions {
 	}
 	allow(data) {
 		switch (this.type) {
-			case Constants.TYPES.INHERIT:
-			case Constants.TYPES.PUBLIC:
-			case Constants.TYPES.PRIVATE:
-			case Constants.TYPES.PRIVILGED:
-				throw `${this.id} has ${this.type} accessibility.`;
 			case Constants.TYPES.WHITELIST:
 				for (var id in data.servers) {
 					this.servers[id] = this.get(id).add(data.servers[id]);
@@ -320,16 +312,13 @@ class Permissions {
 					this.servers[id] = this.get(id).remove(data.servers[id]);
 				}
 				break;
+			default:
+				throw `${this.id} has ${this.type} accessibility.`;
 		}
 		return this;
 	}
 	deny(data) {
 		switch (this.type) {
-			case Constants.TYPES.INHERIT:
-			case Constants.TYPES.PUBLIC:
-			case Constants.TYPES.PRIVATE:
-			case Constants.TYPES.PRIVILGED:
-				throw `${this.id} has ${this.type} accessibility.`;
 			case Constants.TYPES.WHITELIST:
 				for (var id in data.servers) {
 					this.servers[id] = this.get(id).remove(data.servers[id]);
@@ -340,36 +329,29 @@ class Permissions {
 					this.servers[id] = this.get(id).add(data.servers[id]);
 				}
 				break;
+			default:
+				throw `${this.id} has ${this.type} accessibility.`;
 		}
 		return this;
 	}
 	clear(data) {
 		switch (this.type) {
-			case Constants.TYPES.INHERIT:
-			case Constants.TYPES.PUBLIC:
-			case Constants.TYPES.PRIVATE:
-			case Constants.TYPES.PRIVILGED:
-				throw `${this.id} has ${this.type} accessibility.`;
 			case Constants.TYPES.WHITELIST:
 			case Constants.TYPES.BLACKLIST:
 				for (var id in data.servers) {
 					delete this.servers[id];
 				}
 				break;
+			default:
+				throw `${this.id} has ${this.type} accessibility.`;
 		}
 		return this;
 	}
 	copy(data) {
 		//console.log('Permissions#copy(data)');
 		switch (this.type) {
-			case Constants.TYPES.INHERIT:
-			case Constants.TYPES.PUBLIC:
-			case Constants.TYPES.PRIVATE:
-			case Constants.TYPES.PRIVILGED:
-				throw `${this.id} has ${this.type} accessibility.`;
 			case Constants.TYPES.WHITELIST:
 			case Constants.TYPES.BLACKLIST:
-			default:
 				for (var id in this.servers) {
 					delete this.servers[id];
 				}
@@ -377,22 +359,21 @@ class Permissions {
 					this.servers[id] = new ServerPermissions(data.servers[id]);
 				}
 				break;
+			default:
+				throw `${this.id} has ${this.type} accessibility.`;
 		}
 		return this;
 	}
 	invert() {
 		switch (this.type) {
-			case Constants.TYPES.INHERIT:
-			case Constants.TYPES.PUBLIC:
-			case Constants.TYPES.PRIVATE:
-			case Constants.TYPES.PRIVILGED:
-				throw `${this.id} has ${this.type} accessibility.`;
 			case Constants.TYPES.WHITELIST:
 				this.type = Constants.TYPES.BLACKLIST;
 				break;
 			case Constants.TYPES.BLACKLIST:
 				this.type = Constants.TYPES.WHITELIST;
 				break;
+			default:
+				throw `${this.id} has ${this.type} accessibility.`;
 		}
 		return this;
 	}

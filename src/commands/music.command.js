@@ -26,13 +26,13 @@ module.exports = {
 	'music': {
 		category: 'Audio',
 		title: MUSIC_TITLE,
-		info: 'Interface for playing music in Voice Channels. I will join your VC when called for and leave when you want me to or when I\'m alone.',
+		info: 'Interface for playing music in Voice Channels. I will join your VC when called for and leave when you want me to or when I\'m alone. (EXPERIMENTAL DISCLAIMER: This command is not totally working yet, due to problems with overriding audio streams)',
 		permissions: 'inclusive',
 		analytics: false,
 		subcommands: {
 			'search': {
 				title: MUSIC_TITLE + ' | Search',
-				info: 'Search my local library for music.',
+				info: 'Search my local library for music. (Note: this will be replaced with YouTube search eventually)',
 				parameters: ['...keywords'],
 				fn({client, serverID, member, arg}) {
 					let files = search(arg);
@@ -136,6 +136,7 @@ module.exports = {
 				}
 			},
 			'playlist': {
+				aliases: ['pl','songs','queue'],
 				title: MUSIC_TITLE + ' | Playlist',
 				info: 'Get the current playlist.',
 				// display up to 10 playlist in the current playlist
@@ -216,6 +217,7 @@ module.exports = {
 				}
 			},
 			'loop': {
+				aliases: ['repeat'],
 				title: MUSIC_TITLE + ' | Loop',
 				info: 'Toggle looping the current song or entire playlist. (defaults to song)',
 				parameters: ['[<song|playlist>]'],

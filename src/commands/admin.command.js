@@ -304,19 +304,5 @@ module.exports = {
 			return client.unblock(user)
 			.then(() => md.atUser(user) + ' is now allowed to use this bot again.');
 		}
-	}/*,
-	'prefix': {
-		category: 'Admin',
-		title: 'Change Prefix',
-		info: 'Set the bot\'s prefix in the server.',
-		permissions: 'privileged',
-		parameters: ['char'],
-		fn({client, serverID, args}) {
-			client.database.get('servers').modify(serverID, server => {
-				server.prefix = args[0];
-				return server;
-			}).save();
-			return 'Server prefix set to ' + md.code(args[0]);
-		}
-	}*/
+	}
 };

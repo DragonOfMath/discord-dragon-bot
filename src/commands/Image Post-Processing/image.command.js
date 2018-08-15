@@ -610,7 +610,7 @@ module.exports = {
 				}
 			},
 			'bulge': {
-				aliases: ['fisheye','eyefish','bubble'],
+				aliases: ['fisheye','eyefish','bubble','explode'],
 				info: 'Add a bulge at the specified center and strength to an image.',
 				parameters: ['[imageURL]', '[strength]', '[xpos]', '[ypos]'],
 				fn({client, channelID, args}) {
@@ -678,14 +678,19 @@ module.exports = {
 				parameters: ['[imageURL]','[strength]'],
 				fn({client, channelID, args}) {
 					return processImage(client, channelID, args, 'warp.jpg', function (image, strength) {
-						strength = strength === undefined ? random(2,20) : strength;
-						let spacing = Math.floor(image.bitmap.width/10);
-						let perlin = new Perlin2(10);
+						let w = image.bitmap.width;
+						let h = image.bitmap.height;
+						let max = Math.max(w,h);
+						let warpSize = 5;
+						strength = strength === undefined ? random(max / (2 * warpSize), max / warpSize) : strength;
+						let spacing = Math.floor(image.bitmap.width/warpSize);
+						let perlinX = new Perlin2(warpSize);
+						let perlinY = new Perlin2(warpSize);
 						return image.transform((x,y) => {
-							let n = perlin.noise(x/spacing, y/spacing);
-							x += strength * n * Math.cos(strength * n);
-							y += strength * n * Math.sin(strength * n);
-							return {x,y};
+							return {
+								x: x + (strength * perlinX.noise(x/spacing, y/spacing)),
+								y: y + (strength * perlinY.noise(x/spacing, y/spacing))
+							};
 						});
 					});
 				}

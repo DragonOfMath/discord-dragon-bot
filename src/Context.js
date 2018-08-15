@@ -1,7 +1,7 @@
 const DiscordUtils = require('./DiscordUtils');
 
 class Context {
-	constructor(client, userID, channelID, message, WSMessage) {
+	constructor(client, userID, channelID, message = '', WSMessage) {
 		if (typeof(client) !== 'object') {
 			throw new TypeError(`${this.constructor.name}.client must be a Discord.Client object.`);
 		}
@@ -61,6 +61,9 @@ class Context {
 		}
 		// calculate the time the message was made
 		this.timestamp = DiscordUtils.getCreationTime(this.messageID);
+	}
+	hasPrefix(pfx) {
+		return this.message.startsWith(pfx);
 	}
 	debug() {
 		let debugInfo = '';

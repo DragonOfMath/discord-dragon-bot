@@ -124,7 +124,10 @@ module.exports = {
 				'ich auch danke', // german
 				'ek ook dankie', // afrikaans
 				'\u79C1\u3082\u3001\u3042\u308A\u304C\u3068\u3046', // japanese
-				'\u6211\u4E5F\u662F\uFF0C\u8B1D\u8B1D' // chinese
+				'\u6211\u4E5F\u662F\uFF0C\u8B1D\u8B1D', // chinese
+				'Best By 07 SEP 18 043 | 49',
+				'bean time :)',
+				'can i get uhhhhhh fortnite borgar'
 			]);
 		},
 		thicc() {

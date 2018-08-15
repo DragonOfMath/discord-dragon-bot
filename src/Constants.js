@@ -22,6 +22,7 @@ const OBJ_END     = '}';
 const PUBLIC      = 'public';
 const PRIVATE     = 'private';
 const PRIVILEGED  = 'privileged';
+const DM_ONLY     = 'dm';
 const WHITELIST   = 'inclusive';
 const BLACKLIST   = 'exclusive';
 const INHERIT     = 'inherit';
@@ -161,6 +162,7 @@ module.exports = {
 			PRIVILEGED,
 			WHITELIST,
 			BLACKLIST,
+			DM_ONLY,
 			INHERIT
 		},
 		DEFAULT_TYPE: INHERIT,
@@ -170,6 +172,7 @@ module.exports = {
 			PRIVILEGED: '**Privileged**: only those with the ' + PRIVILEGED_PERMISSION + ' permission can use this.',
 			WHITELIST:  '**Inclusive**: use is limited to whitelisted users/roles/channels only.',
 			BLACKLIST:  '**Exclusive**: use is restricted from blacklisted users/roles/channels.',
+			DM_ONLY:   'This command may only be used in DMs with the bot.',
 			INHERIT:    'Inherited from supercommand.'
 		},
 		TARGETS: [

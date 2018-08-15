@@ -1,5 +1,5 @@
 const Resource = require('../../Resource');
-const Subscription = require('../../Subscription');
+//const Subscription = require('../../Subscription');
 const {fetch,truncate,unescapeHTMLEntities} = require('../../Utils');
 
 const TYPE = ['','hot','new','rising','top','controversial']; // '' and 'hot' are the same

@@ -14,63 +14,59 @@ class ParseError extends Error {
 	@arg {Array<Any>} tokens - produced by Parser.tokenize()
 */
 class Block {
-	constructor(tokens) {
+	constructor(tokens, parseAsCommand = true) {
 		this.text     = '';
 		this.cmd      = '';
 		//this.comments = [];
 		if (tokens.length > 0) {
-			var i, j, t, s, b, stop = false;
+			let i, j, t, s, b, stop = false;
 			
-			if (String(tokens[0]).startsWith(Constants.PREFIX)) {
-				this.cmd  = tokens[0].substring(Constants.PREFIX.length);
+			if (parseAsCommand) {
+				this.cmd = tokens[0];
 				this.cmds = this.cmd.split(Constants.DELIMITER);
-				this.arg  = '';
+				this.arg = '';
 				this.args = [];
-			} else {
-				stop = true;
-			}
-			
-			read:
-			for (i = 1; i < tokens.length; ++i) {
-				t = tokens[j=i];
 				
-				if (t == Constants.STOP) {
-					stop = true;
-					break read;
+				read:
+				for (i = 1; i < tokens.length; ++i) {
+					t = tokens[j=i];
 					
-				} else if (/^(\/\/.*|\/\*.*\*\/)$/.test(t)) {
-					//this.comments.push(t);
-					continue read;
-					
-				} else if (!stop && t == Constants.BLOCK_START) {
-					s = 1;
-					do {
-						i++;
-						switch (tokens[i]) {
-							case Constants.BLOCK_START:
-								s++;
-								break;
-							case Constants.BLOCK_END:
-								s--;
-								if (s > 0) break;
-							case Constants.STOP:
-								if (s > 1) break;
-								b = tokens.slice(j+1,i);
-								if (b.length) this.args.push(new Block(b));
-								j = i;
-								break;
-						}
-					} while (tokens[i] && s > 0);
-					if (s > 0) throw new ParseError(`Missing "${Constants.BLOCK_END}" for token ${j}: ${tokens.join(' ')}`);
-					continue read;
-					
-				} else if (!stop) {
-					this.args.push(t);
-					continue read;
+					if (t == Constants.STOP) {
+						stop = true;
+						break read;
+						
+					} else if (/^(\/\/.*|\/\*.*\*\/)$/.test(t)) {
+						//this.comments.push(t);
+						continue read;
+						
+					} else if (!stop && t == Constants.BLOCK_START) {
+						s = 1;
+						do {
+							i++;
+							switch (tokens[i]) {
+								case Constants.BLOCK_START:
+									s++;
+									break;
+								case Constants.BLOCK_END:
+									s--;
+									if (s > 0) break;
+								case Constants.STOP:
+									if (s > 1) break;
+									b = tokens.slice(j+1,i);
+									if (b.length) this.args.push(new Block(b));
+									j = i;
+									break;
+							}
+						} while (tokens[i] && s > 0);
+						if (s > 0) throw new ParseError(`Missing "${Constants.BLOCK_END}" for token ${j}: ${tokens.join(' ')}`);
+						continue read;
+						
+					} else if (!stop) {
+						this.args.push(t);
+						continue read;
+					}
 				}
-			}
-			
-			if (this.cmd) {
+				
 				this.arg = this.args.map(String).join(' ');
 				
 				this.text = Constants.PREFIX + this.cmd;
@@ -94,13 +90,15 @@ class Block {
 
 class Parser {
 	/**
-		Turn raw text input into a command and its arguments
-		@arg {String} text
+		Turn tokens into a Block that describes the input
+		@arg {String|Array<String>} input - the input tokens or text string
+		@arg {Boolean} [asCommand] - whether to treat the input as a command or as a normal message
 	*/
-	static parseCommand(text) {
-		var tokens = this.tokenize(text);
-		//console.log(tokens);
-		return new Block(tokens);
+	static createBlock(input, asCommand = false) {
+		if (typeof(input) === 'string') {
+			input = this.tokenize(input);
+		}
+		return new Block(input, asCommand);
 	}
 	/**
 		Turn raw text input into tokens that are then configured into Blocks

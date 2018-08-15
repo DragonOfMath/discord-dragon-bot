@@ -4,7 +4,7 @@ const USER_AGENT = 'DragonBot (DragonOfMath @ github)';
 
 function fetch(url, options = {}) {
 	options.url     = options.url || url;
-	options.json    = /\.json\b/i.test(options.url);
+	options.json    = options.json || /\.json\b/i.test(options.url);
 	options.headers = {'User-Agent': USER_AGENT};
 	return new Promise((resolve,reject) => {
 		request(options, function (error, response, body) {

@@ -127,12 +127,15 @@ class AudioPlayer {
 		throw 'Track not found in playlist.';
 	}
 	shuffle() {
-		for (let i = 0, j, temp; i < this.playlist.length; i++) {
-			j = random(this.playlist.length);
-			if (i === this.index || j === this.index) continue;
-			temp = this.playlist[i];
-			this.playlist[i] = this.playlist[j];
-			this.playlist[j] = temp;
+		for (let i = 0, j, temp; i < this.playlist.length;) {
+			if (i !== this.index) {
+				j = random(this.playlist.length);
+				if (j === this.index) continue;
+				temp = this.playlist[i];
+				this.playlist[i] = this.playlist[j];
+				this.playlist[j] = temp;
+			}
+			i++;
 		}
 	}
 	play() {

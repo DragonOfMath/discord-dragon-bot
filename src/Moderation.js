@@ -47,9 +47,14 @@ const Spam = {
 			let defaultEmojis = x.match(emojiRegex) || [];
 			return x.length > 40 && (customEmojis.length + defaultEmojis.length) > 20;
 		} catch (e) { return false; }
+	},
+	// bit 5 = 32
+	newlinespam(x) {
+		// message must not contain more than 10 newlines in a row
+		return /[\n\r]{10,}/g.test(x);
 	}
 };
-const SPAM_FILTERS = ['mentions','links','letters','caps','emojis'];
+const SPAM_FILTERS = ['mentions','links','letters','caps','emojis','newlines'];
 
 function validateTargetUser(client, server, userID, modID) {
 	userID = md.userID(userID) || userID;
@@ -392,7 +397,10 @@ class Moderation {
 		}
 		return this.modify(client, server, s => {
 			return s.modlog(client, modID, userID, 'Warning', reason)
-			.then(() => `${md.mention(userID)}, you have been issued a warning for ${md.bold(reason)}.`);
+			.then(() => {
+				client.notice(`${server.name} > User ${userID}: Warned for ${reason}`);
+				return `${md.mention(userID)}, you have been issued a warning for ${md.bold(reason)}.`;
+			});
 		});
 	}
 	static kick(client, server, userID, modID, reason) {
@@ -403,7 +411,10 @@ class Moderation {
 		return this.modify(client, server, s => {
 			return client.kick({serverID: server.id, userID})
 			.then(() => s.modlog(client, modID, userID, 'Kick', reason))
-			.then(() => `${md.mention(userID)} has been kicked for ${md.bold(reason)}.`);
+			.then(() => {
+				client.notice(`${server.name} > User ${userID}: Kicked for ${reason}`);
+				return `${md.mention(userID)} has been kicked for ${md.bold(reason)}.`;
+			});
 		});
 	}
 	static ban(client, server, userID, modID, reason) {
@@ -413,9 +424,12 @@ class Moderation {
 		}
 		return this.modify(client, server, s => {
 			return client.ban({serverID: server.id, userID, reason})
-			.then(() => this.deleteInvitesByUser(client, server, userID))
 			.then(() => s.modlog(client, modID, userID, 'Ban', reason))
-			.then(() => `${md.mention(userID)} has been :hammer: banned for ${md.bold(reason)}.`);
+			.then(() => this.deleteInvitesByUser(client, server, userID))
+			.then(() => {
+				client.notice(`${server.name} > User ${userID}: Banned for ${reason}`);
+				return `${md.mention(userID)} has been :hammer: banned for ${md.bold(reason)}.`;
+			});
 		});
 	}
 	static massBan(client, server, userIDs, modID, reason) {
@@ -426,7 +440,10 @@ class Moderation {
 		return this.modify(client, server, s => {
 			return client.unban({serverID: server.id, userID})
 			.then(() => s.modlog(client, modID, userID, 'Unban'))
-			.then(() => `${md.mention(userID)} has been unbanned.`);
+			.then(() => {
+				client.notice(`${server.name} > User ${userID}: Unbanned.`);
+				return `${md.mention(userID)} has been unbanned.`;
+			});
 		});
 	}
 	static softban(client, server, userID, modID, reason) {
@@ -435,7 +452,10 @@ class Moderation {
 			return client.ban({serverID: server.id, userID, reason})
 			.then(() => s.modlog(client, modID, userID, 'Softban'))
 			.then(() => client.unban({serverID: server.id, userID}))
-			.then(() => `${md.mention(userID)} has been softbanned for ${md.bold(reason)}.`);
+			.then(() => {
+				client.notice(`${server.name} > User ${userID}: Softbanned.`);
+				return `${md.mention(userID)} has been softbanned for ${md.bold(reason)}.`;
+			});
 		});
 	}
 	
@@ -448,6 +468,7 @@ class Moderation {
 			} else {
 				delete s.observer;
 			}
+			client.notice(`${server.name}: Lockdown is ${mode?'enabled':'disabled'}`);
 		});
 	}
 	static setActions(client, server, actions) {
@@ -509,7 +530,7 @@ class Moderation {
 	static listBannedNames(client, server) {
 		let names = this.get(client, server).names;
 		return {
-			title: '',
+			title: 'Banned names in ' + server.name,
 			description: names.map(md.code).join(', ') || 'None'
 		};
 	}

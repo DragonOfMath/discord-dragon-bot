@@ -283,6 +283,26 @@ module.exports = {
 			}
 		}
 	},
+	'pressf': {
+		aliases: ['payrespects','pf2pr'],
+		category: 'Fun',
+		info: 'Press F to pay respects.',
+		permissions: 'inclusive',
+		fn({client, user}) {
+			let F;
+			client.database.get('users').modify(user.id, DATA => {
+				F = DATA.F = (DATA.F || 0) + 1;
+				return DATA;
+			}).save();
+			return {
+				title: ':regional_indicator_f:',
+				description: md.mention(user) + ' has paid their respects.',
+				footer: {
+					text: 'Respects paid: ' + F
+				}
+			};
+		}
+	},
 	'random': {
 		aliases: ['rand', 'rng'],
 		category: 'Fun',

@@ -209,7 +209,7 @@ module.exports = {
 			'spam': {
 				title: 'Moderation | Spam Level',
 				info: 'Allow the bot the filter spam messages, including all caps, repetitive letters, global mentions, and untrusted links.',
-				parameters: ['[...<mentions|links|letters|caps|emojis>]'],
+				parameters: ['[...<mentions|links|letters|caps|emojis|newlines>]'],
 				fn({client, args, server}) {
 					return Moderation.setSpamLevel(client, server, args);
 				}
@@ -247,8 +247,7 @@ module.exports = {
 			},
 			'names': {
 				aliases: ['usernames', 'bannednames'],
-				title: 'Moderation | Banned Usernames',
-				info: 'Interface for protection against users with banned names.',
+				info: 'List the server\'s filters for banned usernames.',
 				fn({client, args, server}) {
 					return Moderation.listBannedNames(client, server);
 				},
