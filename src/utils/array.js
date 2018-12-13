@@ -1,32 +1,3 @@
-function forEachAsync(callback, start = 0, end = this.length) {
-	var iterable = this;
-	function _next(i) {
-		if (i < end) {
-			return Promise.resolve(callback(iterable[i], i))
-			.then(() => _next(i+1));
-		} else {
-			return Promise.resolve(void 0);
-		}
-	}
-	return _next(start);
-}
-function mapAsync(callback, start = 0, end = this.length) {
-	var iterable = this;
-	var mapped = [];
-	function _next(i) {
-		if (i < end) {
-			return Promise.resolve(callback(iterable[i], i))
-			.then(value => {
-				if (typeof(value) !== 'undefined') mapped.push(value);
-				return _next(i+1);
-			});
-		} else {
-			return Promise.resolve(mapped);
-		}
-	}
-	return _next(start);
-}
-
 class Array2D extends Array {
 	constructor(rows = 0, columns = 0) {
 		super(rows);
@@ -35,7 +6,7 @@ class Array2D extends Array {
 		}
 	}
 	fill(x, rowStart = 0, colStart = 0, rowEnd = this.rows-1, colEnd = this.cols-1) {
-		for (var r=rowStart;r<=rowEnd;++r)this[r].fill(x,colStart,colEnd);
+		for (var r=rowStart;r<=rowEnd;++r)this[r].fill(x,colStart,colEnd+1);
 		return this;
 	}
 	resize(rows, cols) {
@@ -93,30 +64,111 @@ class Array2D extends Array {
 }
 
 /**
-	Combine 'a' with 'b' such that 'b' contains no elements already found in 'a'
+	Combine arrays such that the result contains all the common elements
 */
-function union(a, b) {
-	if (b && b.length) {
-		return a.concat(b.filter(x => !a.includes(x)));
-	} else {
-		return a;
-	}
+Array.union = function union(a, ...b) {
+	return b.reduce((u,c) => u.concat(c.filter(x => !u.includes(x))), a);
 }
 /**
-	Filter 'a' such that it contains no elements in 'b'
+	Filter the source array such that the result does not contain any of the target arrays' elements
 */
-function diff(a, b) {
-	if (b && b.length) {
-		return a.filter(x => !b.includes(x));
-	} else {
-		return a;
-	}
+Array.diff = function diff(a, ...b) {
+	return b.reduce((d,c) => d.filter(x => !c.includes(x)), a);
 }
-
-module.exports = {
-	forEachAsync,
-	mapAsync,
-	Array2D,
-	union,
-	diff
+/**
+	Remove duplicate elements from an array
+*/
+Array.unique = function unique(a) {
+	return a.reduce((b,i) => {
+		if (!b.includes(i)) b.push(i);
+		return b;
+	}, []);
+}
+/**
+	Recursively flatten arrays within arrays
+*/
+Array.flatten = function flatten(a) {
+	return [].concat(...a.map(x => x instanceof Array ? x.flatten() : [x]));
 };
+/**
+	Perform forEach but resolving a Promise after each iteration
+*/
+Array.forEachAsync = async function forEachAsync(iterable, callback, start, end) {
+	if (typeof(start) === 'undefined') start = 0;
+	if (typeof(end) === 'undefined') end = iterable.length;
+	for (let i = start; i < end; i++) {
+		await callback(iterable[i], i);
+	}
+	return await void 0;
+};
+/**
+	Perform map but resolving a Promise after each iteration
+*/
+Array.mapAsync = async function mapAsync(iterable, callback, start, end) {
+	if (typeof(start) === 'undefined') start = 0;
+	if (typeof(end) === 'undefined') end = iterable.length;
+	let mapped = [];
+	for (let i = start; i < end; i++) {
+		mapped.push(await callback(iterable[i], i));
+	}
+	return await mapped;
+};
+/**
+	Similar to lodash's _.groupBy() function
+*/
+Array.groupBy = function groupBy(iterable, callback) {
+	let groups = {};
+	for (let i = 0, g; i < iterable.length; i++) {
+		if (typeof(callback) === 'function') {
+			g = callback(iterable[i],i);
+		} else {
+			g = iterable[i][callback];
+		}
+		groups[g] = groups[g] || [];
+		groups[g].push(iterable[i]);
+	}
+	return groups;
+};
+
+Array.shuffle = function shuffle(iterable, iterations = 1) {
+	let shuffled = iterable.slice();
+	while (iterations-- > 0) {
+		for (var a = 0, b, temp; a < shuffled.length; a++) {
+			b = Math.floor(shuffled.length * Math.random());
+			temp = shuffled[a];
+			shuffled[a] = shuffled[b];
+			shuffled[b] = temp;
+		}
+	}
+	return shuffled;
+};
+Array.range = function range(start, end, step = 1) {
+	return Array.from({length: (end - start) / step}, (x,i) => start + (i * step));
+};
+
+Array.prototype.flatten = function () {
+	return Array.flatten(this);
+};
+Array.prototype.unique = function () {
+	return Array.unique(this);
+};
+Array.prototype.union = function (a) {
+	return Array.union(this, a);
+};
+Array.prototype.diff = function (a) {
+	return Array.diff(this, a);
+};
+Array.prototype.forEachAsync = function () {
+	return Array.forEachAsync(this, ...arguments);
+};
+Array.prototype.mapAsync = function () {
+	return Array.mapAsync(this, ...arguments);
+};
+Array.prototype.groupBy = function (callback) {
+	return Array.groupBy(this, callback);
+};
+Array.prototype.shuffle = function (iterations) {
+	return Array.shuffle(this, iterations);
+};
+
+module.exports = {Array,Array2D};

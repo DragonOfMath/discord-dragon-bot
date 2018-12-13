@@ -117,6 +117,16 @@ function md5(text) {
 }
 
 /**
+	Splits comma-separated values
+*/
+function parseCSV(values) {
+	if (values instanceof Array) {
+		values = values.join(' ');
+	}
+	return values.split(/,\s*/);
+}
+
+/**
 	Convert text such as "Sample Text!" into keywords = ["sample","text"]
 */
 function keywordify(text) {
@@ -161,6 +171,7 @@ module.exports = {
 	isUpperCase,
 	isLowerCase,
 	md5,
+	parseCSV,
 	keywordify,
 	kwsearch
 };

@@ -1,8 +1,8 @@
 function isInt(x) {
-	return (x|0) === x && String(x).indexOf('.') == -1
+	return (x|0) === x && String(x).indexOf('.') == -1;
 }
 function isIterable(x) {
-	return x instanceof Array || typeof(x) === 'string'
+	return x instanceof Array || typeof(x) === 'string';
 }
 
 function random() {
@@ -22,6 +22,9 @@ function random() {
 			}
 			if (isIterable(arguments[0])) {
 				return arguments[0][random(arguments[0].length)];
+			}
+			if (typeof(arguments[0]) === 'object') {
+				return arguments[0][random(Object.keys(arguments[0]))];
 			}
 		case 2:
 			if (typeof(arguments[0]) === 'number' && typeof(arguments[1]) === 'number') {

@@ -1,0 +1,63 @@
+!batch {
+	!alias fish:f pokemon:p daily:$;
+	!p;
+	!p.item;
+	!p.train;
+	!f.wait 1000;
+	!repeat 10 {
+		!batch {
+			!repeat 100 {!fish};
+			!cleanup 100;
+		};
+	};
+}
+
+!batch {
+	!mset.center -0.26 0.70333;
+	!mset.zoom 3000;
+	!mset.depth 300;
+	!mshader.presets.load gold_n_navy;
+	!mset;
+}
+
+// fibonacci
+!batch {
+	!var x 0;
+	!var y 0;
+	!var z 1;
+	!foreach 20 i {
+		!batch {
+			!var x $y;
+			!var y $z;
+			!var z %($x+$y);
+			!echo "fib($i) = $z";
+		}
+	}
+}
+
+!batch {
+	!repeat 50 {
+		!batch {
+			!fish.artifact;
+			!fish;
+			!casino.coin 100;
+			!cah.b;
+			!cah;
+		}
+	};
+	!cleanup 500;
+	!wait 10000;
+	!repeat 1000 {
+		!batch {
+			!fish;
+			!wait 3000;
+		}
+	}
+}
+
+// automatic pokemon catching, scavenging, and training
+!batch {
+	!async {!while 1 {!wait %(30 * 60000) {!pokemon.train}}};
+	!async {!while 1 {!wait %(60 * 60000) {!pokemon.item}}};
+	!async {!while 1 {!wait %(120 * 60000) {!pokemon}}};
+}

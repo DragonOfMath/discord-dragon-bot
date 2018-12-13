@@ -1,5 +1,8 @@
-Math.EPSILON = 0.01;
-Math.TAU = 2 * Math.PI;
+Math.EPSILON = Math['ɛ'] = Math['ϵ'] = Math['ɛ'] = 0.01;
+Math['π'] = Math['𝜋'] = Math['𝛑'] = Math.PI;
+Math.TAU = Math['τ'] = 2 * Math.PI;
+Math.GOLDEN_RATIO = Math.PHI = Math['φ'] = (1 + Math.sqrt(5)) / 2;
+Math.INFINITY = Math['∞'] = Infinity;
 
 Math.radToDeg = function radToDeg(r) {
 	return r * 180 / Math.PI;
@@ -10,9 +13,25 @@ Math.degToRad = function degToRad(d) {
 Math.minmax = function minmax(x,min,max) {
 	return Math.max(min, Math.min(x, max));
 };
+Math.average = function average(data) {
+	return data.reduce((sum,a) => sum += a, 0) / data.length;
+};
+Math.standardDeviation = function stdDev(data) {
+	if (data.length > 1) {
+		let avg = Math.average(...data);
+		let sumOfSquares = data.reduce((sum,x) => sum += Math.pow(avg - x, 2), 0);
+		return Math.sqrt(sumOfSquares / (data.length-1));
+	} else {
+		return NaN;
+	}
+};
 Math.modulo = function modulo(x,n) {
 	return ((x % n) + n) % n;
 };
+Math.step = function step(x) {
+	return x > 0 ? 1 : 0;
+};
+
 // https://en.wikipedia.org/wiki/De_Moivre%27s_formula
 Math.complexPow = function complexPow(zReal, zImag, power) {
 	var r = Math.exp(Math.log(zReal * zReal + zImag * zImag) * power / 2);
@@ -49,7 +68,8 @@ Math.factorial = function factorial(x) {
 	return f;
 };
 Math.factorize = function factorize(x) {
-	let f = [];
+	x = Math.abs(x);
+	let f = [1];
 	let p = 2;
 	while (x > 1) {
 		if (x % p == 0) {
@@ -74,7 +94,7 @@ Math.prime = function prime(x) {
 	return true;
 };
 Math.primesUpTo = function primesUpTo(x) {
-	for (var n = 3, primes = [2], factor; n <= x; n += 2) {
+	for (var n = 3, primes = [2]; n <= x; n += 2) {
 		if (primes.every(p => n % p)) {
 			primes.push(n);
 		}
@@ -99,18 +119,76 @@ Math.root = function root(x,n) {
 	} else {
 		// https://en.wikipedia.org/wiki/Nth_root_algorithm
 		let sign = Math.sign(x);
-		let odd  = n % 2;
-		if (sign < 0 && !odd) return NaN;
+		if (sign < 0 && n % 2 == 0) return NaN;
 		x = Math.abs(x);
 		let root = 1;
 		let prev = 0;
-		while (Math.abs(root-prev) > Math.epsilon) {
+		while (Math.abs(root-prev) > Math.EPSILON) {
 			prev = root;
 			root += (x / Math.pow(root, n - 1) - root) / n;
 		}
 		root *= sign;
 		return root;
 	}
+};
+
+/**
+ * Calculates the binomial coefficient C = n! / k!(n - k)!
+ * @param {Number} n
+ * @param {Number} k
+ */
+Math.coefficient = Math.binco = Math.combination = Math.combo = function combination(n, k = 1) {
+	if (k > n) {
+		return 0;
+	}
+	let numerator   = 1;
+	let denominator = 1;
+	for (let i = 0; i < k; i++) {
+		numerator   *= n - i;
+		denominator *= i + 1;
+	}
+	return Math.floor(numerator / denominator);
+};
+
+/**
+ * Calculates P = n! / (n - k)!
+ * @param {Number} n
+ * @param {Number} k
+ */
+Math.permutation = Math.perm = function permutation(n, k = 1) {
+	if (k > n) {
+		return 0;
+	}
+	let p = 1;
+	for (let i = 0; i < k; i++) {
+		p *= n - i;
+	}
+	return p;
+};
+
+/**
+ * Safely evaluate an expression using known Math properties and methods.
+ * Cannot use variables.
+ * @param {String} expression
+ */
+const JS_RESERVED = ['function','return','if','else','for','while','do','switch','case','break','continue'];
+Math.evaluate = Math.eval = function evaluate(expression) {
+	expression = expression.replace(/[a-zA-Z]+/g, str => {
+		if (str.toUpperCase() in Math) {
+			return str.toUpperCase();
+		} else if (str.toLowerCase() in Math) {
+			return str.toLowerCase();
+		} else if (JS_RESERVED.includes(str)) {
+			return str;
+		} else {
+			throw new SyntaxError('Invalid Math property/method or keyword: ' + str);
+		}
+	});
+	return eval(`with (Math) {${expression}}`);
+};
+
+Math.manhattan = function manhattan(x0, y0, x1, y1) {
+	return Math.abs(x0 - x1) + Math.abs(y0 - y1);
 };
 
 function pascalsTriangle(N) {
@@ -125,4 +203,33 @@ function pascalsTriangle(N) {
 	return rows;
 }
 
-module.exports = {Math,pascalsTriangle};
+// find N and D such that X = N/D
+function dirtyFraction(x) {
+	let numerator = x;
+	let denominator = 1;
+	
+	// turn each part of the fraction into whole numbers
+	while (numerator % 1 != 0) {
+		numerator   *= 10;
+		denominator *= 10;
+	}
+	
+	// ensure floating points don't ruin this
+	numerator = Math.round(numerator);
+	denominator = Math.round(denominator);
+	
+	// find the greatest common factor
+	let factor = Math.gcd(numerator,denominator);
+	
+	// divide the parts by their greatest common factor
+	numerator   /= factor;
+	denominator /= factor;
+	
+	return {numerator,denominator};
+}
+
+module.exports = {
+	Math,
+	pascalsTriangle,
+	dirtyFraction
+};

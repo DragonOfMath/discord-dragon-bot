@@ -1,0 +1,40 @@
+body: {
+	"coord": {
+		"lon": -122.68,
+		"lat": 45.52
+	},
+	"weather": [{
+		"id": 801,
+		"main": "Clouds",
+		"description": "few clouds",
+		"icon": "02d"
+	}],
+	"base": "stations",
+	"main": {
+		"temp": 302.15,
+		"pressure": 1014,
+		"humidity": 51,
+		"temp_min": 301.15,
+		"temp_max": 303.15
+	},
+	"visibility": 16093,
+	"wind": {
+		"speed": 2.6,
+		"deg": 320
+	},
+	"clouds": {
+		"all": 20
+	},
+	"dt": 1497905580,
+	"sys": {
+		"type": 1,
+		"id": 2274,
+		"message": 0.0042,
+		"country": "US",
+		"sunrise": 1497874905,
+		"sunset": 1497931383
+	},
+	"id": 5746545,
+	"name": "Portland",
+	"cod": 200
+}

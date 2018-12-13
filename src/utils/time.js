@@ -222,7 +222,7 @@ Date.parseDuration = function (tokens, time = 0) {
 		let sign = t[0];
 		if (sign == '+' || sign == '-') {
 			t = t.substring(1);
-			sign = Number(sign+1);
+			sign = Number(sign+'1');
 		} else {
 			sign = 1;
 		}
@@ -302,12 +302,20 @@ Date.parseDuration = function (tokens, time = 0) {
 	Get the timezone offset using one of the timezone codes
 */
 Date.getTimezoneOffset = function (timezone) {
-	// get offset as +/-HH:MM
+	// get offset as +/-HH:MM from GMT
 	let tzoff = Date.Timezones[timezone];
 	if (!tzoff) return NaN;
 	// multiply by 60 to go from MM:SS to HH:MM
 	return Date.parseDuration(tzoff) * 60;
 };
+
+/**
+	
+*/
+Date.getTimezoneDifference = function (tz1, tz2) {
+  return Date.getTimezoneOffset(tz2) - Date.getTimezoneOffset(tz1);
+};
+
 /**
 	Get the current time in the specified timezone using the abbreviation or IANA region code
 */
@@ -316,16 +324,27 @@ Date.getTimezoneTimeString = function (timezone, time = Date.now()) {
 	try {
 		return now.toLocaleTimeString('en-US', {timeZone: timezone});
 	} catch (e) {
-		let utcms    = now.getTime();
-		let myoffset = now.getTimezoneOffset() * MINUTE;
+		// get the UTC time in milliseconds (this is exactly the same as Date.now())
+		let utcms = now.getTime();
+		
+		// get the timezone offset in minutes, then convert to milliseconds
+		// Note: the sign is flipped
+		let myoffset = -now.getTimezoneOffset() * MINUTE;
+		
+		// get the offset of the target timezone in milliseconds
 		let tzoffset = Date.getTimezoneOffset(timezone);
 		if (!tzoffset) {
 			throw 'Invalid timezone or IANA region code.';
 		}
-		return new Date(utcms - myoffset + tzoffset).toLocaleTimeString('en-US');
+		
+		// add the offsets to the time and return a new time string
+		return new Date(utcms + (tzoffset - myoffset)).toLocaleTimeString('en-US');
 	}
 };
 
+/**
+	
+*/
 Date.prototype.difference = function (date = 0) {
 	return this.getTime() - (date instanceof Date ? date.getTime() : date);
 };

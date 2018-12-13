@@ -1,244 +1,48 @@
-class DiscordEmbed {
-	constructor(message = '', embed) {
-		this.message = '';
-		if (typeof (message) === 'object') {
-			[message, embed] = [embed, message];
-		}
-		if (typeof(message) === 'string') {
-			this.message = message;
-		}
-		if (typeof(embed) === 'object' && embed != null) {
-			this.embed = embed;
-		}
-	}
-	embedThumbnail(url,width,height) {
-		this.embed = this.embed || {};
-		this.embed.thumbnail = {url,width,height};
-		return this;
-	}
-	embedImage(url,width,height) {
-		this.embed = this.embed || {};
-		this.embed.image = {url,width,height};
-		return this;
-	}
-	embedVideo(url,width,height) {
-		this.embed = this.embed || {};
-		this.embed.video = {url,width,height};
-		return this;
-	}
-	embedProvider(name,url) {
-		this.embed = this.embed || {};
-		this.embed.provider = {name,url};
-		return this;
-	}
-	setAuthor(name,url,icon_url) {
-		this.embed = this.embed || {};
-		this.embed.author = {name,url,icon_url};
-		return this;
-	}
-	setMessage(x) {
-		this.message = x;
-		return this;
-	}
-	setColor(x) {
-		this.embed = this.embed || {};
-		this.embed.color = Number(x);
-		return this;
-	}
-	setTitle(x) {
-		this.embed = this.embed || {};
-		this.embed.title = x;
-		return this;
-	}
-	setDescription(x) {
-		this.embed = this.embed || {};
-		this.embed.description = x;
-		return this;
-	}
-	setFooter(text,icon_url) {
-		this.embed = this.embed || {};
-		this.embed.footer = {text,icon_url};
-		return this;
-	}
-	setURL(url) {
-		this.embed = this.embed || {};
-		this.embed.url = url;
-		return this;
-	}
-	addField(name,value,inline) {
-		this.embed = this.embed || {};
-		this.embed.fields = this.embed.fields || [];
-		inline = !!inline;
-		this.embed.fields.push({name,value,inline});
-		return this;
-	}
-	/**
-		Ensures message + embed are within Discord's size limits
-		https://discordapp.com/developers/docs/resources/channel#embed-limits
-	*/
-	checkPayloadLength() {
-		if (typeof(this.message) === 'string' && this.message.length > 2000) {
-			throw new Error('Message length exceeds Discord\'s limit: ' + this.message.length);
-		}
-		
-		if (typeof(this.embed) === 'object') {
-			let totalLength = 0;
-			if (this.embed.title) {
-				if (this.embed.title.length > 256) {
-					throw new Error('Embed title length exceeds Discord\'s limit: ' + this.embed.title.length);
-				} else {
-					totalLength += this.embed.title.length;
-				}
-			}
-			if (this.embed.description) {
-				if (this.embed.description.length > 2048) {
-					throw new Error('Embed description length exceeds Discord\'s limit: ' + this.embed.description.length);
-				} else {
-					totalLength += this.embed.description.length;
-				}
-			}
-			if (this.embed.fields) {
-				if (this.embed.fields.length > 25) {
-					throw new Error('Number of embed fields exceeds Discord\'s limit: ' + this.embed.fields.length);
-				} else {
-					for (let f of this.embed.fields) {
-						if (typeof(f.name) !== 'string') {
-							f.name = String(f.name);
-						}
-						if (f.name.length > 256) {
-							throw new Error('Embed field name length exceeds Discord\'s limit: ' + f.name.length);
-						} else {
-							totalLength += f.name.length;
-						}
-						if (typeof(f.value) !== 'string') {
-							f.value = String(f.value);
-						}
-						if (f.value.length > 1024) {
-							throw new Error('Embed field value length exceeds Discord\'s limit: ' + f.value.length);
-						} else {
-							totalLength += f.value.length;
-						}
-					}
-				}
-			}
-			if (this.embed.footer && this.embed.footer.text) {
-				if (this.embed.footer.text.length > 2048) {
-					throw new Error('Embed footer text length exceeds Discord\'s limit: ' + this.embed.footer.text.length);
-				} else {
-					totalLength += this.embed.footer.text.length;
-				}
-			}
-			if (this.embed.author && this.embed.author.name) {
-				if (this.embed.author.name.length > 256) {
-					throw new Error('Embed author name length exceeds Discord\'s limit: ' + this.embed.author.name.length);
-				} else {
-					totalLength += this.embed.author.name.length;
-				}
-			}
-			
-			if (totalLength > 6000) {
-				throw new Error('Total embed text length exceeds Discord\'s limit: ' + totalLength);
-			}
-		}
-		
-		return true;
-	}
-	/**
-		Modifies all string properties and fields
-	*/
-	replaceAll(regex, sub) {
-		if (this.message) {
-			this.message = this.message.replace(regex, sub);
-		}
-		if (this.embed) {
-			if (this.embed.title) {
-				this.embed.title = String(this.embed.title).replace(regex, sub);
-			}
-			if (this.embed.description) {
-				this.embed.description = String(this.embed.description).replace(regex, sub);
-			}
-			if (this.embed.footer) {
-				this.embed.footer.text = String(this.embed.footer.text).replace(regex, sub);
-			}
-			if (this.embed.fields) for (var field of this.embed.fields) {
-				field.name = String(field.name).replace(regex, sub);
-				field.value = String(field.value).replace(regex, sub);
-			}
-		}
-		return this;
-	}
-	toString() {
-		var str = this.message + '\n';
-		if (this.embed) {
-			if (this.embed.title) {
-				str += '**' + this.embed.title + '**\n';
-			}
-			if (this.embed.url) {
-				str += this.embed.url + '\n';
-			}
-			if (this.embed.description) {
-				str += this.embed.description + '\n';
-			}
-			if (this.embed.fields) {
-				for (var field of this.embed.fields) {
-					str += '**' + field.name + '**\n' + field.value + '\n';
-				}
-			}
-			if (this.embed.footer) {
-				str += this.embed.footer.text + '\n';
-			}
-			if (this.embed.image && this.embed.image.url != this.embed.url) {
-				str += this.embed.image.url + '\n';
-			}
-			if (this.embed.video && this.embed.video.url != this.embed.url) {
-				str += this.embed.video.url;
-			}
-		}
-		return str.trim();
-	}
-	static stringify(message, embed) {
-		return new DiscordEmbed(message, embed).toString();
-	}
-}
-
-function tableify(columns = [], rows = [], callback) {
+function tableify(columns = [], rows = [], fn, start = 0, limit) {
 	if ((columns.length > 3 && columns.length % 3 !== 0) || columns.length > 24) {
 		throw '# of columns must be a multiple of 3 and not be more than 24.';
 	}
-	var fields = columns.map(name => ({
+	if (!limit) limit = rows.length;
+	
+	let end = Math.min(start + limit, rows.length) - 1;
+	let fields = columns.map(name => ({
 		name,
 		value: '',
 		inline: true
 	}));
-	var row, item, r;
-	for (item of rows) {
-		row = callback(item);
-		for (r = 0; r < row.length; r++) {
-			fields[r].value += String(row[r]) + '\n';
+	for (let r = start, row; r <= end; r++) {
+		row = fn ? fn(rows[r], r) : rows[r];
+		for (let c = 0; c < row.length; c++) {
+			fields[c].value += String(row[c]) + '\n';
 		}
 	}
-	return {fields};
+	
+	let embed = {fields};
+	if (start != 1 || end != rows.length) {
+		embed.footer = {
+			text: `Showing ${start+1}-${end+1} of ${rows.length} Total`
+		};
+	}
+	return embed;
 }
 
-function paginate(items, page, itemsPerPage, callback) {
-	itemsPerPage = +itemsPerPage || 20;
+function paginate(items, page = 1, limit = 20, fn) {
+	page  = +page;
+	limit = +limit;
 	
-	var totalItems = items.length || Object.keys(items).length;
-	var maxPages = Math.ceil(totalItems / itemsPerPage);
+	let totalItems = items.length || Object.keys(items).length;
+	let maxPages = Math.ceil(totalItems / limit);
 	
-	if (typeof(page) !== 'number') {
-		page = Number(page);
-	}
-	if (isNaN(page) || page < 0) {
+	if (isNaN(page) || page < 1) {
 		page = 1;
 	} else {
-		page = Math.max(1, Math.min(page, maxPages));
+		page = Math.min(page, maxPages);
 	}
 	
-	var start = (page - 1) * itemsPerPage;
-	var end   = Math.min(start + itemsPerPage, totalItems) - 1;
+	let start = (page - 1) * limit;
+	let end   = Math.min(start + limit, totalItems) - 1;
 	
-	var embed = {};
+	let embed = {};
 	
 	if (items.length > 0) {
 		embed.fields = [];
@@ -246,7 +50,7 @@ function paginate(items, page, itemsPerPage, callback) {
 			text: `Page ${page} of ${maxPages} | Showing ${start+1}-${end+1} of ${totalItems} Total`
 		};
 		for (var idx = start, temp; idx <= end; idx++) {
-			temp = callback(items, idx, items[idx]);
+			temp = fn(items, idx, items[idx]);
 			if (typeof(temp) === 'string') {
 				temp = {
 					name: `#${idx+1}`,
@@ -262,31 +66,60 @@ function paginate(items, page, itemsPerPage, callback) {
 	return embed;
 }
 
-function bufferize(items, delimiter = '\n') {
-	var e = {fields: []};
-	var start = 0, idx, end, item, buffer = '';
-	for (idx = start; idx < items.length; idx++) {
-		if (buffer) buffer += delimiter;
-		item = items[idx];
-		if (buffer.length + item.length > 1000) {
+/**
+ * Paginate but put multiple items under each field, up to a given limit or until the field size limit is reached.
+ */
+function bufferize(items, page = 1, itemsPerField = 25, itemsPerPage = 100, delimiter = '\n', map) {
+	page          = +page;
+	itemsPerField = +itemsPerField;
+	pageLimit     = +itemsPerPage;
+	
+	let totalItems = items.length || Object.keys(items).length;
+	let maxPages   = Math.ceil(totalItems / itemsPerPage);
+	
+	if (isNaN(page) || page < 1) {
+		page = 1;
+	} else {
+		page = Math.min(page, maxPages);
+	}
+	
+	let pageStart = (page - 1) * itemsPerPage;
+	let pageEnd   = Math.min(pageStart + itemsPerPage, totalItems) - 1;
+	let embed = {
+		fields: [],
+		footer: {text:`Page ${page} of ${maxPages} | Showing ${pageStart+1}-${pageEnd+1} of ${totalItems} Total`}
+	};
+	
+	let start, end, buffer = '', itemsInBuffer = 0, idx;
+	for (start = pageStart,
+	     end  = start + itemsPerField,
+		 idx = start,
+		 item; idx <= pageEnd; idx++) {
+		if (itemsInBuffer == itemsPerField || (buffer.length + items[idx].length) > 1000) {
 			end = idx;
-			e.fields.push({
+			embed.fields.push({
 				name: `${start+1}-${end}`,
-				value: buffer
+				value: buffer,
+				inline: true
 			});
 			start = end;
 			buffer = '';
+			itemsInBuffer = 0;
 		}
-		buffer += item;
+		item = items[idx];
+		if (map) item = map(item, idx, items);
+		buffer += item + delimiter;
+		itemsInBuffer++;
 	}
 	if (buffer) {
 		end = idx;
-		e.fields.push({
+		embed.fields.push({
 			name: `${start+1}-${end}`,
-			value: buffer
+			value: buffer,
+			inline: true
 		});
 	}
-	return e;
+	return embed;
 }
 
-module.exports = {DiscordEmbed,paginate,tableify,bufferize};
+module.exports = {paginate,tableify,bufferize};

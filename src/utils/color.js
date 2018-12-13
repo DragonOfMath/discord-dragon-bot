@@ -66,6 +66,7 @@ class Color {
 		this.red   = Math.floor(x/0x10000);
 		this.green = Math.floor(x/0x100) % 0x100;
 		this.blue  = x % 0x100;
+		this.alpha = 0xFF;
 	}
 	get hex() {
 		return '#' + this.val.toString(16).padStart(6, '0');
@@ -112,6 +113,13 @@ class Color {
 	}
 	clone() {
 		return new Color(this);
+	}
+	equals(color) {
+		if (typeof(color) === 'number') {
+			return this.val == color;
+		} else {
+			this.r == color.r && this.g == color.g && this.b == color.b;
+		}
 	}
 	
 	static from(obj) {
@@ -190,6 +198,20 @@ class Color {
 		blue  = 0xFF * (blue  + m);
 		
 		return new Color(red, green, blue);
+	}
+	static resolve(color) {
+		if (typeof(color) === 'number') {
+			return color;
+		}
+		if (typeof(color) === 'object') {
+			return new Color(color).rgba;
+		}
+		if (typeof(color) === 'string') {
+			if (this[color.toUpperCase()] instanceof Color) {
+				return this[color.toUpperCase()].rgba;
+			}
+		}
+		return 0;
 	}
 }
 
