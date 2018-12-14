@@ -1,25 +1,25 @@
 # DragonBot Commands
-There are **517** commands in **13** categories.
+There are **544** commands in **13** categories.
 
 ## Catgories
- * [Admin](#admin) (43)
+ * [Admin](#admin) (44)
  * [Audio](#audio) (13)
- * [Discord](#discord) (81)
- * [Economy](#economy) (26)
- * [Fun](#fun) (106)
- * [Image](#image) (95)
+ * [Discord](#discord) (90)
+ * [Economy](#economy) (25)
+ * [Fun](#fun) (97)
+ * [Image](#image) (103)
  * [Meta](#meta) (17)
- * [Misc](#misc) (32)
+ * [Misc](#misc) (39)
  * [Moderation](#moderation) (41)
- * [NSFW](#nsfw) (28)
+ * [NSFW](#nsfw) (34)
  * [Programming](#programming) (10)
- * [Text](#text) (16)
- * [Web](#web) (9)
+ * [Text](#text) (18)
+ * [Web](#web) (13)
 ## Admin
 
 ### `runjs ...code` *Private*
 
-Aliases: `evaljs`
+Aliases: `eval`
 
 Run JavaScript code within the bot.
 
@@ -41,6 +41,12 @@ Aliases: `pause`
 
 Disconnects the bot for a period of time, then reconnects it.
 
+### `echo ...arguments` *Private*
+
+Aliases: `print`, `display`
+
+Display the raw arguments, which can be the output of an expression.
+
 ### `proxy target ...message` *Private*
 
 Aliases: `ghost`, `reply`
@@ -51,7 +57,11 @@ Send a message through the bot to another dimension.
 
 Adds a temporary alias for a command.
 
-### `ignore <users|bots|none>` *Private*
+### `toggle -embeds -tts -typing -invites -globalmentions -ignore -errors -logging`
+
+Toggles internal client settings.
+
+### `ignore <users|bots|all|none>` *Private*
 
 Toggles ignoring other users and bots (the owner is not affected).
 
@@ -72,12 +82,6 @@ Toggles typing simulation before each message.
 ### `errors <on|dm|off>` *Private*
 
 Toggle handling of errors.
-
-### `echo ...arguments` *Private*
-
-Aliases: `print`, `display`
-
-Display the arguments, which can be the output of an expression.
 
 ### `logging level` *Private*
 
@@ -205,31 +209,31 @@ Looks up the IP address and location of a website/domain.
 
 Aliases: `make`, `new`
 
-Create new self-assignable role(s), with no special permissions. You can assign a color to a role by appending it with `:color`, e.g. `artist:#FFFF00` (for yellow).
+Create new self-assignable role(s), with no special permissions. You can assign a color to a role by appending it with `:color`, e.g. `artist:#FFFF00` (for yellow). Use commas to separate role names.
 
 ### `roles.rename oldname newname` *Privileged*
 
 Aliases: `name`
 
-Renames an existing role.
+Renames an existing role. Use quote marks for multi-word role names.
 
 ### `roles.recolor role color` *Privileged*
 
 Aliases: `color`
 
-Replaces color of an existing role.
+Replaces color of an existing role. Use quote marks for multi-word role names.
 
 ### `roles.assign ...roles` *Privileged*
 
 Aliases: `register`
 
-Makes role(s) self-assignable.
+Makes role(s) self-assignable. Use commas to separate role names.
 
 ### `roles.unassign ...roles` *Privileged*
 
 Aliases: `unregister`
 
-Makes role(s) un-self-assignable.
+Makes role(s) un-self-assignable. Use commas to separate role names.
 
 ### `roles.permissions role ...flags` *Privileged*
 
@@ -303,7 +307,7 @@ Mix up the current playlist.
 
 ## Discord
 
-### `analytics [...commands] [page] -a/-all/-global -t/-temp`
+### `analytics [...commands] -a/-all/-global -t/-temp`
 
 Display statistics about bot command usage in this server. Use the flag `-a` or `-all` for global analytics and `-t` or `-temp` for temporary analytics (since the bot was online).
 
@@ -338,6 +342,8 @@ Displays the server's growing member count over the past 100 days.
 Aliases: `cmds`
 
 Interface for enabling and disabling commands. *You should configure commands in a private channel to avoid mentioning users and roles.*
+
+If you are looking for a list of commands, try using the `category` command (there are simply too many commands to list them all!).
 
 ### `commands.enable ...commands [...targets]` *Privileged*
 
@@ -379,7 +385,7 @@ Aliases: `replace`, `alias`, `rename`
 
 Replace permission entry keys with new ones, in case the names of commands change and are no longer binded. :warning: Warning! This is a low-level command, it will create or delete data regardless of validation!
 
-### `commands.create name code` *Privileged*
+### `commands.create name code` *Private*
 
 Aliases: `new`
 
@@ -403,9 +409,11 @@ Aliases: `dev`, `owner`
 
 Displays the bot's developer.
 
-### `bot.performance`
+### `bot.health`
 
-Displays uptime, pint, and memory usage.
+Aliases: `performance`
+
+Displays uptime, ping, and memory usage.
 
 ### `bot.uptime`
 
@@ -426,6 +434,8 @@ Aliases: `mem`
 Checks bot memory usage.
 
 ### `bot.version`
+
+Aliases: `v`
 
 Shows bot and library versions.
 
@@ -448,6 +458,24 @@ Get commit history on the bot.
 ### `bot.shard`
 
 Get shard ID, not that it really matters at the moment...
+
+### `bot.readme [section]`
+
+Aliases: `info`
+
+Get the bot readme information.
+
+### `bot.changelog [section]`
+
+Aliases: `changes`, `updates`
+
+Get the bot changelog information.
+
+### `bot.todo [section]`
+
+Aliases: `contributing`
+
+Get the bot to-do information.
 
 ### `info`
 
@@ -477,7 +505,7 @@ Displays information about a user.
 
 Displays information about a role.
 
-### `info.invite invite`
+### `info.invite code`
 
 Reveals information about a server invite. (doesn't work on vanity invites)
 
@@ -491,55 +519,59 @@ Analyze and identify information about a snowflake ID.
 
 Analyze and identify information about a Discord Token
 
+### `info.permissions value` *Private*
+
+Get a list of permissions.
+
 ### `list`
 
 Listing interface for all users, roles, and channels in this server.
 
-### `list.users [page]`
+### `list.users`
 
 Aliases: `members`
 
 List members of this server.
 
-### `list.roles [page]`
+### `list.roles`
 
 List roles of this server.
 
-### `list.channels [page]`
+### `list.channels`
 
 List channels of this server.
+
+### `list.servers [userID]` *Private*
+
+Aliases: `guilds`
+
+List all servers the bot has access to. Optionally, filter by servers that are shared with a user.
 
 ### `list.all` *Private*
 
 Aliases: `every`
 
-Listing interface for all users, roles, channels, and servers the bot has access to.
+Listing interface for ALL users, roles, channels, and servers the bot has access to. For privacy reasons, this is hidden.
 
-### `list.all.users [serverID] [page]` *Private*
+### `list.all.users [serverID]` *Private*
 
 Aliases: `members`
 
 List all users the bot has access to. Optionally, filter by server ID.
 
-### `list.all.roles [serverID] [page]` *Private*
+### `list.all.roles [serverID]` *Private*
 
 List all roles the bot has access to. Optionally, filter by server ID.
 
-### `list.all.channels [serverID] [page]` *Private*
+### `list.all.channels [serverID]` *Private*
 
 List all channels the bot has access to. Optionally, filter by server ID.
-
-### `list.all.servers [userID] [page]` *Private*
-
-Aliases: `guilds`
-
-List all servers the bot has access to. Optionally, filter by servers that a user is in.
 
 ### `search [channel] ...keywords`
 
 Aliases: `find`, `lookup`, `query`
 
-Search a message in the current channel, up to 100 messages into history.
+Search a message in the current channel, up to 1000 messages into history.
 
 ### `search.user discriminator | keyword [...more keywords]`
 
@@ -558,10 +590,6 @@ Search for roles with the given keywords in their name.
 Aliases: `channels`
 
 Search for channels with the given keywords in their name.
-
-### `search.status <online|offline|idle|invisible|dnd>`
-
-Search users with the given discriminator.
 
 ### `search.all` *Private*
 
@@ -615,29 +643,61 @@ Aliases: `deleteall`, `removeall`
 
 Remove all custom prefixes from the server.
 
-### `roles`
+### `roles ...roles`
 
-Aliases: `role`
+Aliases: `role`, `iama`, `iam`, `rank`
 
-Manage roles on the server, and allow users to assign themselves roles or remove roles.
-
-### `roles.add ...roles`
-
-Aliases: `give`, `iama`, `iam`
-
-Assigns roles to you.
+Assigns roles to you. Use commas to separate role names.
 
 ### `roles.remove ...roles`
 
 Aliases: `take`, `iamnota`, `iamnot`
 
-Removes roles from you.
+Removes roles from you. Use commas to separate role names.
 
 ### `roles.list`
 
 Aliases: `show`, `display`, `roles`
 
 Lists all roles that may be assigned/removed.
+
+### `support`
+
+Get an invite to the bot's support server.
+
+### `tag name` *Privileged*
+
+Aliases: `t`, `tags`
+
+Get a server tag.
+
+### `tag.set name ...data` *Privileged*
+
+Aliases: `make`, `create`, `assign`
+
+Set a server tag (maximum of 10).
+
+### `tag.list` *Privileged*
+
+Aliases: `show`, `all`
+
+List server tags.
+
+### `tag.delete name` *Privileged*
+
+Aliases: `remove`, `del`, `rem`
+
+Delete a server tag.
+
+### `tag.clear` *Privileged*
+
+Delete all server tags.
+
+### `help [command]`
+
+Aliases: `halp`
+
+Lists bot commands, or shows information about a command.
 
 ### `ping [url]`
 
@@ -646,18 +706,6 @@ Basic heartbeat/latency checkup command, or ping an address.
 ### `invite`
 
 Gives you a link to add the bot to your servers.
-
-### `permcalc ...flags`
-
-Aliases: `permissions`
-
-Calculate the number that is masked by these permissions: `CREATE_INSTANT_INVITE`, `KICK_MEMBERS`, `BAN_MEMBERS`, `ADMINISTRATOR`, `MANAGE_CHANNELS`, `MANAGE_GUILD`, `ADD_REACTIONS`, `VIEW_AUDIT_LOG`, `VIEW_CHANNEL`, `SEND_MESSAGES`, `SEND_TTS_MESSAGES`, `MANAGE_MESSAGES`, `EMBED_LINKS`, `ATTACH_FILES`, `READ_MESSAGE_HISTORY`, `MENTION_EVERYONE`, `USE_EXTERNAL_EMOJIS`, `CONNECT`, `SPEAK`, `MUTE_MEMBERS`, `DEAFEN_MEMBERS`, `MOVE_MEMBERS`, `USE_VAD`, `CHANGE_NICKNAME`, `MANAGE_NICKNAMES`, `MANAGE_ROLES`, `MANAGE_WEBHOOKS`, `MANAGE_EMOJIS`
-
-### `help [command]`
-
-Aliases: `?`, `whatis`
-
-Lists bot commands, or shows information about a command.
 
 ### `category [category]`
 
@@ -689,6 +737,12 @@ Aliases: `message`, `feedback`, `bugreport`, `report`, `suggest`
 
 Send a direct message to the bot owner. Let me know if you've encountered a bug, have an idea for the bot, or just wanted to say hi! :smiley:
 
+### `permcalc ...flags`
+
+Aliases: `permissions`
+
+Calculate the number that is masked by these permissions: `CREATE_INSTANT_INVITE`, `KICK_MEMBERS`, `BAN_MEMBERS`, `ADMINISTRATOR`, `MANAGE_CHANNELS`, `MANAGE_GUILD`, `ADD_REACTIONS`, `VIEW_AUDIT_LOG`, `VIEW_CHANNEL`, `SEND_MESSAGES`, `SEND_TTS_MESSAGES`, `MANAGE_MESSAGES`, `EMBED_LINKS`, `ATTACH_FILES`, `READ_MESSAGE_HISTORY`, `MENTION_EVERYONE`, `USE_EXTERNAL_EMOJIS`, `CONNECT`, `SPEAK`, `MUTE_MEMBERS`, `DEAFEN_MEMBERS`, `MOVE_MEMBERS`, `USE_VAD`, `CHANGE_NICKNAME`, `MANAGE_NICKNAMES`, `MANAGE_ROLES`, `MANAGE_WEBHOOKS`, `MANAGE_EMOJIS`
+
 ### `dstatus`
 
 Aliases: `discordstatus`
@@ -701,9 +755,15 @@ Aliases: `nick`, `nickme`
 
 Request a nickname change.
 
-### `welcome` *Privileged*
+### `games [game]`
 
-Let your users feel welcome! Set a channel and message for which this bot may greet them.
+Aliases: `findagame`
+
+Get a list of the most popular games currently being played on the server.
+
+### `welcome [user]` *Privileged*
+
+Let your users feel welcome! Set a channel and message for which this bot may greet them. Use this command to manually welcome them.
 
 ### `welcome.message ...message` *Privileged*
 
@@ -727,9 +787,12 @@ Test the welcome/goodbye messages.
 
 ## Economy
 
-### `bank`
+### `bank [user]`
 
-The bank tracks the credits of all users on the server. Credits can be used to play games, like Blackjack, Slots, Fishing, and Lottery. Users can transfer their credits or make investments. Authorized bank staff may offer loans and custom bank amounts.
+Aliases: `account`, `profile`
+
+View a bank account's summary.
+Credits can be used to play games, like Blackjack, Slots, Fishing, and Lottery. Users can transfer their credits or make investments. Authorized bank staff may offer loans and custom bank amounts.
 
 ### `bank.auth user` *Privileged*
 
@@ -764,12 +827,6 @@ Closes `user`'s account, which prevents transactions.
 Aliases: `reset`
 
 Deletes `user`'s account. (This effectively just resets their bank account...)
-
-### `bank.view [user]`
-
-Aliases: `check`, `summary`, `account`, `profile`
-
-Returns a summary of the `user`'s account.
 
 ### `bank.add [user] amount`
 
@@ -837,7 +894,7 @@ Assortment of fun and risky minigames. Place your bets and win big!
 
 Roll a pair of dice. Pair of 1's or 6's = x2. Other pair = x1. Sum of 6 = x0.5. Any other roll = loss.
 
-### `casino.coin [bet] [heads or tails]`
+### `casino.coin [bet] [heads|tails]`
 
 Aliases: `cointoss`, `coinflip`
 
@@ -847,7 +904,7 @@ Toss a coin and call it right.
 
 Aliases: `slotmachine`
 
-3-column slot machine game!
+3-column slot machine game! Now with extra betting and free spins!
 
 ### `slots.table`
 
@@ -864,6 +921,108 @@ Classic Blackjack card game, now with other players! Have the highest hand witho
 Convert an amount from any currency to another. Default target currency is USD.
 
 ## Fun
+
+### `daily`
+
+Aliases: `money`, `cash`, `freebie`, `welfare`, `877-cash-now`
+
+Earn free money every day!
+
+### `fish`
+
+Aliases: `fishy`, `fishing`, `feesh`
+
+Catch critters of the sea to win big prizes! Each try costs **5 credits** and you must wait **20 seconds** between tries. :new: Events are here! For a limited time, fish will be harder/easier to catch, or be more/less valuable!
+
+### `fish.inventory [user] [category]`
+
+Aliases: `inv`, `catches`
+
+Displays how many of each type of fish you've caught.
+
+### `fish.info [fishtype|fishname|:fish:]`
+
+Aliases: `fish`
+
+Displays information about a fish by its type, name, or emoji. If no argument is passed, displays the types of fish to catch.
+
+### `fish.events`
+
+Aliases: `evts`
+
+Displays any fishing events on this server.
+
+### `fish.event`
+
+Aliases: `evt`, `artifact`
+
+Consumes an Artifact in your inventory to generate a random Fishing Event.
+
+### `fish.table [sortby]`
+
+Displays the current catch rates of all fish types. Can sort by name, value, chance, or type.
+
+### `fish.newevent [fish] [<rarity|value>] [multiplier] [expires]` *Private*
+
+(Admin only) Starts a new fishing event, either from given parameters or randomized.
+
+### `fish.hittable [user] [ammo]`
+
+Calculates the probability of hitting a bird, given a few sample Ammo values and the current hit percentage.
+
+### `fish.wait [time]` *Private*
+
+Temporarily set the cooldown for `fish` usage.
+
+### `lottery amount`
+
+Participate in the global lottery. Specify how many tickets you wish to by at **:dragon:$50.0** each, up to **100** tickets. Every **12 hours** the bot will pick a number, and if one of your tickets includes that number, you win the jackpot! Tickets will be reset at that time, so the jackpot can keep growing.
+
+### `lottery.tickets`
+
+Aliases: `numbers`
+
+List the ticket numbers you've purchased.
+
+### `lottery.info`
+
+Get the current jackpot, the total number of tickets purchased globally, the time remaining, and the last winning number of the Lottery.
+
+### `lottery.time`
+
+Aliases: `countdown`
+
+Get the time left until the lottery round is over.
+
+### `lottery.winner`
+
+Aliases: `last`
+
+Get the winning number of the last lottery round.
+
+### `lottery.jackpot`
+
+Aliases: `jp`, `total`
+
+Check the current jackpot of the lottery.
+
+### `lottery.end` *Private*
+
+Aliases: `finish`
+
+End the lottery round before it is officially over.
+
+### `lottery.cancel [resetJackpot]` *Private*
+
+Aliases: `forfeit`
+
+Cancel the current lottery and refund all participants. Specify whether to reset the jackpot or not.
+
+### `lottery.custom amount` *Private*
+
+Aliases: `override`
+
+Set a custom jackpot for the Lottery.
 
 ### `cah [count]`
 
@@ -925,64 +1084,6 @@ Aliases: `8ch`, `infinichan`
 
 Gets a random post from one of the boards on 8ch.net (You can specify which board, else one is chosen at random)
 
-### `connectfour [opponent]`
-
-Aliases: `connect4`, `4inarow`
-
-Play a game of Connect Four against another user or the bot. The first turn player is randomly selected.
-
-### `daily`
-
-Aliases: `money`, `cash`, `freebie`, `welfare`, `877-cash-now`
-
-Earn free money every day!
-
-### `fish`
-
-Aliases: `fishy`, `fishing`, `feesh`
-
-Catch critters of the sea to win big prizes! Each try costs **5 credits** and you must wait **20 seconds** between tries. :new: Events are here! For a limited time, fish will be harder/easier to catch, or be more/less valuable!
-
-### `fish.inventory [user] [category]`
-
-Aliases: `inv`, `catches`
-
-Displays how many of each type of fish you've caught.
-
-### `fish.info [fishtype|fishname|:fish:]`
-
-Aliases: `fish`
-
-Displays information about a fish by its type, name, or emoji. If no argument is passed, displays the types of fish to catch.
-
-### `fish.events`
-
-Aliases: `evts`
-
-Displays any fishing events on this server.
-
-### `fish.event`
-
-Aliases: `evt`, `artifact`
-
-Consumes an Artifact in your inventory to generate a random Fishing Event.
-
-### `fish.table [sortby]`
-
-Displays the current catch rates of all fish types. Can sort by name, value, chance, or type.
-
-### `fish.newevent [fish] [<rarity|value>] [multiplier] [expires]` *Private*
-
-(Admin only) Starts a new fishing event, either from given parameters or randomized.
-
-### `fish.hittable [user] [ammo]`
-
-Calculates the probability of hitting a bird, given a few sample Ammo values and the current hit percentage.
-
-### `fish.wait [time]` *Private*
-
-Temporarily set the cooldown for `fish` usage.
-
 ### `rate`
 
 Aliases: `outta10`
@@ -993,9 +1094,9 @@ I will rate anything out of 10 points.
 
 Aliases: `choose`, `choices`
 
-Let me choose between your choices (use quotation marks/OR/`|` to separate mult-word choices; if left out, all words are choices)
+Let me choose between your choices (use quotation marks/or/`|` to separate mult-word choices; if left out, all words are choices)
 
-### `eightball ...question`
+### `eightball question`
 
 Aliases: `8ball`, `8`
 
@@ -1121,67 +1222,47 @@ Pick a random command. (gives you the usage, does not actually run it)
 
 Generate a random fake Discord Token.
 
+### `bingo [...co-players]`
+
+Play a game of Emoji Bingo, solo or with friends!
+
+### `connectfour [opponent]`
+
+Aliases: `connect4`, `4inarow`
+
+Play a game of Connect Four against another user or the bot. The first turn player is randomly selected.
+
 ### `gol [rules] -w/-wrap`
 
 Aliases: `gameoflife`, `conway`
 
 Simulate the Game of Life... in Discord! Set the rules in the format `B###/S###` where B is birth conditions and S is survival conditions, each followed by digits 0-8. The default rules are `B3/S23`.
 
+### `minesweeper [...co-players] -m/-mines`
+
+Play the classic Minesweeper game, with additional multiplayer!
+
+### `sudoku [difficulty|board]`
+
+Play a game of Sudoku. Enter a number from 0 to 100 to set the difficulty, or use an 81-character string for the grid.
+
+### `tictactoe [<x|o>] [opponent]`
+
+Aliases: `ttt`, `3inarow`
+
+Play a game of Tic-Tac-Toe against another user or the bot. You can choose to be X or O. The first turn player is randomly selected.
+
+### `towers [difficulty]`
+
+Aliases: `hanoi`, `towersofhanoi`, `towerofhanoi`, `toh`
+
+Play the Tower of Hanoi minigame. The difficulty value is the number of blocks to stack.
+
 ### `maze [width] [height]`
 
 Aliases: `labyrinth`
 
 Play the maze runner game. You can set the maze size (limited from 10x10 up to 100x100).
-
-### `lottery amount`
-
-Participate in the global lottery. Specify how many tickets you wish to by at **:dragon:$50.0** each, up to **100** tickets. Every **12 hours** the bot will pick a number, and if one of your tickets includes that number, you win the jackpot! Tickets will be reset at that time, so the jackpot can keep growing.
-
-### `lottery.tickets`
-
-Aliases: `numbers`
-
-List the ticket numbers you've purchased.
-
-### `lottery.info`
-
-Get the current jackpot, the total number of tickets purchased globally, the time remaining, and the last winning number of the Lottery.
-
-### `lottery.time`
-
-Aliases: `countdown`
-
-Get the time left until the lottery round is over.
-
-### `lottery.winner`
-
-Aliases: `last`
-
-Get the winning number of the last lottery round.
-
-### `lottery.jackpot`
-
-Aliases: `jp`, `total`
-
-Check the current jackpot of the lottery.
-
-### `lottery.end` *Private*
-
-Aliases: `finish`
-
-End the lottery round before it is officially over.
-
-### `lottery.cancel [resetJackpot]` *Private*
-
-Aliases: `forfeit`
-
-Cancel the current lottery and refund all participants. Specify whether to reset the jackpot or not.
-
-### `lottery.custom amount` *Private*
-
-Aliases: `override`
-
-Set a custom jackpot for the Lottery.
 
 ### `markov [iterations] [seed]`
 
@@ -1205,9 +1286,11 @@ Read a number of messages in a channel and add them to the Markov chain. Default
 
 Clears all Markov chain data.
 
-### `minesweeper [...co-players]`
+### `call [user]`
 
-Play the classic Minesweeper game, with additional multiplayer!
+Aliases: `phone`, `telephone`, `ringring`, `hangup`, `endcall`
+
+Pick up the phone and see who answers! As this is a rather privacy-sensitive command, you should use this in DMs with the bot. You can call a specific user and I will try to contact them, otherwise, I will hook you up with anyone else also using `call` within 30 seconds. To end a call, use the `hangup` or `endcall` aliases.
 
 ### `pokemon`
 
@@ -1220,24 +1303,6 @@ Catches a random Pokémon. Cooldown: **2 hours**
 Aliases: `pokeinventory`, `pinventory`, `pinv`
 
 Displays your Pokémon. Optionally include a search term to filter Pokémon.
-
-### `pokemon.legendaries`
-
-Aliases: `lgds`
-
-Displays your legendary Pokémon. (Shortcut for `pokemon.pokedex -legendary`)
-
-### `pokemon.favorites`
-
-Aliases: `faves`
-
-Displays your faved Pokémon. (Shortcut for `pokemon.pokedex -favorites`)
-
-### `pokemon.shinies`
-
-Aliases: `shinys`
-
-Displays your shiny Pokémon. (Shortcut for `pokemon.pokedex -shiny`)
 
 ### `pokemon.inventory [user]`
 
@@ -1351,41 +1416,16 @@ Sell an item to the PokéShop.
 
 Identify a pokémon based on its picture. Either link the image or upload it.
 
-### `bulbapedia [topic]`
+### `reddit [subreddit] -type -time -limit`
 
-Aliases: `pokemonwiki`, `pkmnwiki`, `pokewiki`
+Retrieve reddit posts from a sub of your choice or one at random.
+**Post Types**: __hot__, __new__, __rising__, __top__, __controversial__, or __gilded__.
+**Time Ranges**: __day__, __week__, __month__, __year__, or from __all__ time.
+Default flag values are `type=hot`, `time=all`, and `limit=200`.
 
-Search for Pokemon articles on Bulbapedia.
+### `reddit.subbed`
 
-### `reddit [subreddit]`
-
-Retrieve a random reddit post from a sub of your choice or one at random.
-
-### `reddit.new [subreddit]`
-
-Get the newest posts of a subreddit.
-
-### `reddit.rising [subreddit]`
-
-Get the rising posts of a subreddit.
-
-### `reddit.top [subreddit] [filter]`
-
-Get the top posts of a subreddit from the last __day__, __week__, __month__, __year__, or from __all__ time.
-
-### `reddit.controversial [subreddit] [filter]`
-
-Get the controversial posts of a subreddit from the last __day__, __week__, __month__, __year__, or from __all__ time.
-
-### `reddit.gilded [subreddit] [filter]`
-
-Aliases: `golden`
-
-Get gilded posts of a subreddit from the last __day__, __week__, __month__, __year__, or from __all__ time.
-
-### `reddit.subbed [page]`
-
-Aliases: `listsubs`, `listsubscriptions`, `listsubbed`, `subbed`, `subscribed`
+Aliases: `listsubs`, `listsubscriptions`, `listsubbed`, `subscriptions`, `subscribed`
 
 List subreddits this channel is currently subscribed to.
 
@@ -1407,17 +1447,18 @@ Aliases: `disable`, `toggle`
 
 Toggle the use of the subscription service for this channel.
 
-### `reddit.polling time`
-
-Aliases: `pollinterval`, `polltime`
-
-Sets the polling time in seconds for retrieving new posts. Lower means shorter waiting but higher traffic.
-
-### `reddit.options type [timespan] [limit]`
+### `reddit.options -polling/-interval -type -time -limit -threshold -crossposts/-xposts -media`
 
 Aliases: `subopts`
 
 Set subscription options for this channel, which include what type of posts to get, in what time span, and how many posts to poll for.
+ * `-polling` is the interval in seconds between fetching posts.
+ * `-type` must be either hot, new, rising, top, controversial, or gilded.
+ * `-time` must be either hour, day, week, month, year, or all.
+ * `-limit` is the number of posts to fetch.
+ * `-threshold` is the minimum post score.
+ * `-crossposts` is to allow crossposting between shared subreddits.
+ * `-media` is a comma-separated string for allowing post types: text, image, video, and other.
 
 ### `reddit.status`
 
@@ -1425,29 +1466,47 @@ Aliases: `isitdown`
 
 Check the health status of reddit.
 
-### `sudoku [difficulty]`
-
-Play a game of Sudoku. Enter a number from 0 to 100 to set the difficulty.
-
-### `call [user]`
-
-Aliases: `telephone`, `ringring`
-
-Pick up the phone and see who answers! As this is a rather privacy-sensitive command, you should use this in DMs with the bot. You can call a specific user and I will try to contact them, otherwise, I will hook you up with anyone else also using `call` within 30 seconds. To end a call, use this command again.
-
-### `tictactoe [<x|o>] [opponent]`
-
-Aliases: `ttt`, `3inarow`
-
-Play a game of Tic-Tac-Toe against another user or the bot. You can choose to be X or O. The first turn player is randomly selected.
-
-### `towers [difficulty]`
-
-Aliases: `hanoi`, `towersofhanoi`, `towerofhanoi`, `toh`
-
-Play the Tower of Hanoi minigame. The difficulty value is the number of blocks to stack.
-
 ## Image
+
+### `gif`
+
+GIF image module.
+
+### `gif.spin [imageURL] [frames] [speed] [<cw|ccw>]`
+
+Aliases: `roll`
+
+Spin an image! Optionally set how many frames to spin and at what rate (in frames per second).
+
+### ~~`gif.shake [imageURL] [intensity]`~~
+
+Aliases: `intensify`
+
+Shake an image! Optionally, set how violent the shaking is (in percentage of image size).
+
+### ~~`gif.reverse [gifURL]`~~
+
+Aliases: `backwards`
+
+Reverse a GIF
+
+### ~~`gif.trigger [imageURL]`~~
+
+Aliases: `triggered`
+
+Make an image into the triggered gif meme.
+
+### ~~`gif.corrupt [gifURL]`~~
+
+Aliases: `broken`
+
+Corrupt a GIF
+
+### ~~`gif.magik [gifURL]`~~
+
+Aliases: `gmagik`
+
+Apply the magik filter to a GIF.
 
 ### `graph <line|scatter|bar|pie> ...(x,y) -w/-width -h/-height -t/-title -x/-xaxis -y/-yaxis -b/-borders -o/-origin -g/-grid`
 
@@ -1567,6 +1626,8 @@ Resize or refit an image to new dimensions.
 
 ### `image.rescale [imageURL] [scale]`
 
+Aliases: `scale`
+
 Rescale an image by a factor.
 
 ### `image.rotate [imageURL] [degrees]`
@@ -1641,130 +1702,11 @@ Aliases: `recursion`
 
 Apply the Droste effect, which is a recursion of the image itself.
 
-### `image.magik [imageURL]`
+### ~~`image.magik [imageURL]`~~
 
 Aliases: `magick`, `magic`
 
 Apply seam-carving to an image.
-
-### `maze.generate [width] [height] [scale]`
-
-Aliases: `gen`, `make`, `create`
-
-Generate a maze.
-
-### `maze.solve [imageURL] [scale]`
-
-Solve a maze generated by this bot. Might or might not work with other mazes.
-
-### `meme [imageURL] [toptext]`
-
-Aliases: `maymay`, `dankify`, `whenyou`
-
-Make a simple text+image meme.
-
-### `meme.deepfry [imageURL]`
-
-Aliases: `needsmorefrying`, `needsmoredeepfrying`
-
-Deep-fry an image.
-
-### `meme.jpeg [imageURL] [compression]`
-
-Aliases: `jpg`, `needsmorejpeg`, `needsmorejpg`
-
-Adds JPEG compression to an image.
-
-### `meme.mojo [imageURL] [title]`
-
-Aliases: `watchmojo`, `top10`
-
-Create a Top 10 meme from the Watchmojo template. Format: image, title.
-
-### `meme.brain ...items`
-
-Aliases: `expandingbrain`, `brains`
-
-Create an expanding brain meme with 3 to 6 texts/images. Format: things ordered from worst to best.
-
-### `meme.drake ...items`
-
-Create a Drake choice meme with 2 texts/images. Format: disliked thing, liked thing.
-
-### `meme.thanos ...items`
-
-Create a Thanos meme with 2 texts/images. Format: object, subject.
-
-### `meme.shaq ...items`
-
-Aliases: `isleep`, `realshit`
-
-Create a sleeping Shaq meme with 2 to 3 texts/images. Format: ignored thing, woke thing, [super woke thing].
-
-### `meme.ohfuck text`
-
-Aliases: `mindblown`
-
-Create an "oh fuck" meme with text.
-
-### `meme.fact text`
-
-Create a fact meme with text.
-
-### `meme.byemom text`
-
-Aliases: `google`
-
-Google something bad while mom is away.
-
-### `meme.www thingleft thingright`
-
-Aliases: `whowouldwin`
-
-Display the ultimate showdown between two things (text or images).
-
-### `meme.note [noteitem]`
-
-Aliases: `notepass`, `passingnote`
-
-Pass a note in class.
-
-### `meme.watermark [imageURL] [watermark] [text]`
-
-Aliases: `whodidthis`, `ifunny`, `9gag`, `funwaa`, `smartphowned`, `weedbro`, `thisissosad`, `xbox`
-
-Add one of these watermarks to an image (and optional text for some): `whodidthis`, `ifunny`, `9gag`, `funwaa`, `smartphowned`, `weedbro`, `thisissosad`, `xbox`. (Tip: you can use a command alias or a parameter to specify the watermark you want)
-
-### `place [color] [xpos] [ypos]`
-
-Aliases: `rplace`, `canvas`
-
-A public canvas, where any user can paint pixels:
-	* You may only choose one of these colors: red, green, blue, yellow, cyan, magenta, white, black.
-	* The canvas dimensions are 256x256. X starts at the left, and Y starts at the top.
-	* You may place one pixel every 30 seconds.
-
-### `place.reset [size]` *Private*
-
-Aliases: `clear`
-
-Reset the canvas to a blank slate.
-
-### `qr`
-
-https://en.wikipedia.org/wiki/QR_code
-
-### `qr.decode [imageURL]`
-
-Aliases: `read`, `decrypt`, `unhack`
-
-Read a QR code from the input image.
-
-### `qr.encode ...text`
-
-Aliases: `write`, `encrypt`, `hack`
-
-Write input text to a QR image file. (Note: emojis will not be preserved)
 
 ### `mset [width] [height]`
 
@@ -1952,6 +1894,131 @@ Aliases: `delete`, `remove`
 
 Delete a shader preset. ID can be the name or index.
 
+### `maze.generate [width] [height] -scale`
+
+Aliases: `gen`, `make`, `create`
+
+Generate a maze.
+
+### `maze.solve [imageURL] -scale`
+
+Solve a maze generated by this bot. Might or might not work with other mazes.
+
+### `meme [imageURL] [toptext]`
+
+Aliases: `maymay`, `dankify`, `whenyou`
+
+Make a simple text+image meme.
+
+### `meme.deepfry [imageURL]`
+
+Aliases: `needsmorefrying`, `needsmoredeepfrying`
+
+Deep-fry an image.
+
+### `meme.jpeg [imageURL] [compression]`
+
+Aliases: `jpg`, `needsmorejpeg`, `needsmorejpg`
+
+Adds JPEG compression to an image.
+
+### `meme.mojo [imageURL] [title]`
+
+Aliases: `watchmojo`, `top10`
+
+Create a Top 10 meme from the Watchmojo template. Format: image, title.
+
+### `meme.brain ...items`
+
+Aliases: `expandingbrain`, `brains`
+
+Create an expanding brain meme with 3 to 6 texts/images. Format: things ordered from worst to best.
+
+### `meme.drake ...items`
+
+Create a Drake choice meme with 2 texts/images. Format: disliked thing, liked thing.
+
+### `meme.thanos ...items`
+
+Create a Thanos meme with 2 texts/images. Format: object, subject.
+
+### `meme.shaq ...items`
+
+Aliases: `isleep`, `realshit`
+
+Create a sleeping Shaq meme with 2 to 3 texts/images. Format: ignored thing, woke thing, [super woke thing].
+
+### `meme.ohfuck text`
+
+Aliases: `mindblown`
+
+Create an "oh fuck" meme with text.
+
+### `meme.fact text`
+
+Create a fact meme with text.
+
+### `meme.byemom text`
+
+Aliases: `google`
+
+Google something bad while mom is away.
+
+### `meme.www thingleft thingright`
+
+Aliases: `whowouldwin`
+
+Display the ultimate showdown between two things (text or images).
+
+### `meme.note [noteitem]`
+
+Aliases: `notepass`, `passingnote`
+
+Pass a note in class.
+
+### `meme.smile imageURL`
+
+Aliases: `damnsmile`, `damnedsmile`, `thatdamnsmile`, `thatdamnedsmile`
+
+"So you see, that's where the trouble began... That smile. That damned smile."
+
+### `meme.watermark [imageURL] [watermark] [text]`
+
+Aliases: `whodidthis`, `ifunny`, `9gag`, `funwaa`, `smartphowned`, `weedbro`, `thisissosad`, `xbox`
+
+Add one of these watermarks to an image (and optional text for some): `whodidthis`, `ifunny`, `9gag`, `funwaa`, `smartphowned`, `weedbro`, `thisissosad`, `xbox`. (Tip: you can use a command alias or a parameter to specify the watermark you want)
+
+### `place [color] [xpos] [ypos]`
+
+Aliases: `rplace`, `canvas`
+
+A public canvas, where any user can paint pixels:
+	* You may only choose one of these colors: red, green, blue, yellow, cyan, magenta, white, black.
+	* The canvas dimensions are 256x256. X starts at the left, and Y starts at the top.
+	* You may place one pixel every 30 seconds.
+
+### `place.reset [size]` *Private*
+
+Aliases: `clear`
+
+Reset the canvas to a blank slate.
+
+### `qr`
+
+https://en.wikipedia.org/wiki/QR_code
+
+### `qr.decode [imageURL]`
+
+Aliases: `read`, `decrypt`, `unhack`
+
+Read a QR code from the input image.
+
+### `qr.encode ...text`
+
+Aliases: `write`, `encrypt`, `hack`
+
+Write input text to a QR image file. (Note: emojis will not be preserved)
+
 ## Meta
 
 ### `noop`
@@ -2048,6 +2115,16 @@ Enumerates a range of values. If `enumerable` is a number, it iterates from 0 up
 
 ## Misc
 
+### `note userID [...text]` *Private*
+
+Get/set a user's note.
+
+### ~~`uno ...co-players`~~
+
+Aliases: `unocardgame`
+
+Play the UNO card game!
+
 ### `color [red] [green] [blue]`
 
 View a color.
@@ -2062,7 +2139,7 @@ Generate a color from HSL format.
 
 ### `math [expression]`
 
-Aliases: `maths`, `calculate`, `calc`
+Aliases: `maths`, `calculate`, `calculator`, `calc`
 
 Mathemathical! A handy pocket calculator for Discord!
 
@@ -2138,6 +2215,30 @@ Aliases: `const`
 
 Get a known mathematical constant.
 
+### `pi`
+
+Aliases: `π`, `𝜋`, `𝛑`
+
+Check how many digits of pi are calculated since the bot was started. Every 5 seconds, a new digit is added.
+
+### `pi.digits [start] [end]`
+
+Aliases: `get`
+
+Get a range of digits of pi. Default of 100 digits from the starting digit. Maximum of 1000 digits.
+
+### `poly ...polynomial -derive -integrate -graph`
+
+Aliases: `polynomial`, `solvepoly`, `solvepolynomial`, `roots`
+
+Attempts to solve for the roots of a polynomial. in `a_0x^n + a_1x^(n-1) + ... a_n = 0` form.
+
+### `poll topic ...emoji=choice -m/-mention` *Privileged*
+
+Aliases: `polling`, `vote`, `voting`
+
+Start a poll in the channel. Specify a topic and 2-10 choices. Optionally, you can specify the emoji for a choice by prepending it with the emoji and a `=`, otherwise it defaults to 0-9
+
 ### `roman number`
 
 Aliases: `romannums`, `romannumerals`
@@ -2168,21 +2269,39 @@ Aliases: `reset`, `redo`
 
 Clear all objectives from your to-do list.
 
-### `yugioh [topic]`
+### `birthday [date]`
 
-Aliases: `ygo`, `yugiohwiki`, `ygowiki`, `yugipedia`
+Aliases: `bday`, `birthdays`, `bdays`
 
-Get info about a Yu-Gi-Oh! card, archetype, character, etc.
+Input your birthday date so that this bot wishes you happy birthday! If you want your birthday to be announced publicly in the current channel, append the flag `-announce`.
 
-### `poll topic ...emoji=choice -m/-mention` *Privileged*
+### `birthday.announce [channel]`
 
-Aliases: `polling`, `vote`, `voting`
+Aliases: `channel`
 
-Start a poll in the channel. Specify a topic and 2-10 choices. Optionally, you can specify the emoji for a choice by prepending it with the emoji and a `=`, otherwise it defaults to 0-9
+Get/Set the channel that I will announce your birthday in.
+
+### `birthday.upcoming`
+
+Aliases: `list`, `users`, `server`
+
+List the upcoming birthdays of users in this server.
+
+### `birthday.today`
+
+Aliases: `celebrating`
+
+Lists users who are celebrating their birthdays today.
+
+### `birthday.remove`
+
+Aliases: `delete`, `undo`, `forget`
+
+If you change your mind and don't want me knowing your birthday, you can remove it from my database.
 
 ### `reminder ...time ...text`
 
-Aliases: `remindme`, `setreminder`, `note`
+Aliases: `remindme`, `setreminder`
 
 Set a reminder to be sent to your DMs after a specified time. After setting, you will be given the ID of the reminder in case you want to cancel it.
 
@@ -2202,25 +2321,13 @@ Set a timer. Format example: 3 hours 2 minutes 5 seconds OR 00:30:10.00.
 
 Aliases: `tz`
 
-Get the current time in another timezone, either using the timezone abbreviation ("EST") or the IANA region code ("America/New York").
+Get the current time in another timezone, either using the timezone abbreviation ("EST") or the IANA region code ("America/New York") *(Daylight Savings not applied yet)*.
 
 ### ~~`screenshot url -s/-scripts`~~
 
 Aliases: `ss`
 
 Take a screenshot of a website. Use the `-s` or `-scripts` flag to enable dynamic loading.
-
-### ~~`tag`~~
-
-Aliases: `t`
-
-
-
-### ~~`auto`~~
-
-Aliases: `autoresponse`, `reply`
-
-
 
 ### ~~`weather city|city,region|zip,region|lat,lon`~~
 
@@ -2236,7 +2343,7 @@ Aliases: `unhoist`
 
 Change a user's nickname such that they are no longer hoisted (e.g. using a "!" in their name) in the member list.
 
-### `archive count -b/-bot -c/-cmds -t/-text -m/-media -p/-pinned` *Privileged*
+### `archive ...count| [channel] -b/-bot -c/-cmds -t/-text -m/-media -p/-pinned` *Privileged*
 
 Aliases: `move`
 
@@ -2392,7 +2499,7 @@ Get or apply settings for how the bot responds to vulgar messages.
 
 Display the current spam filters and actions.
 
-### `mod.spam.filters [...<mentions|links|letters|caps|emojis|newlines>]` *Privileged*
+### `mod.spam.filters [...<mentions|links|letters|allcaps|emojis|newlines>]` *Privileged*
 
 Allow the bot the filter spam messages, including all caps, repetitive letters, global mentions, and untrusted links.
 
@@ -2490,6 +2597,10 @@ Aliases: `src`, `sauce`, `saucepls`, `reverseimagesearch`
 
 When given only the direct link to an image on e621, it can be tough locating the source. This command will help to locate a post with only its hash, usually given in the filename.
 
+### `e621.pool poolID`
+
+Browse the posts of a pool.
+
 ### `e621.new tag1 [tag2] [tag3] [tag4] [tag5]`
 
 Aliases: `newest`, `recent`, `latest`
@@ -2526,6 +2637,10 @@ Aliases: `src`, `sauce`, `saucepls`, `reverseimagesearch`
 
 When given only the direct link to an image on e926, it can be tough locating the source. This command will help to locate a post with only its hash, usually given in the filename.
 
+### `e926.pool poolID`
+
+Browse the posts of a pool.
+
 ### `e926.new tag1 [tag2] [tag3] [tag4] [tag5]`
 
 Aliases: `newest`, `recent`, `latest`
@@ -2550,15 +2665,37 @@ Aliases: `worst`, `worstof`
 
 Search the *worst* posts on e926. Beware these treacherous waters, because your blacklist won't apply!
 
-### `fa ...query [...option:value]`
+### `flist name|id`
+
+Retrieve an F-List character.
+
+### `flist.kinks [group]`
+
+Aliases: `fetishes`
+
+Display a list of kink groups, or kinks in a specified group.
+
+### `flist.kink [kink]`
+
+Aliases: `fetish`
+
+Retrieve a description of the specified kink, by name or ID.
+
+### `flist.search [...kinks]`
+
+Aliases: `find`, `lookup`, `query`
+
+Search for kinks matching the given keywords.
+
+### `fa query -page -perpage -order_by -order_direction -range -mode -rating -type`
 
 Aliases: `furaffinity`
 
-Search FurAffinity. Options you may set include: `page`, `perpage`, `order_by`, `order_direction`, `range`, `mode`, `rating`, and `type`.
+Search submissions on FurAffinity.
 
 ### `fa.user user`
 
-Aliases: `artist`, `creator`, `username`
+Aliases: `profile`, `artist`, `creator`, `username`
 
 View information about a user.
 
@@ -2652,7 +2789,7 @@ Aliases: `i`
 
 Install a node package into your default `node_modules` folder.
 
-### `npm.version package` *Private*
+### `npm.version package`
 
 Aliases: `v`
 
@@ -2750,6 +2887,18 @@ Aliases: `crypto`, `DSA`, `DSA-SHA`, `DSA-SHA1`, `DSA-SHA1-old`, `RSA-MD4`, `RSA
 
 Get the specified hash of some text. Specify the algorithm with a command alias or with a parameter, default is `md5`.
 
+### `textbox ...text -title -buttons`
+
+Aliases: `box`
+
+Generate a unicode box with text inside. Use the `-title:"Title"` flag to set the box title and `-buttons:ok,cancel` to add buttons (with labels separated by commas).
+
+### `fancy ...text -type`
+
+Aliases: `fancytext`, `cancer`
+
+Turns your text into fancy text! Types: default, math-bold, math-bold-fraktur, math-fraktur, math-bold-italic, math-bold-script, math-double-struck, math-monospace, math-sans, math-sans-bold, math-sans-bold-italic, math-sans-italic, regional, squared-small, squared-neg, squared-big, superscript, subscript, enclosed-circled, enclosed-circled2, enclosed-paren, enclosed-list, acute, dots, small-caps, stroked, upside-down, reversed, curvy1, curvy2, curvy3, cyrillic, ethiopic, fullwidth
+
 ### `portmanteau word1|user1 word2|user2`
 
 Aliases: `combine`
@@ -2800,4 +2949,28 @@ Enter a basic search query for SoundCloud.
 
 Enter a query.
 
-*Documentation generated in 14 milliseconds.*
+### `bulbapedia [topic]`
+
+Aliases: `pokemonwiki`, `pkmnwiki`, `pokewiki`
+
+Search for Pokemon articles on Bulbapedia.
+
+### `minecraft [topic]`
+
+Aliases: `minecraftwiki`, `mc`, `mcwiki`
+
+Search the Minecraft Wiki.
+
+### `terraria [topic]`
+
+Aliases: `terrawiki`
+
+Search the Terraria Wiki.
+
+### `yugioh [topic]`
+
+Aliases: `ygo`, `yugiohwiki`, `ygowiki`, `yugipedia`
+
+Get info about a Yu-Gi-Oh! card, archetype, character, etc.
+
+*Documentation generated in 12 milliseconds.*

@@ -11,6 +11,7 @@ WIP/
 *.png
 *.jpg
 *.jpeg
+*.gif
 init.json
 markov.json
 package-lock.json
