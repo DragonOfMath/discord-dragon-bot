@@ -1,4 +1,4 @@
-const Parser = require('../src/DebugParser');
+const Parser = require('../src/Debugging/DebugParser');
 
 console.log(Parser.createBlock(`test "hello world" 123 {fish};`, true));
 
@@ -32,10 +32,12 @@ repeat 10 {
 };
 `, true));
 
-console.log(Parser.createBlock(`piet https://example.com/piet.png -t -cs:10 -in:"hello" test %/http\\:\\/\\//gi;`, true));
+console.log(Parser.createBlock(`piet https://example.com/piet.png -t -cs:10 -in:"hello" test`, true));
 
 console.log(Parser.createBlock(`
 \`\`\`
  (=<\`#9]~6ZY32Vx/4Rs+0No-&Jk)"Fh}|Bcy?\`=*z]Kw%oG4UUS0/@-ejc(:'8dc
 \`\`\`
 `, true));
+
+console.log(Parser.createBlock(`expressions %(10 + [] * Math.random()) %[1,2,3,4,"hello",true] %{"key":"value","obj":{}} %/http\\:\\/\\//gi;`, true));

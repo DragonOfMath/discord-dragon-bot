@@ -135,7 +135,7 @@ class DragonClient extends pipe(Discord.Client, PromiseClientMixin, LoggerMixin)
 		this._simulateTyping  = false;
 		this._messageChunks   = true;
 		this._allowGlobalMentions = true;
-		this._allowInviteLinks    = false;
+		this._allowInviteLinks    = true;
 		
 		// Event Handlers
 		//this.on('any', console.log);
@@ -510,11 +510,13 @@ class DragonClient extends pipe(Discord.Client, PromiseClientMixin, LoggerMixin)
 	 */
 	async moveMessages(options = {}) {
 		if (!options.map) {
-			options.map = message => {
-				return {
-					message: `By ${md.mention(message.author.id)} in ${md.channel(options.from)}:\n${message.content}`,
-					embed: message.embeds[0]
-				};
+			options.map = ({author,content,attachments,embeds}) => {
+				let message = `By ${md.mention(author.id)} in ${md.channel(options.from)}:\n${content}`;
+				let embed = embeds[0];
+				if (attachments && attachments.length) {
+					message += '\n' + attachments.map(a => a.url).join('\n');
+				}
+				return {message,embed};
 			};
 		}
 		
@@ -826,7 +828,7 @@ class DragonClient extends pipe(Discord.Client, PromiseClientMixin, LoggerMixin)
 		// evaluate the %(...) expression
 		if (text[0] == Constants.Symbols.EXPRESSION) {
 			if (text[1] == Constants.Symbols.EXP_START && text.endsWith(Constants.Symbols.EXP_END)) {
-				text = eval(text.substring(1));
+				text = Math.eval(text.substring(1)); // avoid open eval
 			} else if ((text[1] == Constants.Symbols.ARR_START && text.endsWith(Constants.Symbols.ARR_END))
 				    || (text[1] == Constants.Symbols.OBJ_START && text.endsWith(Constants.Symbols.OBJ_END))) {
 				text = JSON.parse(text.substring(1));
@@ -1146,7 +1148,7 @@ class DragonClient extends pipe(Discord.Client, PromiseClientMixin, LoggerMixin)
 		if (!this._allowInviteLinks) {
 			// avoid selfbots/adbots from being picked up in certain messages.
 			// credit to I don't know who, but I'm thankful for this!
-			payload.replaceOnly(/(http|https)?(:)?(\/\/)?(discordapp|discord).(gg|io|me|com)\/(\w+:{0,1}\w*@)?(\S+)(:[0-9]+)?(\/|\/([\w#!:.?+=&%@!-/]))?/g, '[LINK REMOVED]', ['message']);
+			payload.replaceOnly(/(http|https)?(:)?(\/\/)?(discordapp|discord|disco).(gg|io|me|com)\/(\w+:{0,1}\w*@)?(\S+)(:[0-9]+)?(\/|\/([\w#!:.?+=&%@!-/]))?/g, '[LINK REMOVED]', ['message']);
 		}
 		// remove my name and client token if it EVER shows up
 		const CENSOR = new RegExp(__dirname.split('\\').slice(1,3).join('\\\\'), 'gi');

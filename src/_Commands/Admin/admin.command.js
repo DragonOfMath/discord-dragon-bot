@@ -4,7 +4,7 @@ const FilePromise   = require('../../Structures/FilePromise');
 const {Markdown:md} = require('../../Utils');
 
 function toggle(client, setting, flag) {
-	return client[setting] = flag === undefined ? !client[setting] : !!flag;
+	return client[setting] = (flag === undefined || flag === '') ? !client[setting] : !!flag;
 }
 
 /**
@@ -19,7 +19,7 @@ module.exports = {
 		parameters: ['...code'],
 		permissions: 'private',
 		suppress: true,
-		fn({client,context,arg}) {
+		fn({client,context,flags,arg}) {
 			with (context) {
 				return eval(arg);
 			}
@@ -118,6 +118,7 @@ module.exports = {
 		title: 'Client Settings',
 		info: 'Toggles internal client settings.',
 		flags: ['embeds','tts','typing','invites','globalmentions','ignore','errors','logging'],
+		permissions: 'private',
 		fn({client, flags}) {
 			let settingsChanged = {};
 			if (flags.has('embeds')) {

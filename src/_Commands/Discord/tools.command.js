@@ -20,7 +20,7 @@ module.exports = {
 				var cmd = client.commands.get(arg)[0];
 				return cmd.embed(client, server);
 			} else {
-				return 'Click here for a full list of commands: ' + client.SOURCE_CODE+'docs/index.md';
+				return 'Click here for a full list of commands: ' + client.SOURCE_CODE+'blob/master/docs/index.md';
 				//return 'Help machine :b:roke.';
 			}
 		}

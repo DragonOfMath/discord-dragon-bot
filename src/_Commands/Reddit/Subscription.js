@@ -1,7 +1,7 @@
 const SubscriptionViewer = require('./SubscriptionViewer');
 const Resource  = require('../../Structures/Resource');
 const Constants = require('../../Constants/Reddit');
-const {Array,Format:fmt} = require('../../Utils');
+const {Array,Format:fmt,wait} = require('../../Utils');
 
 function allowed(x) {
 	return x ? 'allowed' : 'ignored';
@@ -44,7 +44,23 @@ class RedditSubscription extends Resource {
 	}
 	async poll() {
 		this.lastPollTime = Date.now();
-		let posts = await require('./Reddit').getSubreddit(this.toRedditString(), this.options);
+		let posts = [];
+		
+		do {
+			try {
+				posts = await require('./Reddit').getSubreddit(this.toRedditString(), this.options);
+				break;
+			} catch (e) {
+				if (e.code == 'ENOTFOUND') {
+					// somehow the dns lookup for reddit breaks a lot, so try again
+					await wait(5000);
+				} else {
+					// if there was a different error involved, then don't get any posts.
+					console.error('Unable to get reddit posts: ' + e);
+					return [];
+				}
+			}
+		} while (true);
 		
 		posts = posts.filter(post => {
 			// post score must be positive

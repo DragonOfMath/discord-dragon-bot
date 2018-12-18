@@ -254,7 +254,9 @@ class Permissions {
 		
 		if (this.isInherited) {
 			var p = this.inherited;
-			return p.toString(client, server) + `\n(inherited from ${p.id})`;
+			if (p && p != this) {
+				return p.toString(client, server) + `\n(inherited from ${p.id})`;
+			}
 		}
 		
 		var str;

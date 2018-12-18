@@ -17,6 +17,8 @@ const TO_MD = {
 };
 
 const NO_END_TAG = ['*'];
+const TAG_START_RGX = /\[(\w+)(?:[=\s](.+)?)?\]/;
+const TAG_END_RGX = /\[\/(.+)\]/;
 
 class BBCode {
 	constructor(tag = '', value = '', children = []) {
@@ -28,7 +30,7 @@ class BBCode {
 		this.children = children;
 	}
 	toString() {
-		return (this.tag ? '[' + this.tag + (this.value ? '=' + this.value : '') + ']' : '')
+		return (this.tag ? ('[' + this.tag + (this.value ? '=' + this.value : '') + ']') : '')
 		+ (this.children.map(c => c.toString()).join(''))
 		+ (this.tag && !NO_END_TAG.includes(this.tag) ? '[/' + this.tag + ']' : '');
 	}
@@ -37,36 +39,37 @@ class BBCode {
 		return this.tag.toLowerCase() in TO_MD ? TO_MD[this.tag.toLowerCase()](markdown,this.value) : markdown;
 	}
 	static parse(text) {		
-		let token = '', tokens = [];
+		let token = '', tokens = [], tag, value, children;
 		for (let i = 0, j, letter; i < text.length; i++) {
 			if (text[i] == '[') {
 				if (token) tokens.push(token);
 				j = i;
 				while (text[i] && text[i] != ']') i++;
-				tag = text.substring(j,i+1);
-				if (tag[1] == '/') {
-					tag = tag.match(/\[\/(.+)\]/)[1];
-					let value    = '';
-					let children = [];
+				token = text.substring(j,i+1);
+				if (token[1] == '/') {
+					[,tag] = token.match(TAG_END_RGX);
+					children = [];
 					while (tokens.length) {
 						token = tokens.pop();
 						if (!token) break;
 						if (token.tag == tag) {
 							token.children = children;
+							tokens.push(token);
 							break;
 						} else {
 							children.push(token);
 						}
 					}
 				} else {
-					[,tag,value] = tag.match(/\[(\w+)(?:=(.+))\]/);
-					tag = new BBCode(tag,value);
-					tokens.push(tag);
+					[,tag,value] = token.match(TAG_START_RGX);
+					tokens.push(new BBCode(tag,value));
 				}
+				token = '';
 			} else {
 				token += text[i];
 			}
 		}
+		if (token) tokens.push(token);
 		
 		return new BBCode('','',tokens);
 	}

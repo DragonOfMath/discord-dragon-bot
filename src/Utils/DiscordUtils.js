@@ -146,7 +146,7 @@ class DiscordUtils {
 		return m.attachments.length > 0 || m.embeds.length > 0 || m.content.match(/https?:\/\//g);
 	}
 	static filterMessage(client, message, flags = new Map()) {
-		if (!Map.size) {
+		if (!flags.size) {
 			return true;
 		}
 		if (message.content.startsWith(client.PREFIX) && (flags.has('cmds') || flags.has('c'))) {
@@ -198,7 +198,7 @@ class DiscordUtils {
 		if (message.attachments && message.attachments.length > 0) {
 			embed.fields.push({
 				name: 'Attachments and Links',
-				value: messages.attachments.map(x => x.url || (x.image && x.image.url) || (x.video && x.video.url)).join('\n')
+				value: message.attachments.map(x => x.url || (x.image && x.image.url) || (x.video && x.video.url)).join('\n')
 			});
 		}
 		

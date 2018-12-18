@@ -1,5 +1,22 @@
 # Changelog
 
+## 2.0.1: Bugfixes
+
+ * toggling client settings without a flag value should negate the setting.
+ * flags parameter missing for eval
+ * super bad help command
+ * f-list character error
+ * f-list kinks/custom_kinks sometimes empty arrays instead of dictionaries
+ * reddit thumbnails sometimes malformed
+ * reddit subscriptions fail due to ENOTFOUND error
+ * client always censoring its own links
+ * parser expressions not working
+ * replaced open eval with safer Math.eval utility for %(...)
+ * circular recursion between Permissions classes
+ * bbcode tokenization is iffy
+ * message filtering and attachment serializing
+
+
 ## 2.0.0: Dragon Reborn
 
 This is my *magnum opus* of updates. I have worked tirelessly for months to fix and add plenty of new features.

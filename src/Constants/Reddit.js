@@ -23,7 +23,7 @@ module.exports = {
 			options: {
 				type: 'hot',
 				time: 'all',
-				limit: 200,
+				limit: 100,
 				threshold: 1, // must not be below 1 upvote
 				crossposts: false, // keep crossposts from similar subs
 				media: {

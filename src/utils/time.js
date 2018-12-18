@@ -349,4 +349,9 @@ Date.prototype.difference = function (date = 0) {
 	return this.getTime() - (date instanceof Date ? date.getTime() : date);
 };
 
-module.exports = {Date};
+
+async function wait(t=0) {
+	return await new Promise((resolve,reject) => setTimeout(resolve, t));
+}
+
+module.exports = {Date,wait};

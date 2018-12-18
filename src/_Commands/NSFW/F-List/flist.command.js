@@ -4,7 +4,7 @@ const {quote,parseCSV} = require('../../../Utils');
 module.exports = {
 	'flist': {
 		category: 'NSFW',
-		title: 'F-List | Get Character',
+		title: 'F-List',
 		info: 'Retrieve an F-List character.',
 		parameters: ['name|id'],
 		permissions: 'inclusive',

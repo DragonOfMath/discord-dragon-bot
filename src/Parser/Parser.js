@@ -238,7 +238,7 @@ class Parser {
 	 * @return {String} the expression
 	 */
 	parseExpression(start = this.i) {
-		return this.lookaheadCarefully(start, Constants.EXP_START, Constants.EXP_END);
+		return Constants.EXPRESSION + this.lookaheadCarefully(start+1, Constants.EXP_START, Constants.EXP_END);
 	}
 	/**
 	 * Parse the next token as an array expression; evaluate later.
@@ -246,7 +246,7 @@ class Parser {
 	 * @return {String} the expression
 	 */
 	parseArray(start = this.i) {
-		return this.lookaheadCarefully(start, Constants.ARR_START, Constants.ARR_END);
+		return Constants.EXPRESSION + this.lookaheadCarefully(start+1, Constants.ARR_START, Constants.ARR_END);
 	}
 	/**
 	 * Parse the next token as an object expression; evaluate later.
@@ -254,7 +254,7 @@ class Parser {
 	 * @return {String} the expression
 	 */
 	parseObject(start = this.i) {
-		return this.lookaheadCarefully(start, Constants.OBJ_START, Constants.OBJ_END);
+		return Constants.EXPRESSION + this.lookaheadCarefully(start+1, Constants.OBJ_START, Constants.OBJ_END);
 	}
 	/**
 	 * Parse the next token as a regular expression; evaluate later.
@@ -263,8 +263,7 @@ class Parser {
 	 */
 	parseRegex(start = this.i) {
 		// parse %/..../ and flags afterwards
-		this.i = start;
-		return this.letter + this.lookahead(this.i+1, Constants.RGX_END, true) + this.parseRaw();
+		return Constants.EXPRESSION + this.lookahead(start+1, Constants.RGX_END, true) + this.parseRaw();
 	}
 	/**
 	 * Parse the next token(s) as a flag, preserving its name and value if any.
@@ -309,7 +308,7 @@ class Parser {
 				token += this.letter;
 				this.i++;
 			}
-		} while (this.letter && !callback(this.i, token));
+		} while (!this.EOF && !callback(this.i, token));
 		this.i += stopAt.length;
 		return token;
 	}
@@ -322,7 +321,7 @@ class Parser {
 	 * @return {String} the token
 	 */
 	lookaheadCarefully(start = this.i, scopeEnter, scopeExit, includeEsc = false) {
-		let s = 1;
+		let s = 0;
 		let token = '';
 		this.i = start;
 		do  {
@@ -330,14 +329,14 @@ class Parser {
 				token += this.parseEscape(this.i, includeEsc);
 			} else {
 				token += this.letter;
-				this.i++;
 				if (this.letter == scopeEnter) {
 					s++;
 				} else if (this.letter == scopeExit) {
 					s--;
 				}
+				this.i++;
 			}
-		} while (this.letter && s > 0);
+		} while (!this.EOF && s > 0);
 		if (s > 0) throw new SyntaxError(`Cannot find matching "${scopeExit}" to close "${scopeEnter}".`);
 		return token;
 	}

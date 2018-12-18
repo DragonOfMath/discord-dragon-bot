@@ -1,6 +1,10 @@
 const Constants = require('../../Constants/Reddit');
 const {truncate,unescapeHTMLEntities} = require('../../Utils');
 
+function getFileName(url) {
+	return url.split('/').pop();
+}
+
 class RedditPost {
 	constructor(post) {
 		Object.assign(this, post);
@@ -11,6 +15,9 @@ class RedditPost {
 		if (this.permalink) {
 			this.permalink = Constants.URL + this.permalink;
 		}
+		if (getFileName(this.thumbnail) == this.thumbnail) {
+			this.thumbnail = '';
+		}
 	}
 	get timestamp() {
 		return new Date(this.created * 1000);
@@ -19,14 +26,14 @@ class RedditPost {
 		if (this.post_hint == 'image') {
 			return true;
 		}
-		var filePart = this.url.split('/').pop();
+		var filePart = getFileName(this.url);
 		return Constants.Post.IMAGE_DOMAINS.includes(this.domain) || Constants.Post.IMAGE_FORMATS.some(f => filePart.includes(f));
 	}
 	get isVideo() {
 		if (this.post_hint == 'video') {
 			return true;
 		}
-		var filePart = this.url.split('/').pop();
+		var filePart = getFileName(this.url);
 		return Constants.Post.VIDEO_DOMAINS.includes(this.domain) || Constants.Post.VIDEO_FORMATS.some(f => filePart.includes(f));
 	}
 	get crosspost() {
