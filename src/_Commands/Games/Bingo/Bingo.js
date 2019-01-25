@@ -82,8 +82,9 @@ class Bingo extends MessageGame {
 		this.updateEmbed();
 	}
 	startMove(client) {
-		if (!this.winner) {
-			setTimeout(() => {
+		if (!this.winner && !this._timeout) {
+			this._timeout = setTimeout(() => {
+				this._timeout = null;
 				if (this.closed) return;
 				
 				// select a new emoji

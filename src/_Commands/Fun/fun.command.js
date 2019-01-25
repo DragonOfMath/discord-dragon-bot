@@ -172,11 +172,30 @@ module.exports = {
 	'roll': {
 		category: 'Fun',
 		title: ':game_die:',
-		info: 'Advanced dice-roll command, using an expression of dice rolls in the form XdXX, plus modifiers.',
-		parameters: ['XdXX * scale + offset + ...'],
+		info: 'Advanced dice-roll command with two uses:\n  1) using an expression of dice rolls in the form `XdXX`, with simple math syntax.\n  2) 4chan-like dubs/trips/quads/quints.',
+		parameters: ['XdXX|dubs|trips|quads|quints'],
 		permissions: 'inclusive',
 		fn({args, userID}) {
-			let expression = args.map(a => {
+			let roll;
+			switch (args[0]) {
+			case 'dubs':
+			case 'doubles':
+				roll = random(100);
+				return md.mention(userID) + ' ' + String(roll).padStart(2,'0') + ' ' + (roll % 11 ? 'fail' : random(['checkem','dubs get','winrar']));
+			case 'trips':
+			case 'triples':
+				roll = random(1000);
+				return md.mention(userID) + ' ' + String(roll).padStart(3,'0') + ' ' + (roll % 111 ? 'fail' : random(['checkem','trips get','winrar']));
+			case 'quads':
+			case 'quadruples':
+				roll = random(10000);
+				return md.mention(userID) + ' ' + String(roll).padStart(4,'0') + ' ' + (roll % 1111 ? 'fail' : random(['checkem','quads get','winrar']));
+			case 'quints':
+			case 'quintuples':
+				roll = random(100000);
+				return md.mention(userID) + ' ' + String(roll).padStart(5,'0') + ' ' + (roll % 11111 ? 'fail' : random(['checkem','quints get','winrar']));
+			}
+			roll = args.map(a => {
 				try {
 					let [,rolls,sides] = a.match(/^(\d+)d(\d+)$/);
 					let s = randomDistribution(sides, rolls);
@@ -185,7 +204,7 @@ module.exports = {
 					return a;
 				}
 			}).join(' ');
-			return md.mention(userID) + ' rolled ' + md.code(expression) + ' = ' + md.bold(eval(expression));
+			return md.mention(userID) + ' rolled ' + md.code(roll) + ' = ' + md.bold(eval(roll));
 		}
 	},
 	'rps': {

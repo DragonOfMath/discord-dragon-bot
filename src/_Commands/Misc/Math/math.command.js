@@ -58,6 +58,17 @@ module.exports = {
 					return `The product of f(x) = ${funcstr} from ${from} to ${to} is **${prod}**.`;
 				}
 			},
+			/*
+			'graph': {
+				aliases: ['plot'],
+				title: MATH_TITLE + ' | Graph',
+				info: 'Graph an equation. Use `x` and `y` for Cartesian equations, `r` and `a` for Polar equations, `t` for Parametric equations, and `i` for complex equations.',
+				parameters: ['...equation'],
+				flags: ['xmin','xmax','ymin','ymax','tmin','tmax','amin','amax'],
+				fn({client, args}) {
+					
+				}
+			},*/
 			'factorial': {
 				title: MATH_TITLE + ' | Factorial',
 				info: 'Calculates the factorial of an integer.',

@@ -15,7 +15,9 @@ class Resource {
 				if (typeof(t[k]) === 'function') {
 					o[k] = t[k](d[k]);
 				} else if (typeof(t[k]) === 'object') {
-					if (Array.isArray(t[k])) {
+					if (t[k] == null) {
+						o[k] = t[k];
+					} else if (Array.isArray(t[k])) {
 						o[k] = k in d ? d[k] : [].slice.call(t[k]);
 					} else {
 						o[k] = zip(t[k], d[k]);
@@ -25,7 +27,7 @@ class Resource {
 				}
 			}
 			for (let k in d) {
-				if (o[k] === undefined) {
+				if (o[k] === undefined || o[k] == null) {
 					o[k] = d[k];
 				}
 			}

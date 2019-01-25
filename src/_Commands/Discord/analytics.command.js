@@ -100,7 +100,7 @@ module.exports = {
 				borders: true,
 				grid: true,
 				minimumY: 0
-			});
+			}).image.getBufferAs('membercount.png');
 		}
 	}
 };

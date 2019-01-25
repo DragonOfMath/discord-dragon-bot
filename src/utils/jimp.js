@@ -182,7 +182,11 @@ Jimp.prototype.deepfry = function () {
 Jimp.prototype.pixelate = function (pixels = 32) {
 	var w = this.bitmap.width;
 	var h = this.bitmap.height;
-	return this.resize(pixels, Jimp.AUTO).resize(w, h, Jimp.RESIZE_NEAREST_NEIGHBOR);
+	if (pixels <= Math.min(w,h)) {
+		return this.resize(pixels, Jimp.AUTO).resize(w, h, Jimp.RESIZE_NEAREST_NEIGHBOR);
+	} else {
+		return this.resize(pixels, Jimp.AUTO, Jimp.RESIZE_NEAREST_NEIGHBOR);
+	}
 };
 
 Jimp.prototype.cropCircle = Jimp.prototype.circleCrop = function cropCircle(resizeToFit = false) {

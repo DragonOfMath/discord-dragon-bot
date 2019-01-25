@@ -16,7 +16,7 @@ module.exports = {
 		},
 		data: {},
 		permissions: {},
-		resolver: (f) => f || function(){},
+		resolver: null,
 		events: {},
 		manager: null,
 		started: () => Date.now(),

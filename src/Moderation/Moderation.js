@@ -275,7 +275,7 @@ class Moderation {
 		return this.modify(client, server, settings => {
 			return client.addToRole({
 				serverID: server.id,
-				userID: user.id,
+				userID: userID,
 				roleID: muteRole.id
 			})
 			.then(() => settings.recordModlogIncident(client, modID, userID, 'Mute', reason))
@@ -295,7 +295,7 @@ class Moderation {
 		return this.modify(client, server, settings => {
 			return client.removeFromRole({
 				serverID: server.id,
-				userID: user.id,
+				userID: userID,
 				roleID: muteRole.id
 			})
 			.then(() => settings.recordModlogIncident(client, modID, userID, 'Unmute', reason))

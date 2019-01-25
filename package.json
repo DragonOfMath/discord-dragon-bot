@@ -2,7 +2,7 @@
   "name": "discord-dragon-bot",
   "description": "rawr",
   "main": "index.js",
-  "version": "2.0.1",
+  "version": "2.0.2",
   "license": "MIT",
   "dependencies": {
     "bignumber.js": "^8.0.1",

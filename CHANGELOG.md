@@ -1,5 +1,26 @@
 # Changelog
 
+## 2.0.2: Battleship, Video, Roll, Bugfixes
+
+### New and Improved Commands
+
+New battleship classic minigame, play against the bot (or have the bot play against itself).
+New video command, uses a discord hack to turn any voice channel you're in into a video call, as long as you remain in the server.
+Roll command can be used for dubs, trips, and quads like on chan boards.
+mirror alias for archive can duplicate specific messages to another channel.
+
+### Fixes
+
+* membercount graph not sending
+* Bingo intensifies when reactions are clicked
+* new Bank Accounts start closed when they should be opened
+* Session resolvers start as empty functions when they should be null
+* mute/unmute commands failed
+* redundant cast in Parser.parseRaw()
+* avoid parallel timeouts when running message games
+* null resource template values replaced when possible
+* pixelate fails to expand to larger sizes
+
 ## 2.0.1: Bugfixes
 
  * toggling client settings without a flag value should negate the setting.

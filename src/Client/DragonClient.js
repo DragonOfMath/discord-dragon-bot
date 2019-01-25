@@ -20,6 +20,7 @@ const FilePromise   = require('../Structures/FilePromise');
 const Utils         = require('../Utils');
 const {
 	Markdown:md,
+	Format:fmt,
 	Array,
 	DiscordEmbed,
 	DiscordUtils,
@@ -507,13 +508,20 @@ class DragonClient extends pipe(Discord.Client, PromiseClientMixin, LoggerMixin)
 	 * @param {Function}  [options.filter] - filter messages before moving them
 	 * @param {Function}  [options.map]    - map messages prior to reposting them
 	 * @param {Array<Object>} [options.messages] - instead of moving a number of messages from the channel, move only selected messages
+	 * @param {Boolean}   [options.keepOriginalMessages] - don't delete the original messages; false by default
+	 * @param {Boolean}   [options.stripMentions] - avoid mentioning users
 	 */
 	async moveMessages(options = {}) {
+		let serverID = this.channels[options.to].guild_id;
 		if (!options.map) {
 			options.map = ({author,content,attachments,embeds}) => {
 				let message = `By ${md.mention(author.id)} in ${md.channel(options.from)}:\n${content}`;
-				let embed = embeds[0];
-				if (attachments && attachments.length) {
+				if (options.stripMentions) {
+					message = message.replace(/@(here|everyone)/g, (at,m) => m);
+					message = this.fixMessage(message, serverID);
+				}
+				let embed = embeds.find(e => e.type == 'rich');
+				if (attachments.length) {
 					message += '\n' + attachments.map(a => a.url).join('\n');
 				}
 				return {message,embed};
@@ -525,6 +533,8 @@ class DragonClient extends pipe(Discord.Client, PromiseClientMixin, LoggerMixin)
 			for (let message of options.messages) {
 				if (typeof(message) === 'string') {
 					message = await this.getMessage({channelID: options.from, messageID: message});
+				} else if (!options.from) {
+					options.from = message.channel_id;
 				}
 				messages.push(message);
 			}
@@ -550,7 +560,9 @@ class DragonClient extends pipe(Discord.Client, PromiseClientMixin, LoggerMixin)
 		for (let message of messages) {
 			await this.send(options.to, options.map(message));
 		}
-		await this.deleteMessages({channelID: options.from, messageIDs: messages});
+		if (!options.keepOriginalMessages) {
+			await this.deleteMessages({channelID: options.from, messageIDs: messages});
+		}
 	}
 	
 	/**
@@ -590,10 +602,16 @@ class DragonClient extends pipe(Discord.Client, PromiseClientMixin, LoggerMixin)
 	 * @param {Snowflake}              [options.before]  - the message ID to search before
 	 * @param {Snowflake}              [options.after]   - the message ID to search after
 	 * @param {Function|RegExp|String} [options.filter]  - filter messages before returning them.
+	 * @param {Array<Snowflake>}       [options.messageIDs] - alternatively, get the specific message objects
 	 */
-	async getMessages({channelID, limit = 50, before, after, filter}) {
+	async getMessages({channelID, limit = 50, before, after, filter, messageIDs}) {
 		let messages = [];
-		do {
+		if (messageIDs && messageIDs.length) {
+			for (let messageID of messageIDs) {
+				let m = await this.getMessage({channelID,messageID});
+				messages.push(m);
+			}
+		}else do {
 			let _messages = await super.getMessages({
 				channelID,
 				limit: Math.max(2, Math.min(limit, 100)),
@@ -1065,7 +1083,7 @@ class DragonClient extends pipe(Discord.Client, PromiseClientMixin, LoggerMixin)
 			let context = new MessageContext(this, userID, channelID, message, WSMessage);
 			
 			if (context.server) {
-				this.log(`${context.server.name} > ${md.atChannel(context.channel)} > ${md.atUser(context.user)}: ${context.message||'<empty>'}`);
+				this.log(`${context.server.name} > ${md.atChannel(context.channel)} > ${md.atUser(context.user)}: ${context.message||'<empty>'} ${context.attachments.length ? ' [' + fmt.plural('attachment',context.attachments.length) + ']' : ''}`);
 			} else {
 				this.log(`Direct Messages > ${md.atUser(context.user)}: ${context.message||'<empty>'}`);
 			}

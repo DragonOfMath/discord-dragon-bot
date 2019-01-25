@@ -309,6 +309,7 @@ class MessageGame extends LiveMessage {
 
         this.timer = this.options.timeLimit;
         this.stopTimer();
+		this._timeout = null;
 
         this.game = null;
 		this.error = null;
@@ -365,7 +366,9 @@ class MessageGame extends LiveMessage {
     startMove(client) {
 		this.error = null;
         if (this.player.auto) {
-            setTimeout(() => {
+			if (this._timeout) return;
+            this._timeout = setTimeout(() => {
+				this._timeout = null;
                 if (this.closed || !this.player.auto) return;
                 this.handleBotMove(client);
                 this.edit(client);

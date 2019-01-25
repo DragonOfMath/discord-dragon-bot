@@ -22,18 +22,15 @@ class BankAccount extends Resource {
 	 * @param {Number}             acct.state         - current state of the account (See Constants.Bank.Account.STATE)
 	 * @param {Array<Object>}      [acct.investments] - any investments the account is going through
 	 */
-	constructor(userID, acct = {}) {
+	constructor(userID, acct) {
 		if (!userID) {
 			throw new BankError('Bank Account requires a User ID');
-		}
-		if (typeof(acct) !== 'object') {
-			//throw new BankError('Bank Account requires a stateful object');
 		}
 		if (typeof(acct) === 'object' && !acct.state) {
 			// old bank data
 			acct.state = acct.dead ? Constants.STATE.DEAD : 
 			             acct.investing ? Constants.STATE.BUSY : 
-						 acct.open ? Constants.STATE.OPEN : 
+						 (acct.open || acct.open === undefined) ? Constants.STATE.OPEN : 
 						 Constants.STATE.CLOSED;
 			delete acct.open;
 			delete acct.dead;

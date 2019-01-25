@@ -128,7 +128,7 @@ class Parser {
 		}
 		
 		// any value as long as it isn't interrupted by a space
-		return cast(this.parseRaw());
+		return this.parseRaw();
 	}
 	/**
 	 * Parse the next token as a single character.
