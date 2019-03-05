@@ -1,4 +1,4 @@
-const {Markdown:md,RSS,DiscordUtils,tableify} = require('../../Utils');
+const {Markdown:md,Format:fmt,RSS,DiscordUtils,tableify} = require('../../Utils');
 const PERMISSION_FLAGS = require('../../Constants/Permissions').FLAGS;
 const DISCORD_STATUS = require('../../Constants/Discord').STATUS_URL;
 
@@ -243,6 +243,27 @@ module.exports = {
 				} else {
 					return 'Looks like nobody is playing any games at the moment. :(';
 				}
+			}
+		}
+	},
+	'online': {
+		title: 'Last Online',
+		category: 'Discord',
+		info: 'Get the time since a user was last seen online.',
+		parameters: ['userID'],
+		permissions: 'public',
+		fn({client, args}) {
+			let userID = md.userID(args[0]) || args[0];
+			let time = client.database.get('users').get(userID).lastOnline;
+			if (time) {
+				let ago = Math.floor((Date.now() - time) / 60000) * 60000;
+				if (ago > 0) {
+					return `${md.atUser(client.users[userID])} was last seen online **${fmt.time(ago)} ago**.`;
+				} else {
+					return `${md.atUser(client.users[userID])} is **currently online**.`;
+				}
+			} else {
+				return 'I haven\'t seen that user online before.';
 			}
 		}
 	}

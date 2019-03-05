@@ -1,4 +1,5 @@
-const TYPES = require('./fancytext.json');
+const Asset = require('../../Structures/Asset');
+const TYPES = Asset.load('Text/fancytext.json');
 const {random} = require('../../Utils');
 
 class FancyText {

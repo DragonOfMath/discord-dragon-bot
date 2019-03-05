@@ -1,4 +1,4 @@
-const DAY = 86400000;
+const {DAY} = require('../../Constants/Time');
 
 module.exports = {
     id: 'member-count-analytics',
@@ -7,26 +7,25 @@ module.exports = {
     events: {
         tick(client) {
             // check the last tick
-            let now = Date.now();
-            let clientTable = client.database.get('client');
-            let clientData = clientTable.get(client.id);
-            if (now - (clientData.lastGrowthTick||0) < DAY) return;
-            clientData.lastGrowthTick = now;
-            clientTable.set(client.id, clientData).save();
-
-            // update the table when that special tick comes
-            let serverTable = client.database.get('servers');
-            for (let serverID in client.servers) {
-                serverTable.modify(serverID, data => {
-                    data.growth = data.growth || [];
-                    data.growth.push(client.servers[serverID].member_count);
-                    if (data.growth.length > 100) {
-                        data.growth.shift();
-                    }
-                    return data;
-                });
-            }
-            serverTable.save();
+			var tick = client.storage.lastGrowthTick || 0,
+				now = Date.now();
+			if (now - tick >= DAY) {
+				// update each server's growth array
+				var stable = client.database.get('servers');
+				for (let sID in client.servers) {
+					stable.modify(sID, data => {
+						data.growth = data.growth || [];
+						data.growth.push(client.servers[sID].member_count);
+						if (data.growth.length > 100) {
+							data.growth.shift();
+						}
+						return data;
+					});
+				}
+				stable.save();
+				
+				client.storage = {lastGrowthTick: now};
+			}
         }
     }
 };

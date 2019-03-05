@@ -1,3 +1,5 @@
+const {fetch} = require('../../Utils');
+
 module.exports = {
 	'google': {
 		category: 'Web',
@@ -112,6 +114,18 @@ module.exports = {
 		fn({client, args}) {
 			throw 'Feature not supported!';
 			return 'https://lmgtfy.com/search?q=' + args.join('+');
+		}
+	},
+	'steam': {
+		category: 'Web',
+		title: 'Steam Search',
+		info: 'Enter a game you would like to search.',
+		parameters: ['query'],
+		permissions: 'inclusive',
+		enabled: false,
+		fn({client, args}) {
+			throw 'Feature not supported!';
+			
 		}
 	}
 };

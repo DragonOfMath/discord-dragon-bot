@@ -167,11 +167,11 @@ module.exports = {
 			},
 			'sell': {
 				title: Constants.HEADER + ' | Sell',
-				info: 'Sell a Pokémon for its value. Leveled Pokémon are worth more.',
+				info: 'Sell a Pokémon for its value. Leveled and legendary Pokémon are worth more.',
 				parameters: ['pokemon'],
 				fn({client, arg, userID}) {
 					let results = PokemonMain.sellPokemon(client, userID, arg);
-					return `${md.mention(userID)} sold ${md.bold(results.pokemon.name)} ${md.strikethrough('to slavery on the Black PokéMarket')} for ${Bank.formatCredits(results.value)}.`;
+					return `${md.mention(userID)} sold ${md.bold(results.pokemon.name)} ${md.strikethrough('to slavery on the Black PokéMarket')} for ${client.bank.formatCredits(results.value)}.`;
 				}
 			},
 			'fave': {

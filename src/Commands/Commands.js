@@ -171,8 +171,9 @@ class Commands extends TypeMapBase {
 			
 		} else {
 			this.logger.info(handler.text,'->',commands.length,'matches');
+			commands = commands.filter(cmd => !cmd.generated);
 			if (handler.userID != handler.client.ownerID) {
-				commands = commands.filter(cmd => !cmd.suppress && !cmd.generated);
+				commands = commands.filter(cmd => !cmd.suppress);
 			}
 			let msg = commands.map(cmd => cmd.fullID).sort().join(', ');
 			//msg = truncate(msg, 1980);

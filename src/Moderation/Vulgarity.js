@@ -1,7 +1,8 @@
 const Actions   = require('./Actions');
 const Offense   = require('./Offense');
 const Constants = require('../Constants/Moderation');
-const VULGARITY = require('../static/vulgarity.json');
+const Asset     = require('../Structures/Asset');
+const VULGARITY = Asset.load('Discord/vulgarity.json');
 
 class Vulgarity {
 	constructor(level, actions) {

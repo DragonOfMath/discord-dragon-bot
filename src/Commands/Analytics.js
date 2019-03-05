@@ -98,9 +98,9 @@ class Analytics extends MapBase {
 	
 	/**
 	 * Update a server's analytics table (and also the temp table)
-	 * @param {Database} database - the database object
+	 * @param {Database}  database - the database object
 	 * @param {Snowflake} serverID - the server ID
-	 * @param {String} command - the command to update
+	 * @param {String}    command  - the command to update
 	 */
 	static push(database, serverID, command) {
 		// update the temporary table
@@ -117,9 +117,9 @@ class Analytics extends MapBase {
 	}
 	/**
 	 * Get analytics.
-	 * @param {Database} database - the database object
+	 * @param {Database}  database   - the database object
 	 * @param {Snowflake} [serverID] - the server ID
-	 * @param {Snowflake} [temp] - get temporary analytics only
+	 * @param {Snowflake} [temp]     - get temporary analytics only
 	 * @return {Analytics}
 	 */
 	static get(database, serverID, temp = false) {

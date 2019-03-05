@@ -7,6 +7,7 @@ const LoggerMixin   = require('../Debugging/LoggerMixin');
 const AudioPlayer   = require('../Audio/AudioPlayer');
 const Database      = require('../Database/Database');
 const VariableStore = require('../Database/Variables');
+const Bank          = require('../Bank/Bank');
 const Parser        = require('../Parser/Parser');
 const Commands      = require('../Commands/Commands');
 const Analytics     = require('../Commands/Analytics');
@@ -79,6 +80,7 @@ class DragonClient extends pipe(Discord.Client, PromiseClientMixin, LoggerMixin)
 		super(initializer);
 		
 		this.ownerID     = initializer.ownerID;
+		this.supportID   = initializer.supportID;
 		this.PERMISSIONS = initializer.permissions || Constants.Client.PERMISSIONS;
 		
 		Object.defineProperties(this, {
@@ -103,6 +105,7 @@ class DragonClient extends pipe(Discord.Client, PromiseClientMixin, LoggerMixin)
         this.variables = this.vars = new VariableStore(this);
 		
 		// Utilities
+		this.bank   = Bank;
 		this.parser = Parser;
 		this.utils  = Utils;
 		this.dutils = DiscordUtils;
@@ -271,7 +274,13 @@ class DragonClient extends pipe(Discord.Client, PromiseClientMixin, LoggerMixin)
 	}
 	
 	/* Storage */
-
+	
+	get storage() {
+		return this.database.get('client').get(this.id);
+	}
+	set storage(x) {
+		return this.database.get('client').set(this.id, x).save();
+	}
 	getVar(name, namespace) {
         return this.variables.get(namespace, name);
     }

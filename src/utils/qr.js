@@ -1,4 +1,4 @@
-const Jimp   = require('jimp');
+const Jimp   = require('./jimp');
 const jsQR   = require('jsqr');
 const QRcode = require('qrcode');
 
@@ -26,4 +26,4 @@ module.exports.QR = {
 		.then(dataURL => Buffer.from(dataURL.substring('data:image/png;base64,'.length), 'base64'))
 		.then(Jimp.read);
 	}
-}
+};

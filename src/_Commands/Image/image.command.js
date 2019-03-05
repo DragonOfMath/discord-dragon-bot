@@ -137,6 +137,16 @@ module.exports = {
 					}, 'mirror.png');
 				}
 			},
+			'tilt': {
+				aliases: ['perspective'],
+				info: 'Tilts an image to appear 3D-ish.',
+				parameters: ['[imageURL]', '[angle]'],
+				fn({client, args, channelID}) {
+					return processImage(client, args, channelID, (image, angle) => {
+						return image.tilt(angle);
+					}, 'tilt.png');
+				}
+			},
 			'symmetry': {
 				aliases: ['woow','waaw','hooh','haah'],
 				info: 'Mirrors an image along a symmetry.',

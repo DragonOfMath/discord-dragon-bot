@@ -1,5 +1,6 @@
+const Asset = require('../../Structures/Asset');
 const {Markdown:md} = require('../../Utils');
-const EmojiNames    = require('../../static/emoji.json');
+const EmojiNames    = Asset.require('Text/emoji.json');
 
 const SHERIFF = `⠀ ⠀ ⠀  🤠\n　   ???\n    ?   ?　?\n   👇   ?? 👇\n  　  ?　?\n　   ?　 ?\n　   👢     👢`;
 

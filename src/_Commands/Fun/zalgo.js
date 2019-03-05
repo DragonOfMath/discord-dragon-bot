@@ -1,8 +1,9 @@
 const {random} = require('../../Utils');
-const SOUL = require('../../static/zalgo.json');
-const ALL  = [].concat(SOUL.UP, SOUL.DOWN, SOUL.MID);
+const Asset = require('../../Structures/Asset');
+const SOUL  = Asset.load('Text/zalgo.json');
+const ALL   = [].concat(SOUL.UP, SOUL.DOWN, SOUL.MID);
 
-module.exports = class Zalgo {
+class Zalgo {
 	/**
 	 * Corrupts text using zalgo characters.
 	 * Zalgorithm from https://github.com/Marak/zalgo.js/blob/master/zalgo.js
@@ -67,3 +68,5 @@ module.exports = class Zalgo {
 		return text;
 	}
 };
+
+module.exports = Zalgo;

@@ -90,7 +90,7 @@ function bufferize(items, page = 1, itemsPerField = 25, itemsPerPage = 100, deli
 		footer: {text:`Page ${page} of ${maxPages} | Showing ${pageStart+1}-${pageEnd+1} of ${totalItems} Total`}
 	};
 	
-	let start, end, buffer = '', itemsInBuffer = 0, idx;
+	let start, end, item, buffer = '', itemsInBuffer = 0, idx;
 	for (start = pageStart,
 	     end  = start + itemsPerField,
 		 idx = start,

@@ -19,6 +19,9 @@ class Markdown {
 	static codeblock(x, lang = 'js') {
 		return `\`\`\`${lang}\n${x}\n\`\`\``;
 	}
+	static spoiler(x) {
+		return `||${x}||`;
+	}
 	static link(text, url) {
 		return `[${text}](${url})`;
 	}

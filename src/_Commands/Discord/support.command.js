@@ -327,26 +327,35 @@ async function inviteToSupportServer(client, server) {
 module.exports = {
 	'support': {
 		category: 'Discord',
-		info: 'Get an invite to the bot\'s support server.',
+		info: 'Get an invite to the bot\'s support server. Add `dm me` if you want the link to be sent to you in private.',
 		permissions: 'public',
-		fn({client,server,userID}) {
+		fn({client,server,arg,userID}) {
 			if (server.owner_id == client.id) {
 				return 'Silly! We\'re already in my support server!';
 			}
 			
+			/*
 			let serverName = client.username + ' Support Server';
 			if (userID == client.ownerID) {
 				// verify the server is complete
 				return setupSupportServer(client, serverName)
 				.then(server => inviteToSupportServer(client, server));
 			}
+			*/
 			
-			server = DiscordUtils.getServerByName(client.servers, serverName);
+			server = client.servers[client.supportID];
 			if (!server) {
 				return 'Sorry, my support server isn\'t setup yet.';
 			}
 			
-			return inviteToSupportServer(client, server);
+			return inviteToSupportServer(client, server)
+			.then(msg => {
+				if (arg && arg.includes('dm me')) {
+					client.send(userID, msg);
+				} else {
+					return msg;
+				}
+			});
 		}
 	}
 };

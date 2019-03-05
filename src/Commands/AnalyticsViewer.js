@@ -19,11 +19,10 @@ class AnalyticsViewer extends MessageBrowser {
 	updateEmbed() {
 		super.updateEmbed();
 		
-		let length   = this.data.length;
-		let maxPages = Math.ceil(length / this.options.itemsPerPage);
+		let maxPages = Math.ceil(this.data.length / this.options.itemsPerPage);
 		this.page    = Math.min(this.page, maxPages);
 		
-		let embed = bufferize(this.data.keys.map(item => `${item}: ${data[item]}`), this.page, this.options.itemsPerField, this.options.itemsPerPage, '\n');
+		let embed = bufferize(this.data.keys.map(k => `${k}: ${this.data[k]}`), this.page, this.options.itemsPerField, this.options.itemsPerPage, '\n');
 		this.embed.fields = embed.fields;
 		this.embed.footer = embed.footer;
 		this.embed.footer.text += ' | Total Usage: ' + this.data.total;

@@ -263,7 +263,87 @@ module.exports = {
 						output += pi.data.digits.slice(idx, idx + 100).map(String).join('') + '\n';
 					}
 					
-					return `Digits ${start+1}-${end} of 𝜋:\n${md.codeblock(output)}`;
+					return `Digits ${start}-${end} of 𝜋:\n${md.codeblock(output)}`;
+				}
+			},
+			'find': {
+				aliases: ['search','lookup','index'],
+				title: 'Pi Search',
+				info: 'Find a specific sequence of digits in pi. Optionally, you can set a starting offset.',
+				parameters: ['digits'],
+				flags: ['start|offset'],
+				fn({client,flags,arg}) {
+					let offset = 1;
+					if (flags.has('start')) {
+						offset = Number(flags.get('start'));
+					} else if (flags.has('offset')) {
+						offset = Number(flags.get('offset'));
+					}
+					offset = Math.max(1, offset);
+					
+					let pi = client.sessions.get('pi').data.digits;
+					let index = pi.join('').indexOf(arg, offset);
+					if (index > -1) {
+						let lastIndex = index + arg.length;
+						let prevSlice = pi.slice(index - 10, index).join('');
+						let postSlice = pi.slice(lastIndex, lastIndex + 10).join('');
+						return `The sequence ${md.code(arg)} was found at ${index} decimal places:\n...${prevSlice}${md.underline(arg)}${postSlice}...`;
+					} else {
+						return `The sequence ${md.code(arg)} was not found within ${pi.length} decimal places.`;
+					}
+				}
+			},
+			'practice': {
+				aliases: ['test','train'],
+				title: 'Pi Practice',
+				info: 'Practice writing out digits of pi, and I\'ll verify. You can add spaces, commas, etc. to aid you. Starting with `3.` is optional. You can set a custom digit offset to start at (ex: `-start:101`). [Note: this bot assumes you are honest and do not copy/paste digits.]',
+				parameters: ['...digits'],
+				flags: ['start|offset'],
+				fn({client,arg,flags}) {
+					let offset = 1;
+					if (flags.has('start')) {
+						offset = Number(flags.get('start'));
+					} else if (flags.has('offset')) {
+						offset = Number(flags.get('offset'));
+					}
+					offset = Math.max(1, offset);
+					
+					let digits = Array.from(arg.match(/\d/g)).map(Number);
+					if (digits[0] == 3) digits.shift();
+					
+					let pi = client.sessions.get('pi').data.digits;
+					let d = 0, max = Math.min(digits.length, pi.length - offset);
+					for (;d < max && digits[d] == pi[offset+d]; d++);
+					
+					let message = 'Score: ' + md.bold(`${d}/${max}`) + ' correct digits of pi.';
+					if (offset+d == pi.length && d < digits.length) {
+						message += '\nYou wrote more digits of pi than I have calculated so far!';
+						
+					} else if (d == digits.length) {
+						message += '\nHere\'s the next few digits you can try:';
+						
+						let localOffset = offset+d;
+						let localDigits = pi.slice(localOffset, localOffset + 10).join('');
+						
+						message += `\n@${localOffset}-${localOffset+localDigits.length-1}: ${md.spoiler(md.code(localDigits))}`;
+						
+					} else {
+						let yourOffset  = 10 * Math.floor(d / 10);
+						let yourDigits  = digits.slice(yourOffset, yourOffset + 10).join('');
+						
+						let localOffset = 1 + 10 * Math.floor((offset+d) / 10);
+						let localDigits = pi.slice(localOffset, localOffset + 10).join('');
+						
+						message += `\nThe digit sequence @${localOffset}-${localOffset+localDigits.length-1}:\n`;
+						
+						let diff = '+ Correct:   ' + localDigits + '\n'
+						         + '- Incorrect: ' + yourDigits + '\n'
+								 + '  Where:     ' + ' '.repeat(d % 10) + '^';
+						
+						message += md.spoiler(md.codeblock(diff,'diff'));
+					}
+					
+					return message;
 				}
 			}
 		}

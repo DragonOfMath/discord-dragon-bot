@@ -1,13 +1,11 @@
+const Asset = require('../../Structures/Asset');
 const {Markdown:md,Jimp,random,capitalize,Array,Math} = require('../../Utils');
 const {isImage,processImage,processImages} = require('./image-utils');
 
-const MemeTemplates  = require('./Templates/templates.json');
-const MemeWatermarks = require('./Watermarks/watermarks.json');
+const MemeTemplates  = Asset.require('Templates/index.json');
+const MemeWatermarks = Asset.require('Watermarks/index.json');
 const MemeTemplateNames  = Object.keys(MemeTemplates);
 const MemeWatermarkNames = Object.keys(MemeWatermarks);
-
-const TEMPLATE_DIR  = __dirname + '/Templates/';
-const WATERMARK_DIR = __dirname + '/Watermarks/';
 
 function resolveCSV(args, min = 2, max = Infinity) {
 	let csv = args.join(' ').split(/,\s*/);
@@ -29,7 +27,7 @@ function getTemplate(templateName) {
 	if (filename instanceof Array) {
 		filename = random(filename);
 	}
-	return Jimp.read(TEMPLATE_DIR + filename);
+	return Jimp.read(Asset.getPath('Templates/' + filename));
 }
 function applyTemplate(templateName, items = {}, filename) {
 	const Descriptor = MemeTemplates[templateName];
@@ -96,7 +94,7 @@ function getWatermark(watermarkName) {
 	if (filename instanceof Array) {
 		filename = random(filename);
 	}
-	return Jimp.read(WATERMARK_DIR + filename);
+	return Jimp.read(Asset.getPath('Watermarks/' + filename));
 }
 function applyWatermark(watermarkName, image, text = 'BOTTOM TEXT') {
 	const Descriptor = MemeWatermarks[watermarkName];

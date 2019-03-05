@@ -19,16 +19,17 @@ module.exports = {
 		info: 'Let your users feel welcome! Set a channel and message for which this bot may greet them. Use this command to manually welcome them.',
 		parameters: ['[user]'],
 		permissions: 'privileged',
-		fn({client, server, context, args}) {
-			if (!args.length) {
-				return this.listSubcommands();
+		fn({client, server, user, context, args}) {
+			let targetID, targetUser, targetMember;
+			if (args.length) {
+				targetUser = DiscordUtils.resolve(client.users, md.userID(args[0]), args[0], '');
+			} else {
+				targetUser = user;
 			}
-			
-			let targetUser = DiscordUtils.resolve(client.users, md.userID(args[0]), args[0], '');
 			if (!targetUser) {
 				throw 'Invalid user!';
 			}
-			let targetMember = server.members[targetUser.id];
+			targetMember = server.members[targetUser.id];
 			
 			let serverTable = client.database.get('servers');
 			let welcome = new Welcome(serverTable.get(server.id).welcome);
@@ -55,11 +56,12 @@ module.exports = {
 		subcommands: {
 			'message': {
 				title: 'Welcome | Message',
-				info: 'Sets the server\'s welcome message for new users that join. To insert their name, type `$user`, and to mention them, type `$mention`.',
-				parameters: ['...message'],
-				fn({client, serverID, input}) {
+				info: 'Sets the server\'s welcome message for new users that join. To insert their name, type `$``user`, and to mention them, type `$``mention`.',
+				parameters: ['[...message]'],
+				flags: ['clear'],
+				fn({client, serverID, flags, input}) {
 					let serverTable = client.database.get('servers');
-					let message = input.arg;
+					let message = flags.has('clear') ?  '' : input.arg;
 					serverTable.modify(serverID, server => {
 						server.welcome = new Welcome(server.welcome);
 						server.welcome.message = message;
@@ -109,7 +111,7 @@ module.exports = {
 				}
 			},
 			'goodbye': {
-				info: 'Gets or sets the server\'s goodbye message for users that leave the server. To insert their name, type `$user`, and to mention them, type `$mention`.',
+				info: 'Gets or sets the server\'s goodbye message for users that leave the server. To insert their name, type `$``user`, and to mention them, type `$``mention`.',
 				parameters: ['[...message]'],
 				fn({client, serverID, input}) {
 					let serverTable = client.database.get('servers');

@@ -1,9 +1,10 @@
 const Constants = require('../../Constants/Pokemon');
 const Resource  = require('../../Structures/Resource');
+const Asset     = require('../../Structures/Asset');
 const {Format:fmt,random} = require('../../Utils');
 
-const PokemonList        = require('./pokemon.json');
-const SpecialPokemonList = require('./pokemon_special.json');
+const PokemonList        = Asset.require('Pokemon/pokemon.json');
+const SpecialPokemonList = Asset.require('Pokemon/pokemon_special.json');
 
 class Pokemon extends Resource {
 	constructor(p) {
@@ -22,10 +23,10 @@ class Pokemon extends Resource {
 		this.n = x;
 	}
 	get lvl() {
-		return XPtoLevel(this.xp);
+		return Pokemon.XPtoLevel(this.xp);
 	}
 	set lvl(l) {
-		this.xp = levelToXP(l);
+		this.xp = Pokemon.levelToXP(l);
 	}
 	get species() {
 		return PokemonList[this.s];
@@ -135,13 +136,12 @@ class Pokemon extends Resource {
 	static random() {
 		return new Pokemon(random(PokemonList));
 	}
-}
-
-function levelToXP(lvl) {
-	return Math.round(2 * Math.pow(lvl - 1, 2));
-}
-function XPtoLevel(xp) {
-	return 1 + Math.floor(Math.sqrt(xp / 2));
+	static levelToXP(lvl) {
+		return Math.round(2 * Math.pow(lvl - 1, 2));
+	}
+	static XPtoLevel(xp) {
+		return 1 + Math.floor(Math.sqrt(xp / 2));
+	}
 }
 
 module.exports = Pokemon;

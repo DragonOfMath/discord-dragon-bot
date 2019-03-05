@@ -1,5 +1,5 @@
 const Promise = require('bluebird'); // overrides native Promise; needed for Promise.delay()
-const Methods = require('../static/methods.json');
+const {METHODS} = require('../Constants/Client');
 
 /**
 	@class PromiseClient
@@ -102,9 +102,8 @@ module.exports = (Client) => {
 		}
 	}
 	
-	const PCP = PromiseClient.prototype;
-	Methods.forEach(method => {
-		PCP[method] = function (payload) {
+	METHODS.forEach(method => {
+		PromiseClient.prototype[method] = function (payload) {
 			return this.await(method, payload);
 		};
 	});

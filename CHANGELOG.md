@@ -1,25 +1,68 @@
 # Changelog
 
+## 2.0.3: Assets, Time, Minecraft, COTD, Pi, Last Online, many bugfixes
+
+### Major Changes
+ * Asset class for retrieving scripts and images from an asset directory
+ * Time constants from several related scripts put into a constants script
+ * Support server no longer needs more redundant setup, uses `supportID` in `init.json`
+ * `online`: client periodically records the last online time of users
+ * `random.uuid`: generates a random UUID
+ * `image.tilt`: creates a 3D effect on images (WIP)
+ * `mc.craft`: generates a crafting table recipe
+ * `mc.furnace`: generates a furnace recipe
+ * `mc.achievement`: generates a minecraft achievement
+ * `color.oftheday`: retrieves the daily-randomized color
+ * `color.palette`: generates a blend of colors, similar to the `mshader.preview` command
+ * `exercise`: generates random sets of body exercises with scaled difficulty
+   * subcommands for core body parts, generates a set of exercises for that part
+ * `pi.find`: search for specific digits in pi
+ * `pi.practice`: practice reciting digits of pi
+ * `Color` utils redone
+ * `Math` utils redone
+ * `Jimp` can now read from and write to data URLs
+ * `Jimp#getPixelColor()` and `Jimp#setPixelColor()` support `Color` (this simplifies a lot of things)
+
+### Minor Changes
+ * `welcome -clear` clears the server's welcome message, so it can be disabled.
+ * fixed formatting in `welcome` help message.
+ * removed redundant color constants from `mandelbrot.command.js`
+ * fixed custom maze size in `maze.command.js`
+ * fixed usage with `mirror` alias of `archive/move`
+ * moved `levelToXP()` and `XPtoLevel()` as static methods of `Pokemon`
+ * fixed `birthday`
+ * `steam` command stub added
+ * made Bank accessible through the client (probably not a good idea)
+ * `storage` getter/setter for client, retrieves and saves the client's persistent data.
+ * fixed command filtering for wildcard searches
+ * fixed message archiving
+ * fixed Sessions timer not stopping/starting properly
+ * fixed embed utils
+ * added spoiler markdown support
+ * `PrototypeChain` merged with `Object`
+ * `typecast` will leave numbers alone if they do not cast exactly to what they originally were (so that pi practice can work)
+
+
 ## 2.0.2: Battleship, Video, Roll, Bugfixes
 
 ### New and Improved Commands
 
-New battleship classic minigame, play against the bot (or have the bot play against itself).
-New video command, uses a discord hack to turn any voice channel you're in into a video call, as long as you remain in the server.
-Roll command can be used for dubs, trips, and quads like on chan boards.
-mirror alias for archive can duplicate specific messages to another channel.
+ * New battleship classic minigame, play against the bot (or have the bot play against itself).
+ * New video command, uses a discord hack to turn any voice channel you're in into a video call, as long as you remain in the server.
+ * Roll command can be used for dubs, trips, and quads like on chan boards.
+ * mirror alias for archive can duplicate specific messages to another channel.
 
 ### Fixes
 
-* membercount graph not sending
-* Bingo intensifies when reactions are clicked
-* new Bank Accounts start closed when they should be opened
-* Session resolvers start as empty functions when they should be null
-* mute/unmute commands failed
-* redundant cast in Parser.parseRaw()
-* avoid parallel timeouts when running message games
-* null resource template values replaced when possible
-* pixelate fails to expand to larger sizes
+ * membercount graph not sending
+ * Bingo intensifies when reactions are clicked
+ * new Bank Accounts start closed when they should be opened
+ * Session resolvers start as empty functions when they should be null
+ * mute/unmute commands failed
+ * redundant cast in Parser.parseRaw()
+ * avoid parallel timeouts when running message games
+ * null resource template values replaced when possible
+ * pixelate fails to expand to larger sizes
 
 ## 2.0.1: Bugfixes
 

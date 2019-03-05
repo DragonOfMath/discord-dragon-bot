@@ -1,5 +1,6 @@
-const Currency = require('../../static/currency.json');
+const Asset = require('../../Structures/Asset');
 const {Markdown:md,Format:fmt,fetch,strcmp} = require('../../Utils');
+const Currency = Asset.load('Text/currency.json');
 
 function resolveCurrency(id) {
 	for (let ID in Currency) {

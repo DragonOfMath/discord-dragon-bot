@@ -1,7 +1,9 @@
 const DIGITS = '0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz-_';
+const DIGITS_ALT = '0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz+/';
 
 module.exports.Base64 = {
 	DIGITS,
+	DIGITS_ALT,
 	from(input, type = 'string') {
 		if (type == 'string') {
 			return Buffer.from(input, 'base64').toString('ascii');

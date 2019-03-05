@@ -122,7 +122,7 @@ class Moderation {
 			from: channelID,
 			to: archiveID,
 			limit,
-			before: client.channels[channe].last_message_id,
+			before: client.channels[channelID].last_message_id,
 			filter: message => DiscordUtils.filterMessage(client, message, flags)
 		});
 	}

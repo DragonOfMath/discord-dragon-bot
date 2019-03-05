@@ -136,4 +136,8 @@ class Perlin3 {
 	}
 }
 
-module.exports = {Perlin1,Perlin2,Perlin3};
+module.exports = {
+	Perlin1,
+	Perlin2,
+	Perlin3
+};

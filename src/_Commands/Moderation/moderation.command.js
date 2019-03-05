@@ -59,14 +59,13 @@ module.exports = {
 		aliases: ['move','mirror'],
 		category: 'Moderation',
 		//title: 'Archive',
-		info: 'Move messages in the current channel to an archive channel. Use flags to specify the kinds of messages to target: `-cmds`, `-bot`, `-media`, `-text`, and `-pinned`.',
+		info: 'Move messages in the current channel to an archive channel (or a specified channel if using the aliases). Use flags to specify the kinds of messages to target: `-cmds`, `-bot`, `-media`, `-text`, and `-pinned`.',
 		parameters: ['count|...messages', '[channel]'],
 		flags: ['b|bot','c|cmds','t|text','m|media','p|pinned'],
 		permissions: 'privileged',
-		fn({client, server, channel, cmd, args, flags}) {
-			if (typeof(args[0]) === 'number') {
-				return Moderation.archive(client, server, channel, args[0], flags);
-			} else {
+		fn({client, server, channel, cmds, args, flags}) {
+			let cmd = cmds[0].toLowerCase();
+			if (cmd == 'move' || cmd == 'mirror') {
 				let channelID = args.pop();
 				channelID = md.channelID(channelID) || channelID;
 				if (!server.channels[channelID]) {
@@ -76,8 +75,10 @@ module.exports = {
 					from: channel.id,
 					to: channelID,
 					messages: args,
-					keepOriginalMessages: (cmd.toLowerCase() == 'mirror')
+					keepOriginalMessages: (cmd == 'mirror')
 				});
+			} else {
+				return Moderation.archive(client, server, channel, args[0], flags);
 			}
 		},
 		subcommands: {

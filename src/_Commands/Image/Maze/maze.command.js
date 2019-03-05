@@ -19,8 +19,8 @@ module.exports = {
 				[width, height] = args;
 			}
 			let options = {};
-			options.width  = Math.minmax(Number(width), 20, 100);
-			options.height = Math.minmax(Number(width), 20, 100);
+			options.width  = Math.minmax(Number(width)||0, 20, 100);
+			options.height = Math.minmax(Number(width)||0, 20, 100);
 			let maze = new MazeGame(context, options);
 			maze.startGame(client);
 		},

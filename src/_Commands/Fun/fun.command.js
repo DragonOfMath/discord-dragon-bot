@@ -1,5 +1,6 @@
-const {Markdown:md,random,fetch,DiscordUtils} = require('../../Utils');
-const EmojiNames = require('../../static/emoji.json');
+const Asset = require('../../Structures/Asset');
+const {Markdown:md,random,fetch,DiscordUtils,UUID} = require('../../Utils');
+const EmojiNames = Asset.require('Text/emoji.json');
 
 function randomDistribution(o,i) {
 	o = Number(o) || 2;
@@ -454,6 +455,13 @@ module.exports = {
 				info: 'Generate a random fake Discord Token.',
 				fn({userID}) {
 					return md.code(DiscordUtils.generateFakeToken(userID));
+				}
+			},
+			'uuid': {
+				title: 'Random UUID',
+				info: 'Generate a random UUID.',
+				fn() {
+					return UUID();
 				}
 			}
 		}

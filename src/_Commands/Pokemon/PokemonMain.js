@@ -1,4 +1,4 @@
-const Bank = require('../../Bank/Bank');
+const Asset = require('../../Structures/Asset');
 const {Jimp,random} = require('../../Utils');
 
 const Pokemon       = require('./Pokemon');
@@ -8,12 +8,11 @@ const PokeShop      = require('./Pokeshop');
 //const PokemonBattle = require('./PokemonBattle');
 const PokeError     = require('./PokeError');
 
-const PokemonList        = require('./pokemon.json');
-const SpecialPokemonList = require('./pokemon_special.json');
-const PokemonItemList    = require('./pokemon_items.json');
+const PokemonList        = Asset.require('Pokemon/pokemon.json');
+const SpecialPokemonList = Asset.require('Pokemon/pokemon_special.json');
+const PokemonItemList    = Asset.require('Pokemon/items.json');
+const PokemonHashTable   = Asset.require('Pokemon/hashes.json');
 const AllSpecialPokemon  = Object.keys(SpecialPokemonList).reduce((_,t) => _.concat(SpecialPokemonList[t]), []);
-
-const PokemonHashTable   = require('./pokemon_hashes.json');
 
 class PokemonMain {
 	static get pokemon() {
@@ -103,7 +102,7 @@ class PokemonMain {
 			let pokemonSold = pkmn.removePokemon(pokeID);
 			let sellValue = pokemonSold.value;
 			
-			Bank.get(client, userID).changeCredits(sellValue);
+			client.bank.get(client, userID).changeCredits(sellValue);
 			
 			return { pokemon: pokemonSold, value: sellValue };
 		});
@@ -188,13 +187,13 @@ class PokemonMain {
 	}
 	static buyFromShop(client, serverID, userID, item, quantity) {
 		return this.modify(client, userID, (pkmn, user) => {
-			let bank = Bank.get(client, userID);
+			let bank = client.bank.get(client, userID);
 			return PokeShop.buy(pkmn, bank, item, quantity);
 		});
 	}
 	static sellToShop(client, serverID, userID, item, quantity) {
 		return this.modify(client, userID, (pkmn, user) => {
-			let bank = Bank.get(client, userID);
+			let bank = client.bank.get(client, userID);
 			return PokeShop.sell(pkmn, bank, item, quantity);
 		});
 	}

@@ -2,15 +2,31 @@ const Jimp     = require('jimp');
 const {random} = require('./random');
 const {Color}  = require('./Color');
 const {Array}  = require('./Array');
+const {interp} = require('./Math');
 
 // https://github.com/oliver-moran/jimp/issues/90
 // update 8/4/2018:
 // this was implemented in https://github.com/oliver-moran/jimp/blob/ba15d12ba6bf4f395a238ba387ef6e61a80db22c/src/index.js#L672
 //Jimp.prototype.getBufferAsync = require('bluebird').promisify(Jimp.prototype.getBuffer);
 
-Jimp.prototype.getBufferAs = function (filename) {
+Jimp.prototype.getBufferAs = async function (filename) {
 	var mime = /\.png$/i.test(filename) ? Jimp.MIME_PNG : Jimp.MIME_JPEG;
-	return this.getBufferAsync(mime).then(file => ({file, filename}));
+	file = await this.getBufferAsync(mime);
+	return {file, filename};
+};
+
+Jimp.prototype.toDataURL = async function (mime = Jimp.MIME_PNG) {
+	var buffer = await this.getBufferAsync(mime);
+	return `data:image/${mime==Jimp.MIME_PNG?'png':mime==Jimp.MIME_JPEG?'jpeg':'gif'};base64,${buffer.toString('base64')}`;
+};
+
+Jimp.readAsDataURL = function (dataURL) {
+	var [,type,inBase64,data] = dataURL.match(/^(?:data:)?(image\/(?:png|jpe?g|gif))?;?(base64)?,?(.+)$/);
+	if (!type) {
+		throw new Error('Invalid image MIME type');
+	}
+	//console.log(type,inBase64,data.length);
+	return Jimp.read(Buffer.from(data, inBase64));
 };
 
 Jimp.hashDistance = function hashDistance(h1, h2) {
@@ -21,11 +37,36 @@ Jimp.hashDistance = function hashDistance(h1, h2) {
 	return sum / h1.length;
 };
 
+// This annoys me
 Jimp.prototype.rescale = Jimp.prototype.scale;
 
-// Jimp is broken ;-;
+// Intercept pixel getter/setter to use Color class instead
+let _getPixelColor = Jimp.prototype.getPixelColor;
+let _setPixelColor = Jimp.prototype.setPixelColor;
+Jimp.prototype.getPixelColor = function (x, y, o) {
+	var c = _getPixelColor.call(this, x, y);
+	if (o) c = new Color(c);
+	return c;
+};
+Jimp.prototype.setPixelColor = function (c, x, y) {
+	if (typeof(c) === 'object') {
+		if (c instanceof Color) {
+			c = c.rgba;
+		} else {
+			c = Jimp.RgbaToInt(c.r, c.g, c.b, c.a);
+		}
+	}
+	return _setPixelColor.call(this, c, x, y);
+};
+Jimp.prototype.addPixelColor = function (c, x, y) {
+	this.setPixelColor(this.getPixelColor(x,y).add(c), x, y);
+};
+Jimp.prototype.mixPixelColor = function (c, x, y, t = 0.5) {
+	this.setPixelColor(this.getPixelColor(x,y).interp(c, t), x, y);
+};
 
 /*
+// Jimp is broken ;-;
 Jimp.measureText = function measureText(font, text) {
 	let canvas = new Jimp(1000, 128, 0xFFFFFFFF);
 	canvas.print(font, 0, 0, String(text), 1000, 128).autocrop();
@@ -208,29 +249,27 @@ Jimp.prototype.cropCircle = Jimp.prototype.circleCrop = function cropCircle(resi
 };
 
 Jimp.prototype.getAntiAliasedPixelColor = Jimp.prototype.getAAPixelColor = function (x,y) {
-	var x0 = x | 0,
+	let x0 = x | 0,
 		y0 = y | 0,
 		x1 = x0 + 1,
 		y1 = y0 + 1;
 	if (x0 < x || y0 < y) {
-		var colors = [
-			this.getPixelColor(x0, y0),
-			this.getPixelColor(x1, y0),
-			this.getPixelColor(x0, y1),
-			this.getPixelColor(x1, y1)
-		].map(c => Jimp.intToRGBA(c));
+		let colors = [
+			this.getPixelColor(x0, y0, true),
+			this.getPixelColor(x1, y0, true),
+			this.getPixelColor(x0, y1, true),
+			this.getPixelColor(x1, y1, true)
+		];
 		// linear anti-aliasing
-		return Color.interpolate(
-			Color.interpolate(colors[0], colors[1], x - x0),
-			Color.interpolate(colors[2], colors[3], x - x0),
-		y - y0).rgba;
+		return  colors[0].interp(colors[1], x - x0)
+		.interp(colors[2].interp(colors[3], x - x0), y - y0);
 	} else {
 		return this.getPixelColor(x0, y0);
 	}
 };
 
 Jimp.prototype.fill = function fill(color, ox = 0, oy = 0, width = this.bitmap.width, height = this.bitmap.height) {
-	return this.scan(ox, oy, width, height, (x,y,i) => {
+	return this.scan(ox, oy, width, height, (x, y) => {
 		this.setPixelColor(color, x, y);
 	});
 };
@@ -238,8 +277,7 @@ Jimp.prototype.fill = function fill(color, ox = 0, oy = 0, width = this.bitmap.w
 Jimp.prototype.bucket = function bucket(newColor, ox = 0, oy = 0, tolerance = 0.001) {
 	let jimp = this;
 	
-	let color1 = jimpl.getPixelColor(ox, oy);
-	let rgba1 = Jimp.IntToRGBA(color1);
+	let color1 = jimp.getPixelColor(ox, oy);
 	
 	b(ox, oy);
 	return this;
@@ -248,10 +286,9 @@ Jimp.prototype.bucket = function bucket(newColor, ox = 0, oy = 0, tolerance = 0.
 		if (x < 0 || x >= jimp.bitmap.width || y < 0 || y > jimp.bitmap.height) return;
 		
 		let color2 = jimp.getPixelColor(x, y);
-		if (color2 == newColor) return;
+		if (color2.equals(newColor)) return;
 		
-		let rgba2  = Jimp.IntToRGBA(color2);
-		if (Jimp.colorDiff(rgba1,rgba2) > tolerance) return;
+		if (Jimp.colorDiff(color1,color2) > tolerance) return;
 		
 		jimp.setPixelColor(newColor, x, y);
 		b(x+1,y),b(x-1,y),b(x,y+1),b(x,y-1);
@@ -261,12 +298,7 @@ Jimp.prototype.bucket = function bucket(newColor, ox = 0, oy = 0, tolerance = 0.
 Jimp.prototype.map = function map(M) {
 	var clone = this.clone();
 	this.scan(0, 0, this.bitmap.width, this.bitmap.height, (x,y,i)	=> {
-		var color = Jimp.intToRGBA(this.getPixelColor(x,y));
-		color = M(color, x, y, i, this);
-		if (typeof(color) === 'object') {
-			color = Jimp.rgbaToInt(color.r|0,color.g|0,color.b|0,color.a);
-		}
-		clone.setPixelColor(color, x, y);
+		clone.setPixelColor(M(this.getPixelColor(x, y), x, y, i, this), x, y);
 	});
 	return clone;
 };
@@ -284,7 +316,7 @@ Jimp.prototype.differentialBlur = function differentialBlur(D) {
 	var h = this.bitmap.height;
 	var d = Math.hypot(w,h); // diagonal
 	return this.map((color,x,y,i,img) => {
-		var hex, color2;
+		var color2;
 		
 		// get the differential at the x and y
 		var {dx,dy} = D(x,y);
@@ -307,8 +339,7 @@ Jimp.prototype.differentialBlur = function differentialBlur(D) {
 				if (tx < 0 || tx > w || ty < 0 || ty > h) {
 					// skip out of bounds
 				} else {
-					hex    = this.getPixelColor(tx|0, ty|0);
-					color2 = Jimp.intToRGBA(hex);
+					color2 = this.getPixelColor(tx|0, ty|0);
 					color.r += color2.r;
 					color.g += color2.g;
 					color.b += color2.b;
@@ -346,6 +377,21 @@ Jimp.prototype.swirl = function swirl(strength, radius) {
 	});
 };
 
+Jimp.prototype.tilt = function tilt(angle = Math.PI/6) {
+	var w = this.bitmap.width;
+	var h = this.bitmap.height;
+	var ox = w / 2;
+	var oy = h / 2;
+	return this.transform((x,y) => {
+		var dx = x - ox;
+		var dy = y - oy;
+		var z = h / (h - dy * Math.sin(angle));
+		x = ox + dx * z;
+		y = oy + dy * Math.cos(angle) * z;
+		return {x,y};
+	});
+};
+
 Jimp.prototype.recursion = Jimp.prototype.droste = function droste(ox, oy, scale = 0.5) {
 	if (scale > 0 && scale < 0.95) {
 		var depth = Math.log(this.bitmap.width) / Math.log(1/scale);
@@ -359,6 +405,7 @@ Jimp.prototype.recursion = Jimp.prototype.droste = function droste(ox, oy, scale
 // https://en.wikipedia.org/wiki/Bresenham%27s_line_algorithm
 Jimp.prototype.drawLine = Jimp.prototype.line = function drawLine(x0, y0, x1, y1, color = 0x000000FF, AA = false) {
 	x0=x0|0;y0=y0|0;x1=x1|0;y1=y1|0;
+	color = new Color(color);
 	
 	if (y0 == y1) {
 		return this.drawScanX(x0, y0, x1, color);
@@ -367,16 +414,12 @@ Jimp.prototype.drawLine = Jimp.prototype.line = function drawLine(x0, y0, x1, y1
 		return this.drawScanY(x0, y0, y1, color);
 	}
 	
-	//color = new Color(color).rgba;
-	let c = Jimp.intToRGBA(color);
-	
 	let jimp = this;
 	function plot(x,y) {
 		jimp.setPixelColor(color, x, y);
 	}
 	function blend(x,y,t) {
-		let b = Color.interpolate(Jimp.intToRGBA(jimp.getPixelColor(x,y)), c, t);
-		jimp.setPixelColor(Jimp.rgbaToInt(b.r, b.g, b.b, b.a), x, y);
+		jimp.mixPixelColor(color, x, y, t);
 	}
 	
 	let x = x0;
@@ -429,16 +472,14 @@ Jimp.prototype.drawVertScanline  = Jimp.prototype.drawScanY = function scany(x, 
 // Need to find Wu algorithm to provide correct anti-aliasing
 Jimp.prototype.drawCircle = function drawCircle(x0, y0, radius, color = 0x000000FF, AA = false) {
 	x0=x0|0;y0=y0|0;radius=radius|0;
-	
-	let c = Jimp.IntToRGBA(color);
+	color = new Color(color);
 	
 	let jimp = this;
 	function plot(x,y) {
 		jimp.setPixelColor(color, x, y);
 	}
 	function blend(x,y,t) {
-		let b = Color.interpolate(Jimp.intToRGBA(jimp.getPixelColor(x,y)), c, t);
-		jimp.setPixelColor(Jimp.rgbaToInt(b.r, b.g, b.b, b.a), x, y);
+		jimp.mixPixelColor(color, x, y, t);
 	}
 	
 	let bx = radius, by = 0, d = 0, err;
@@ -496,10 +537,10 @@ Jimp.prototype.fillCircle = Jimp.prototype.circleFill = function fillCircle(colo
 	
 	let bx = radius, by = 0, d = 0, err;
 	do {
-		this.drawScanX(x0 - bx, y0 + by, x0 + bx);
-		this.drawScanX(x0 - bx, y0 - by, x0 + bx);
-		this.drawScanX(x0 - by, y0 + bx, x0 + by);
-		this.drawScanX(x0 - by, y0 - bx, x0 + by);
+		this.drawScanX(x0 - bx, y0 + by, x0 + bx, color);
+		this.drawScanX(x0 - bx, y0 - by, x0 + bx, color);
+		this.drawScanX(x0 - by, y0 + bx, x0 + by, color);
+		this.drawScanX(x0 - by, y0 - bx, x0 + by, color);
 		by--;
 		d += 1 + 2 * by;
 		if (1 + 2 * (d - bx) > 0) {
@@ -599,10 +640,6 @@ Jimp.prototype.fillPath = function fillPath(path = new Path(), color = 0x000000F
 	
 	return this;
 };
-
-function interp(a0, a1, w) {
-	return a0 + (a1 - a0) * w;
-}
 
 class Path {
 	constructor(dataPoints = [], smoothing = 'linear', closed = false, step = 0.1) {
@@ -725,7 +762,6 @@ class Path {
 class PixelNode {
 	constructor(color) {
 		this.color = color;
-		this.rgba  = Jimp.intToRGBA(color); // RGBA object
 		this.left  = null;
 		this.right = null;
 		this.up    = null;
@@ -738,20 +774,20 @@ class PixelNode {
 	get gx() {
 		let g = 0;
 		if (this.left instanceof PixelNode) {
-			g -= Jimp.colorDiff(this.rgba, this.left.rgba);
+			g -= Jimp.colorDiff(this.color, this.left.color);
 		}
 		if (this.right instanceof PixelNode) {
-			g += Jimp.colorDiff(this.rgba, this.right.rgba);
+			g += Jimp.colorDiff(this.color, this.right.color);
 		}
 		return g;
 	}
 	get gy() {
 		let g = 0;
 		if (this.up instanceof PixelNode) {
-			g -= Jimp.colorDiff(this.rgba, this.up.rgba);
+			g -= Jimp.colorDiff(this.color, this.up.color);
 		}
 		if(this.down instanceof PixelNode) {
-			g += Jimp.colorDiff(this.rgba, this.down.rgba);
+			g += Jimp.colorDiff(this.color, this.down.color);
 		}
 		return g;
 	}

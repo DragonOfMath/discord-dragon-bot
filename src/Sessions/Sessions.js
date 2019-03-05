@@ -46,12 +46,17 @@ class Sessions extends Logger(TypeMapBase) {
 		this.start(file);
 	}
 	startTimer() {
-		this.interval = setInterval(this.tick.bind(this), Constants.Sessions.POLL_TIME);
-		this.notice('Interval started');
+		if (!this.interval) {
+			this.interval = setInterval(this.tick.bind(this), Constants.Sessions.POLL_TIME);
+			this.notice('Interval started');
+		}
 	}
 	stopTimer() {
-		clearInterval(this.interval);
-		this.notice('Interval stopped');
+		if (this.interval) {
+			clearInterval(this.interval);
+			this.interval = null;
+			this.notice('Interval stopped');
+		}
 	}
 	start(data = {}) {
 		var id = data.id;

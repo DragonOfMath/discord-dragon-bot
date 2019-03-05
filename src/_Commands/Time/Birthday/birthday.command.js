@@ -1,6 +1,6 @@
 const Birthday = require('./Birthday');
 const {Markdown:md,Format:fmt,Date} = require('../../../Utils');
-const DAY = 86400000;
+const {DAY} = require('../../../Constants/Time');
 
 module.exports = {
 	'birthday': {
@@ -13,7 +13,7 @@ module.exports = {
         fn({client, channelID, userID, args, flags}) {
             if (args.length) {
                 let date = Birthday.parse(args.join(' '));
-                if (!date) {
+                if (date == null) {
                     throw 'Invalid birthday format: Try `MM-DD-YYYY` or `Month Day, Year`.'
                 }
 				if (date > Date.now()) {
@@ -59,7 +59,7 @@ module.exports = {
 						channelID = Birthday.get(client, userID).announce;
 					}
 					if (channelID) {
-						return 'I will announce your birthday in ' + md.channel(channel);
+						return 'I will announce your birthday in ' + md.channel(channelID);
 					} else {
 						return 'I will not announce your birthday in public.';
 					}

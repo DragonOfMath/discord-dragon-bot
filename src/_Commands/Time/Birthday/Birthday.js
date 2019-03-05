@@ -98,24 +98,28 @@ class Birthday extends Resource {
 		} else {
 			input = String(input);
 		}
+		let date = null;
 		try {
 			// try MM-DD-YYYY format
-			let [m,d,y] = input.match(/(\d{1,4})/g);
-			if (m && d && y) {
-				let date = new Date(+y,+m-1,+d,0,0,0,0);
-				return date.getTime() / 1000;
+			let [m,d,y] = input.match(/\d{1,4}/g) || [];
+			//console.log('MM-DD-YYYY:',m,d,y);
+			if (!(m && d && y)) {
+				// try Month DD, YYYY format
+				[,m,d,y] = input.match(/(\w+) (\d+)[^\d]+(\d{4})/i) || [];
+				//console.log('Month Day, Year:',m,d,y);
+				m = ['','january','feburary','march','april','may','june','july','august','september','october','november','december'].indexOf(String(m).toLowerCase());
 			}
-			// try Month DD, YYYY format
-			[,m,d,y] = input.match(/(january|february|march|april|may|june|july|august|september|october|november|december) (\d+)[^\d]+(\d{4})/i);
 			if (m && d && y) {
-				m = ['january','feburary','march','april','may','june','july','august','september','october','november','december'].indexOf(m.toLowerCase());
-				let date = new Date(+y,+m-1,+d,0,0,0,0);
-				return date.getTime() / 1000;
+				m = parseInt(m);
+				d = parseInt(d);
+				y = parseInt(y);
+				//console.log('Parsed:',m,d,y);
+				date = new Date(y,m-1,d,0,0,0,0).getTime() / 1000;
 			}
 		} catch (e) {
 			console.error(e);
 		} finally {
-			return null;
+			return date;
 		}
     }
 	static getUpcomingBirthdays(client, server) {

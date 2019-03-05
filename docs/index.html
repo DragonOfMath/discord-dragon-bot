@@ -8,22 +8,22 @@
 <body>
 <div class="index">
 <h1>DragonBot Commands</h1>
-<p>There are <b>544</b> commands in <b>13</b> categories.</p>
+<p>There are <b>566</b> commands in <b>13</b> categories.</p>
 <h2>Categories</h2>
 <ul id="categories">
 <li><a href="#Admin">Admin</a> <span>(44)</span></li>
 <li><a href="#Audio">Audio</a> <span>(13)</span></li>
-<li><a href="#Discord">Discord</a> <span>(90)</span></li>
+<li><a href="#Discord">Discord</a> <span>(91)</span></li>
 <li><a href="#Economy">Economy</a> <span>(25)</span></li>
-<li><a href="#Fun">Fun</a> <span>(97)</span></li>
-<li><a href="#Image">Image</a> <span>(103)</span></li>
+<li><a href="#Fun">Fun</a> <span>(99)</span></li>
+<li><a href="#Image">Image</a> <span>(108)</span></li>
 <li><a href="#Meta">Meta</a> <span>(17)</span></li>
-<li><a href="#Misc">Misc</a> <span>(39)</span></li>
+<li><a href="#Misc">Misc</a> <span>(52)</span></li>
 <li><a href="#Moderation">Moderation</a> <span>(41)</span></li>
 <li><a href="#NSFW">NSFW</a> <span>(34)</span></li>
 <li><a href="#Programming">Programming</a> <span>(10)</span></li>
 <li><a href="#Text">Text</a> <span>(18)</span></li>
-<li><a href="#Web">Web</a> <span>(13)</span></li>
+<li><a href="#Web">Web</a> <span>(14)</span></li>
 </ul>
 </div><div id="commands">
 <div class="category" id="Admin">
@@ -63,7 +63,7 @@
 <p>Adds a temporary alias for a command.</p>
 </div>
 <div class="command" id="toggle">
-<div><h3 class="command-id"><code>toggle -embeds -tts -typing -invites -globalmentions -ignore -errors -logging</code></h3></div>
+<div><h3 class="command-id"><code>toggle -embeds -tts -typing -invites -globalmentions -ignore -errors -logging</code></h3><i>Private</i></div>
 <p>Toggles internal client settings.</p>
 </div>
 <div class="command" id="ignore">
@@ -605,7 +605,7 @@ If you are looking for a list of commands, try using the `category` command (the
 </div>
 <div class="command" id="support">
 <div><h3 class="command-id"><code>support</code></h3></div>
-<p>Get an invite to the bot's support server.</p>
+<p>Get an invite to the bot's support server. Add `dm me` if you want the link to be sent to you in private.</p>
 </div>
 <div class="command" id="tag">
 <div><h3 class="command-id"><code>tag name</code></h3><i>Privileged</i></div>
@@ -689,13 +689,17 @@ If you are looking for a list of commands, try using the `category` command (the
 <div>Aliases: <span class="aliases"><code>findagame</code></span></div>
 <p>Get a list of the most popular games currently being played on the server.</p>
 </div>
+<div class="command" id="online">
+<div><h3 class="command-id"><code>online userID</code></h3></div>
+<p>Get the time since a user was last seen online.</p>
+</div>
 <div class="command" id="welcome">
 <div><h3 class="command-id"><code>welcome [user]</code></h3><i>Privileged</i></div>
 <p>Let your users feel welcome! Set a channel and message for which this bot may greet them. Use this command to manually welcome them.</p>
 </div>
 <div class="command" id="welcome.message">
-<div><h3 class="command-id"><code>welcome.message ...message</code></h3><i>Privileged</i></div>
-<p>Sets the server's welcome message for new users that join. To insert their name, type `$user`, and to mention them, type `$mention`.</p>
+<div><h3 class="command-id"><code>welcome.message [...message] -clear</code></h3><i>Privileged</i></div>
+<p>Sets the server's welcome message for new users that join. To insert their name, type `$``user`, and to mention them, type `$``mention`.</p>
 </div>
 <div class="command" id="welcome.channel">
 <div><h3 class="command-id"><code>welcome.channel [channel]</code></h3><i>Privileged</i></div>
@@ -707,7 +711,7 @@ If you are looking for a list of commands, try using the `category` command (the
 </div>
 <div class="command" id="welcome.goodbye">
 <div><h3 class="command-id"><code>welcome.goodbye [...message]</code></h3><i>Privileged</i></div>
-<p>Gets or sets the server's goodbye message for users that leave the server. To insert their name, type `$user`, and to mention them, type `$mention`.</p>
+<p>Gets or sets the server's goodbye message for users that leave the server. To insert their name, type `$``user`, and to mention them, type `$``mention`.</p>
 </div>
 <div class="command" id="welcome.test">
 <div><h3 class="command-id"><code>welcome.test</code></h3><i>Privileged</i></div>
@@ -1011,8 +1015,10 @@ Credits can be used to play games, like Blackjack, Slots, Fishing, and Lottery. 
 <p>Roll a 20-sided die.</p>
 </div>
 <div class="command" id="roll">
-<div><h3 class="command-id"><code>roll ...XdXX * scale + offset + </code></h3></div>
-<p>Advanced dice-roll command, using an expression of dice rolls in the form XdXX, plus modifiers.</p>
+<div><h3 class="command-id"><code>roll XdXX|dubs|trips|quads|quints</code></h3></div>
+<p>Advanced dice-roll command with two uses:
+  1) using an expression of dice rolls in the form `XdXX`, with simple math syntax.
+  2) 4chan-like dubs/trips/quads/quints.</p>
 </div>
 <div class="command" id="rps">
 <div><h3 class="command-id"><code>rps <r|rock|✊|p|paper|✋|s|scissors|✌></code></h3></div>
@@ -1091,6 +1097,14 @@ Credits can be used to play games, like Blackjack, Slots, Fishing, and Lottery. 
 <div class="command" id="random.token">
 <div><h3 class="command-id"><code>random.token</code></h3></div>
 <p>Generate a random fake Discord Token.</p>
+</div>
+<div class="command" id="random.uuid">
+<div><h3 class="command-id"><code>random.uuid</code></h3></div>
+<p>Generate a random UUID.</p>
+</div>
+<div class="command" id="battleship">
+<div><h3 class="command-id"><code>battleship</code></h3></div>
+<p>Play the classic Battleship game against the bot!</p>
 </div>
 <div class="command" id="bingo">
 <div><h3 class="command-id"><code>bingo [...co-players]</code></h3></div>
@@ -1207,7 +1221,7 @@ Credits can be used to play games, like Blackjack, Slots, Fishing, and Lottery. 
 </div>
 <div class="command" id="pokemon.sell">
 <div><h3 class="command-id"><code>pokemon.sell pokemon</code></h3></div>
-<p>Sell a Pokémon for its value. Leveled Pokémon are worth more.</p>
+<p>Sell a Pokémon for its value. Leveled and legendary Pokémon are worth more.</p>
 </div>
 <div class="command" id="pokemon.fave">
 <div><h3 class="command-id"><code>pokemon.fave pokemon</code></h3></div>
@@ -1373,6 +1387,11 @@ Default flag values are `type=hot`, `time=all`, and `limit=200`.</p>
 <div><h3 class="command-id"><code>image.flip [imageURL] [<horizontal|vertical|both>]</code></h3></div>
 <div>Aliases: <span class="aliases"><code>mirror</code></span></div>
 <p>Flips an image horizontally, vertically, or both.</p>
+</div>
+<div class="command" id="image.tilt">
+<div><h3 class="command-id"><code>image.tilt [imageURL] [angle]</code></h3></div>
+<div>Aliases: <span class="aliases"><code>perspective</code></span></div>
+<p>Tilts an image to appear 3D-ish.</p>
 </div>
 <div class="command" id="image.symmetry">
 <div><h3 class="command-id"><code>image.symmetry [imageURL] [<left-right|right-left|top-bottom|bottom-top|top-left|top-right|bottom-left|bottom-right>]</code></h3></div>
@@ -1694,6 +1713,26 @@ Default flag values are `type=hot`, `time=all`, and `limit=200`.</p>
 <div><h3 class="command-id"><code>maze.solve [imageURL] -scale</code></h3></div>
 <p>Solve a maze generated by this bot. Might or might not work with other mazes.</p>
 </div>
+<div class="command" id="mc">
+<div><h3 class="command-id"><code>mc</code></h3></div>
+<div>Aliases: <span class="aliases"><code>minecraft</code>, <code>meinkraft</code></span></div>
+<p>Minecraft-related image commands.</p>
+</div>
+<div class="command" id="mc.craft">
+<div><h3 class="command-id"><code>mc.craft ...ingredients</code></h3></div>
+<div>Aliases: <span class="aliases"><code>crafting</code>, <code>table</code></span></div>
+<p>Generates a Minecraft crafting recipe. Ingredients are minecraft:identifers or block names, and separated by commas. Empty slots can be any non-valid identifer. To set the output, use 10 ingredients with the output as the last.</p>
+</div>
+<div class="command" id="mc.furnace">
+<div><h3 class="command-id"><code>mc.furnace input fuel output</code></h3></div>
+<div>Aliases: <span class="aliases"><code>cooking</code></span></div>
+<p>Generates a Minecraft furnace recipe. Ingredients are minecraft:identifiers or block names, and separated by commas.</p>
+</div>
+<div class="command" id="mc.achievement">
+<div><h3 class="command-id"><code>mc.achievement text -title -icon</code></h3></div>
+<div>Aliases: <span class="aliases"><code>achvmnt</code>, <code>ag</code></span></div>
+<p>Generates a Minecraft achievement.</p>
+</div>
 <div class="command" id="meme">
 <div><h3 class="command-id"><code>meme [imageURL] [toptext]</code></h3></div>
 <div>Aliases: <span class="aliases"><code>maymay</code>, <code>dankify</code>, <code>whenyou</code></span></div>
@@ -1900,6 +1939,54 @@ Default flag values are `type=hot`, `time=all`, and `limit=200`.</p>
 <div><h3 class="command-id"><code>color.hsl</code></h3></div>
 <p>Generate a color from HSL format.</p>
 </div>
+<div class="command" id="color.day">
+<div><h3 class="command-id"><code>color.day</code></h3></div>
+<div>Aliases: <span class="aliases"><code>oftheday</code>, <code>daily</code></span></div>
+<p>Get the color of the day.</p>
+</div>
+<div class="command" id="color.palette">
+<div><h3 class="command-id"><code>color.palette [number]</code></h3></div>
+<div>Aliases: <span class="aliases"><code>pallete</code>, <code>colors</code></span></div>
+<p>Generate a palette of random colors, up to 10 max (default 5).</p>
+</div>
+<div class="command" id="exercise">
+<div><h3 class="command-id"><code>exercise [difficulty]</code></h3></div>
+<p>Get a random full exercise routine. You can select a difficulty from 1 to 10.</p>
+</div>
+<div class="command" id="exercise.abs">
+<div><h3 class="command-id"><code>exercise.abs [difficulty]</code></h3></div>
+<div>Aliases: <span class="aliases"><code>abdomen</code>, <code>core</code></span></div>
+<p>Get a random exercise for the abs.</p>
+</div>
+<div class="command" id="exercise.quads">
+<div><h3 class="command-id"><code>exercise.quads [difficulty]</code></h3></div>
+<div>Aliases: <span class="aliases"><code>quadriceps</code>, <code>upperleg</code></span></div>
+<p>Get a random exercise for the quads.</p>
+</div>
+<div class="command" id="exercise.glutes">
+<div><h3 class="command-id"><code>exercise.glutes [difficulty]</code></h3></div>
+<div>Aliases: <span class="aliases"><code>gluteus</code>, <code>lowerback</code></span></div>
+<p>Get a random exercise for the glutes.</p>
+</div>
+<div class="command" id="exercise.tris">
+<div><h3 class="command-id"><code>exercise.tris [difficulty]</code></h3></div>
+<div>Aliases: <span class="aliases"><code>triceps</code>, <code>upperarm</code></span></div>
+<p>Get a random exercise for the triceps.</p>
+</div>
+<div class="command" id="exercise.bis">
+<div><h3 class="command-id"><code>exercise.bis [difficulty]</code></h3></div>
+<div>Aliases: <span class="aliases"><code>biceps</code>, <code>lowerarm</code></span></div>
+<p>Get a random exercise for the biceps.</p>
+</div>
+<div class="command" id="exercise.back">
+<div><h3 class="command-id"><code>exercise.back [difficulty]</code></h3></div>
+<p>Get a random exercise for the back.</p>
+</div>
+<div class="command" id="exercise.chest">
+<div><h3 class="command-id"><code>exercise.chest [difficulty]</code></h3></div>
+<div>Aliases: <span class="aliases"><code>uppercore</code></span></div>
+<p>Get a random exercise for the chest.</p>
+</div>
 <div class="command" id="math">
 <div><h3 class="command-id"><code>math [expression]</code></h3></div>
 <div>Aliases: <span class="aliases"><code>maths</code>, <code>calculate</code>, <code>calculator</code>, <code>calc</code></span></div>
@@ -1976,6 +2063,16 @@ Default flag values are `type=hot`, `time=all`, and `limit=200`.</p>
 <div><h3 class="command-id"><code>pi.digits [start] [end]</code></h3></div>
 <div>Aliases: <span class="aliases"><code>get</code></span></div>
 <p>Get a range of digits of pi. Default of 100 digits from the starting digit. Maximum of 1000 digits.</p>
+</div>
+<div class="command" id="pi.find">
+<div><h3 class="command-id"><code>pi.find digits -start/-offset</code></h3></div>
+<div>Aliases: <span class="aliases"><code>search</code>, <code>lookup</code>, <code>index</code></span></div>
+<p>Find a specific sequence of digits in pi. Optionally, you can set a starting offset.</p>
+</div>
+<div class="command" id="pi.practice">
+<div><h3 class="command-id"><code>pi.practice ...digits -start/-offset</code></h3></div>
+<div>Aliases: <span class="aliases"><code>test</code>, <code>train</code></span></div>
+<p>Practice writing out digits of pi, and I'll verify. You can add spaces, commas, etc. to aid you. Starting with `3.` is optional. You can set a custom digit offset to start at (ex: `-start:101`). [Note: this bot assumes you are honest and do not copy/paste digits.]</p>
 </div>
 <div class="command" id="poly">
 <div><h3 class="command-id"><code>poly ...polynomial -derive -integrate -graph</code></h3></div>
@@ -2057,6 +2154,11 @@ Default flag values are `type=hot`, `time=all`, and `limit=200`.</p>
 <div>Aliases: <span class="aliases"><code>tz</code></span></div>
 <p>Get the current time in another timezone, either using the timezone abbreviation ("EST") or the IANA region code ("America/New York") *(Daylight Savings not applied yet)*.</p>
 </div>
+<div class="command" id="video">
+<div><h3 class="command-id"><code>video [be in a voice channel]</code></h3></div>
+<div>Aliases: <span class="aliases"><code>vid</code></span></div>
+<p>Turn your voice channel into a video channel!</p>
+</div>
 <div class="command" id="screenshot">
 <div><h3 class="command-id"><code>screenshot url -s/-scripts</code></h3><i>Disabled</i></div>
 <div>Aliases: <span class="aliases"><code>ss</code></span></div>
@@ -2077,8 +2179,8 @@ Default flag values are `type=hot`, `time=all`, and `limit=200`.</p>
 </div>
 <div class="command" id="archive">
 <div><h3 class="command-id"><code>archive ...count| [channel] -b/-bot -c/-cmds -t/-text -m/-media -p/-pinned</code></h3><i>Privileged</i></div>
-<div>Aliases: <span class="aliases"><code>move</code></span></div>
-<p>Move messages in the current channel to an archive channel. Use flags to specify the kinds of messages to target: `-cmds`, `-bot`, `-media`, `-text`, and `-pinned`.</p>
+<div>Aliases: <span class="aliases"><code>move</code>, <code>mirror</code></span></div>
+<p>Move messages in the current channel to an archive channel (or a specified channel if using the aliases). Use flags to specify the kinds of messages to target: `-cmds`, `-bot`, `-media`, `-text`, and `-pinned`.</p>
 </div>
 <div class="command" id="archive.id">
 <div><h3 class="command-id"><code>archive.id [channel]</code></h3><i>Privileged</i></div>
@@ -2609,6 +2711,10 @@ Default flag values are `type=hot`, `time=all`, and `limit=200`.</p>
 <div><h3 class="command-id"><code>lmgtfy query</code></h3><i>Disabled</i></div>
 <p>Enter a query.</p>
 </div>
+<div class="command" id="steam">
+<div><h3 class="command-id"><code>steam query</code></h3><i>Disabled</i></div>
+<p>Enter a game you would like to search.</p>
+</div>
 <div class="command" id="bulbapedia">
 <div><h3 class="command-id"><code>bulbapedia [topic]</code></h3></div>
 <div>Aliases: <span class="aliases"><code>pokemonwiki</code>, <code>pkmnwiki</code>, <code>pokewiki</code></span></div>
@@ -2632,7 +2738,7 @@ Default flag values are `type=hot`, `time=all`, and `limit=200`.</p>
 </div>
 </div>
 <footer>
-Documentation generated in no time.
+Documentation generated in 21 milliseconds.
 </footer>
 </body>
 </html>

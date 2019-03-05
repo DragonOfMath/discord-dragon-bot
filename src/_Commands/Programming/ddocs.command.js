@@ -1,7 +1,8 @@
+const Asset = require('../../Structures/Asset');
 const {quote,kwsearch,paginate} = require('../../Utils');
 
 function search(query) {
-	return kwsearch(require('../../static/discorddocs.json'), query, doc => doc.keywords);
+	return kwsearch(Asset.require('Discord/discorddocs.json'), query, doc => doc.keywords);
 }
 
 module.exports = {

@@ -1,9 +1,10 @@
-const Bank = require('../../Bank/Bank');
+const Bank      = require('../../Bank/Bank');
 const Constants = require('../../Constants/Pokemon');
+const Asset     = require('../../Structures/Asset');
 const {Markdown:md,Format:fmt,tableify} = require('../../Utils');
 
 const PokeError       = require('./PokeError');
-const PokemonItemList = require('./pokemon_items.json');
+const PokemonItemList = Asset.require('Pokemon/items.json');
 
 class PokeShop {
 	static displayInventory() {

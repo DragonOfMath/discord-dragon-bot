@@ -4,16 +4,7 @@ const {Color,ColorGradient,paginate,Jimp} = require('../../../Utils');
 const mandelbrot = new Mandelbrot();
 const style      = new ColorGradient();
 
-const BLACK   = new Color(0,0,0);
-const RED     = new Color(0xFF,0,0);
-const YELLOW  = new Color(0xFF,0xFF,0);
-const GREEN   = new Color(0,0xFF,0);
-const CYAN    = new Color(0,0xFF,0xFF);
-const BLUE    = new Color(0,0,0xFF);
-const MAGENTA = new Color(0xFF,0,0xFF);
-const WHITE   = new Color(0xFF,0xFF,0xFF);
-
-const DEFAULT_STYLE = [RED,YELLOW,GREEN,CYAN,BLUE,MAGENTA];
+const DEFAULT_STYLE = [Color.RED,Color.YELLOW,Color.GREEN,Color.CYAN,Color.BLUE,Color.MAGENTA];
 
 style.colors = DEFAULT_STYLE;
 
@@ -49,7 +40,7 @@ module.exports = {
 				var image = new Jimp(mandelbrot.width, mandelbrot.height);
 				image.scan(0, 0, mandelbrot.width, mandelbrot.height, function (x,y,i) {
 					var d = mandelbrot.data[y][x];
-					var c = d < (mandelbrot.depth) ? style.get(d / style.scale) : BLACK;
+					var c = d < (mandelbrot.depth) ? style.get(d / style.scale) : Color.BLACK;
 					this.bitmap.data[i+0] = c.r;
 					this.bitmap.data[i+1] = c.g;
 					this.bitmap.data[i+2] = c.b;
@@ -359,7 +350,7 @@ module.exports = {
 		info: 'Displays the shader settings for rendering the Mandelbrot Set.',
 		permissions: 'inclusive',
 		fn() {
-			return style.toEmbedObject();
+			return style.embed();
 		},
 		subcommands: {
 			'scale': {
@@ -390,7 +381,7 @@ module.exports = {
 				fn({args}) {
 					style.random(Number(args[0])||Math.floor(5+10*Math.random()));
 					style.scale = 1 + (20 * Math.random());
-					return style.toEmbedObject();
+					return style.embed();
 				}
 			},
 			'add': {
@@ -450,22 +441,21 @@ module.exports = {
 			'preview': {
 				title: 'Mandelbrot Shader | Preview Gradient',
 				info: 'Displays a gradient of the current color palette.',
-				fn({client, channelID}) {
-					var image = new Jimp(1000, 50, 0xFFFFFFFF), c0, c1, x, y;
-					var dx = 1000 / style.colors.length;
-					for (x=0;x<image.bitmap.width;++x) {
-						c0 = style.colors[Math.floor(x/dx)];
-						c1 = style.get(x/dx);
-						for (y=0;y<25;++y) image.setPixelColor(c0.rgba, x, y);
-						for (;y<50;++y)    image.setPixelColor(c1.rgba, x, y);
+				fn({client}) {
+					var width = 1000,
+						height = 50,
+						image = new Jimp(width, height, 0xFFFFFFFF),
+						colors = style.colors.length,
+						dx = width / colors,
+						dy = height / 2,
+						x;
+					for (x=0;x<colors;x++) {
+						image.fill(style.colors[x].rgba, x * dx, 0, dx, dy);
 					}
-					image.getBuffer(Jimp.MIME_PNG, (err, buffer) => {
-						client.uploadFile({
-							to: channelID,
-							file: buffer,
-							filename: 'gradient.png'
-						});
-					});
+					for (x=0;x<width;++x) {
+						image.drawScanY(x, dy, height, style.get(x/dx).rgba);
+					}
+					return image.getBufferAs('gradient.png');
 				}
 			},
 			'presets': {

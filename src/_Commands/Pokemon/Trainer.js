@@ -1,12 +1,13 @@
 const Constants = require('../../Constants/Pokemon');
 const Resource  = require('../../Structures/Resource');
+const Asset     = require('../../Structures/Asset');
 const {Markdown:md,Format:fmt,random} = require('../../Utils');
 
 const Pokedex         = require('./Pokedex');
 const PokeError       = require('./PokeError');
 
-const PokemonList     = require('./pokemon.json');
-const PokemonItemList = require('./pokemon_items.json');
+const PokemonList     = Asset.require('Pokemon/pokemon.json');
+const PokemonItemList = Asset.require('Pokemon/items.json');
 
 class Trainer extends Resource {
 	constructor(user) {
