@@ -81,8 +81,9 @@ class Graph {
 		// fix domain to fit all x values
 		this.magnitudeX = Math.ceil(Math.log10(this.rangeX));
 		this.intervalX  = Math.pow(10, this.magnitudeX - 1);
-		if (this.intervalX >  this.rangeX / 2) {
+		if (this.intervalX > this.rangeX / 4) {
 			// fix very wide intervals
+			this.magnitudeX -= 1;
 			this.intervalX /= 10;
 		}
 		//this.maximumX += this.intervalX;
@@ -90,8 +91,17 @@ class Graph {
 		// fix range to fit all y values
 		this.magnitudeY = Math.ceil(Math.log10(this.rangeY));
 		this.intervalY  = Math.pow(10, this.magnitudeY - 1);
-		this.minimumY -= this.intervalY;
-		this.maximumY += this.intervalY;
+		if (this.intervalY > this.rangeY / 4) {
+			// fix very wide intervals
+			this.magnitudeY -= 1;
+			this.intervalY /= 10;
+		}
+		if (typeof(this.options.minimumY) === 'undefined') {
+			this.minimumY -= this.intervalY;
+		}
+		if (typeof(this.options.maximumY) === 'undefined') {
+			this.maximumY += this.intervalY;
+		}
 		
 		this.spacingX   = Math.floor(this.width / (this.rangeX / this.intervalX));
 		this.spacingY   = Math.floor(this.height / (this.rangeY / this.intervalY));
@@ -172,7 +182,7 @@ class Graph {
 			this.image.drawLine(gx, this.bottom, gx, this.top, color);
 		}
 		if (text !== undefined) {
-			this.addText(String(text), 8, gx, this.bottom, this.spacingX, 10, 'left');
+			this.addText(String(text), 8, gx - this.spacingX / 2, this.bottom + 4, this.spacingX, 10, 'center');
 		}
 	}
 	addYInterval(y, line, text, color = LIGHT_GREY) {
@@ -181,7 +191,7 @@ class Graph {
 			this.image.drawLine(this.left, gy, this.right, gy, color);
 		}
 		if (text !== undefined) {
-			this.addText(String(text), 8, this.left - this.padding, gy, this.padding, 10, 'right');
+			this.addText(String(text), 8, this.left - this.padding, gy - 4, this.padding - 4, 10, 'right');
 		}
 	}
 	constructAxes() {
@@ -204,7 +214,7 @@ class Graph {
 	}
 	constructIntervals() {
 		// draw the x-axis intervals
-		let intervalX = this.intervalX, decimalPlacesX = Math.max(0,-this.magnitudeX);
+		let intervalX = this.intervalX, decimalPlacesX = Math.max(0,1-this.magnitudeX);
 		for (let x = intervalX; x < this.maximumX; x += intervalX) {
 			this.addXInterval(x, this.options.grid, x.toFixed(decimalPlacesX));
 		}
@@ -213,7 +223,7 @@ class Graph {
 		}
 		
 		// draw the y-axis intervals
-		let intervalY = this.intervalY, decimalPlacesY = Math.max(0,-this.magnitudeY);
+		let intervalY = this.intervalY, decimalPlacesY = Math.max(0,1-this.magnitudeY);
 		for (let y = intervalY; y < this.maximumY; y += intervalY) {
 			this.addYInterval(y, this.options.grid, y.toFixed(decimalPlacesY));
 		}
@@ -358,7 +368,7 @@ class Graph {
 		graph.constructIntervals();
 		graph.drawScatterplotGraph();
 		//graph.drawLineOfBestFit();
-		return graph.image;
+		return graph;
 	}
 	static createBarGraph(data, options = {}) {
 		let graph = new Graph(data, options);

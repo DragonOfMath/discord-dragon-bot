@@ -24,7 +24,7 @@ class PokedexViewer extends ListMessageBrowser {
 		this.embed.title = this.user.username + '\'s Pokedex';
 		this.updateEmbed();
 	}
-	async handleUserAction({reaction, change, client, userID}) {
+	async handleCustomAction({reaction, change, client, userID}) {
 		for (let f in FILTER) {
 			if (reaction == FILTER[f]) {
 				this.options.filters[f] = change > 0;
@@ -53,11 +53,11 @@ class PokedexViewer extends ListMessageBrowser {
 		}
 		return ids;
 	}
-	mapItem(ids, i , id) {
+	mapItem(id) {
 		let mon = this.data[id];
 		return {
 			name:  `${mon.displayName} (ID: ${id})`,
-			value: `${mon.species} Lvl. ${mon.lvl}`,
+			value: `${mon.species} LV. ${mon.lvl}`,
 			inline: true
 		};
 	}

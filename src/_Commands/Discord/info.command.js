@@ -49,6 +49,13 @@ function uptime(client) {
 		inline: true
 	}];
 }
+function downtime(client) {
+	return [{
+		name: ':hourglass: Downtime',
+		value: client.downtime ? fmt.timestamp(client.downtime) : 'no downtime :smile:',
+		inline: true
+	}];
+}
 function ping(client) {
 	return [{
 		name: ':stopwatch: Ping',
@@ -177,6 +184,13 @@ module.exports = {
 				info: 'Displays how long the bot has been running.',
 				fn({client}) {
 					return {fields: uptime(client)};
+				}
+			},
+			'downtime': {
+				aliases: ['down'],
+				info: 'Displays how long it had lost connection to Discord since starting up.',
+				fn({client}) {
+					return {fields: downtime(client)};
 				}
 			},
 			'ping': {
@@ -373,12 +387,14 @@ module.exports = {
 				title: 'Info | Snowflake',
 				info: 'Analyze and identify information about a snowflake ID.',
 				parameters: ['id'],
-				permissions: 'private',
+				permissions: 'public',
 				fn({client, args}) {
 					let id      = args[0];
 					let user    = client.users[id];
+					let role    = client.roles[id];
 					let channel = client.channels[id];
 					let server  = client.servers[id];
+					
 					return {
 						description: 'ID: ' + md.code(id),
 						timestamp: DiscordUtils.getCreationTime(id),
@@ -388,8 +404,12 @@ module.exports = {
 								value: user ? md.mention(user) : 'No match'
 							},
 							{
+								name: 'Role',
+								value: role ? md.role(role) : 'No match'
+							},
+							{
 								name: 'Channel',
-								value: channel ? (md.atChannel(channel) + ' in ' + client.servers[channel.guild_id].name ) : 'No match'
+								value: channel ? md.channel(channel) : 'No match'
 							},
 							{
 								name: 'Server',
@@ -401,9 +421,9 @@ module.exports = {
 			},
 			'token': {
 				title: 'Info | Token',
-				info: 'Analyze and identify information about a Discord Token',
+				info: 'Analyze and identify information about a Discord Token. (Devnote: don\'t worry, this bot can only produce fake tokens to play around with)',
 				parameters: ['token'],
-				permissions: 'private',
+				permissions: 'public',
 				fn({client, args}) {
 					let token = args[0];
 					let tokenInfo = DiscordUtils.decodeToken(token);
@@ -430,8 +450,7 @@ module.exports = {
 				title: 'Info | Permissions',
 				info: 'Get a list of permissions.',
 				parameters: ['value'],
-				permissions: 'private',
-				analytics: false,
+				permissions: 'public',
 				fn({client, args}) {
 					let perms = DiscordUtils.getPermissionNames(args[0]);
 					return `${md.code(args[0])} = ${perms.map(md.code).join(', ')}`;
@@ -570,7 +589,7 @@ module.exports = {
 			
 			keywords = keywords.join(' ');
 			
-			return client.getMessages(channelID, limit)
+			return client.getMessages({channelID, limit})
 			.then(messages => {
 				let foundIndex = -1;
 				for (let m = 1; m < messages.length; m++) {
@@ -654,7 +673,7 @@ module.exports = {
 						title: 'Search | All Users',
 						info: 'Search all users with the given keywords in their name OR discriminator.',
 						parameters: ['discriminator | keyword','[...more keywords]'],
-						fn({client, args, server}) {
+						fn({client, context, args}) {
 							var [disc, ...keywords] = args;
 							if (isNaN(disc) || String(disc).length !== 4) {
 								keywords.unshift(disc);
@@ -665,11 +684,9 @@ module.exports = {
 							var matches = DiscordUtils.search(client.users, user => {
 								return user.discriminator == disc || substrcmp(user.username, keywords);
 							});
-							return list(matches, 1, user => {
-								return (user.id in server.members) ?
-									md.mention(user) :
-									md.atUser(user);
-							});
+							
+							let viewer = new UserListViewer(context, matches, client.servers);
+							viewer.startBrowser(client);
 						}
 					},
 					'role': {
@@ -682,11 +699,8 @@ module.exports = {
 							var matches = DiscordUtils.search(roles, role => {
 								return substrcmp(role.name, keywords);
 							});
-							return list(matches, 1, role => {
-								return (role.id in server.roles) ?
-									md.role(role) :
-									md.atRole(role);
-							});
+							let viewer = new RoleListViewer(context, matches, client.servers);
+							viewer.startBrowser(client);
 						}
 					},
 					'channel': {
@@ -724,7 +738,7 @@ module.exports = {
 		info: 'Quote a message in the channel. Or quote a random message by someone.',
 		parameters: ['[channel]','[messageID]'],
 		permissions: 'inclusive',
-		fn({client, channelID, userID, args}) {
+		fn({client, channelID, args}) {
 			let messageID = args[args.length-1];
 			if (!messageID) {
 				throw 'I need a message to quote!';
@@ -732,11 +746,10 @@ module.exports = {
 			if (md.channelID(args[0])) {
 				channelID = md.channelID(args[0]);
 			}
-			
-			if (md.userID(messageID)) {
-				messageID = md.userID(messageID);
+			let userID = md.userID(messageID);
+			if (userID) {
 				return client.getMessages({channelID,limit:100})
-				.then(messages => messages.filter(message => message.author.id == messageID))
+				.then(messages => messages.filter(message => message.author.id == userID))
 				.then(random)
 				.then(quote);
 			} else {

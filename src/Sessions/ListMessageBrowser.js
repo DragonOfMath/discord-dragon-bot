@@ -5,7 +5,7 @@ class ListMessageBrowser extends MessageBrowser {
 	filterData(data) {
 		return data;
 	}
-	mapItem(data, item, index) {
+	mapItem(item, index, data) {
 		return {
 			name: `#${index+1}`,
 			value: item,

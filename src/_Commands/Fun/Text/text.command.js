@@ -1,13 +1,15 @@
-const {Markdown:md,random,Base64,strcmp,substrcmp,truncate,TextBox} = require('../../Utils');
+const {Markdown:md,random,Base64,strcmp,substrcmp,truncate,TextBox} = require('../../../Utils');
 const Zalgo   = require('./zalgo');
 const owo     = require('./owo');
 const leet    = require('./1337');
+const vaporwave = require('./vaporwave');
 const sheriff = require('./sheriff');
 const nato    = require('./nato');
 const FancyText = require('./FancyText');
+const thesaurize = require('./thesaurize');
 
 const crypto = require('crypto');
-const HashTypes = crypto.getHashes();
+const HashTypes = crypto.getHashes().filter(alias => alias.indexOf('/') == -1);
 
 function hash(text, algorithm = 'md5', format = 'hex') {
 	let h = crypto.createHash(algorithm);
@@ -121,6 +123,18 @@ module.exports = {
 			return Zalgo.uncorrupt(arg);
 		}
 	},
+	'unzws': {
+		aliases: ['strclean','stringclean','dmcheat'],
+		category: 'Text',
+		info: 'Remove zero-width spaces and other hidden characters from a string.',
+		parameters: ['...text'],
+		permissions: 'inclusive',
+		fn({arg}) {
+			return arg.replace('\u00a0', '')
+			          .replace('\ufeff', '')
+			          .replace('\u200b', '');
+		}
+	},
 	'caps': {
 		aliases: ['mixedcaps','mcaps','mock'],
 		category: 'Text',
@@ -141,7 +155,7 @@ module.exports = {
 		aliases: ['uwu', 'hewwo', 'babytalk'],
 		category: 'Text',
 		info: 'H-hewwo?! ',
-		parameters: ['...text'],
+		parameters: ['[...text]'],
 		permissions: 'inclusive',
 		fn({arg}) {
 			return owo(arg);
@@ -155,6 +169,16 @@ module.exports = {
 		permissions: 'inclusive',
 		fn({arg}) {
 			return leet(arg);
+		}
+	},
+	'vaporwave': {
+		aliases: ['aesthetic','widechar'],
+		category: 'Text',
+		info: 'Change your text into vaporwave a e s t h e t i c.',
+		parameters: ['...text'],
+		permissions: 'inclusive',
+		fn({arg}) {
+			return vaporwave(arg);
 		}
 	},
 	'reverse': {
@@ -180,7 +204,7 @@ module.exports = {
 	'nato': {
 		category: 'Text',
 		info: 'Convert to and from the NATO phonetic alphabet. (See <https://en.wikipedia.org/wiki/NATO_phonetic_alphabet>)',
-		parameters: ['[from]', '...text'],
+		parameters: ['[from]', '[...text]'],
 		permissions: 'inclusive',
 		fn({args}) {
 			let [first, ...text] = args;
@@ -196,7 +220,7 @@ module.exports = {
 		aliases: ['b64'],
 		category: 'Text',
 		info: 'Convert to and from Base 64.',
-		parameters: ['[from]', '...text'],
+		parameters: ['[from]', '[...text]'],
 		permissions: 'inclusive',
 		fn({args}) {
 			let [first, ...text] = args;
@@ -211,10 +235,10 @@ module.exports = {
 		}
 	},
 	'hash': {
-		aliases: ['crypto',...HashTypes],
+		aliases: ['crypto','md5','sha256','sha512'],
 		category: 'Text',
 		info: 'Get the specified hash of some text. Specify the algorithm with a command alias or with a parameter, default is `md5`.',
-		parameters: ['[algorithm]','...text'],
+		parameters: ['[algorithm]','[...text]'],
 		permissions: 'inclusive',
 		fn({cmds, args}) {
 			let [algorithm, ...text] = args;
@@ -287,7 +311,6 @@ module.exports = {
 	'fancy': {
 		aliases: ['fancytext','cancer'],
 		category: 'Text',
-		title: 'Fancify Text',
 		info: 'Turns your text into fancy text! Types: ' + Object.keys(FancyText.TYPES).join(', '),
 		parameters: ['...text'],
 		flags: ['type'],
@@ -296,20 +319,31 @@ module.exports = {
 			return FancyText.translate(args.join(' '), flags.get('type'));
 		}
 	},
+	'thesaurus': {
+		aliases: ['thesaurusize','thesaurize'],
+		category: 'Text',
+		info: 'Expandify your verbiages.',
+		parameters: ['...text'],
+		permissions: 'inclusive',
+		fn({arg}) {
+			return thesaurize(arg);
+		}
+	},
 	'portmanteau': {
 		aliases: ['combine'],
 		category: 'Text',
-		title: 'Portmanteau',
 		info: 'Combine two words into a portmanteau.',
 		parameters: ['word1|user1','word2|user2'],
 		permissions: 'inclusive',
-		fn({client,args}) {
+		fn({client,server,args}) {
 			let [w1,w2] = args;
 			if (md.userID(w1)) {
-				w1 = client.users[md.userID(w1)].username;
+				w1 = md.userID(w1);
+				w1 = server.members[w1].nick || client.users[w1].username;
 			}
 			if (md.userID(w2)) {
-				w2 = client.users[md.userID(w2)].username;
+				w2 = md.userID(w2);
+				w2 = server.members[w2].nick || client.users[w2].username;
 			}
 			let shorter = Math.min(w1.length, w2.length);
 			let longer  = Math.max(w1.length, w2.length);
@@ -345,12 +379,32 @@ module.exports = {
 				}
 			}
 			
-			if (portmanteau && portmanteau != w1 && portmanteau != w2) {
-				return `${w1} + ${w2} = ${md.bold(portmanteau)}`;
-			} else {
-				portmanteau = w1 + '-' + w2;
-				return `${w1} + ${w2} = uhhh... ${md.bold(portmanteau)}?`;
+			if (!portmanteau || portmanteau == w1 || portmanteau == w2) {
+				// try splitting by words
+				let words1 = w1.split(' ');
+				let words2 = w2.split(' ');
+				if (words1.length > 1 && words1.length == words2.length) {
+					let halfLength = Math.ceil(words1.length / 2);
+					portmanteau = [...words1.slice(0, halfLength), ...words2.splice(halfLength)].join(' ');
+					if (portmanteau == w1 || portmanteau == w2) {
+						portmanteau = [...words2.slice(0, halfLength), ...words1.splice(halfLength)].join(' ');
+					}
+					// zipper time
+					if (portmanteau == w1 || portmanteau == w2) {
+						portmanteau = [];
+						for (let i = 0; i < w1.length; i++) {
+							portmanteau.push(w1[i]);
+							portmanteau.push(w2[i]);
+						}
+						portmanteau = portmanteau.join(' ');
+					}
+				} else {
+					// when all else fails, just split somewhere and hope it works...
+					portmanteau = w1.substring(0, Math.floor(w1.length * Math.random())) + w2.substring(Math.floor(w2.length * Math.random()));
+				}
 			}
+			
+			return `${w1} + ${w2} = ${md.bold(portmanteau)}`;
 		}
 	}
 };

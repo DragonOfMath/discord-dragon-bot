@@ -21,9 +21,6 @@ module.exports = {
 		pokemon: {},
 		items: {},
 		totalCaught: 0,
-		cooldown: 0,
-		trained: 0,
-		scavenged: 0,
 		active: 0
 	},
 	POKEMON_TEMPLATE: {

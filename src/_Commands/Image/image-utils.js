@@ -1,6 +1,6 @@
 const gifwrap = require('gifwrap');
 const FilePromise = require('../../Structures/FilePromise');
-const {Jimp,Gif,GifUtil} = require('../../Utils');
+const {Jimp,GIF,Gif,GifError} = require('../../Utils');
 
 function isImage(img) {
 	try {
@@ -33,22 +33,20 @@ async function processImage(client, args, channelID, callback, filename) {
 	if (channelID) client.type(channelID);
 	
 	let image;
-	if (images[0].endsWith('.gif')) {
-		image = await FilePromise.read(images[0], 'binary');
-		image = await GifUtil.read(image);
+	if (images[0].toLowerCase().replace(/\?.+/,'').endsWith('.gif')) {
+		image = await GIF.read(images[0]);
 	} else {
 		image = await Jimp.read(images[0]);
 	}
 	
-	let result = await callback(image, ...args);
-	if (result instanceof Jimp) {
-		return result.getBufferAs(filename);
-	} else if (result instanceof Gif) {
-		return {file: result.buffer, filename };
-	} else if (result instanceof Buffer) {
-		return { file: result, filename };
-	} else {
-		return result;
+	try {
+		let result = await callback(image, ...args);
+		return getImageBufferObject(result, filename);
+	} catch (e) {
+		if (e instanceof GifError) {
+			e = e.message;
+		}
+		throw e;
 	}
 }
 async function processImages(client, args, channelID, limit = 2, callback, filename) {
@@ -58,14 +56,25 @@ async function processImages(client, args, channelID, limit = 2, callback, filen
 	if (channelID) client.type(channelID);
 	
 	images = await Promise.all(images.slice(0,limit).map(Jimp.read));
+	
 	let result = await callback(images, ...args);
-	if (result instanceof Jimp) {
-		return result.getBufferAs(filename);
-	} else if (result instanceof Buffer) {
-		return { file: buffer, filename };
+	return getImageBufferObject(result, filename);
+}
+function getImageBufferObject(image, filename) {
+	if (image instanceof Jimp) {
+		return image.getBufferAs(filename);
+	} else if (image instanceof Gif) {
+		return {file: image.buffer, filename };
+	} else if (image instanceof Buffer) {
+		return { file: image, filename };
 	} else {
-		return result;
+		return image;
 	}
 }
 
-module.exports = {isImage,getImageArgs,processImage,processImages};
+module.exports = {
+	isImage,
+	getImageArgs,
+	processImage,
+	processImages
+};

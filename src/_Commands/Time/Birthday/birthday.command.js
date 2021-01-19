@@ -29,7 +29,7 @@ module.exports = {
                 return 'I will remember and wish you a happy birthday!';
             } else {
                 let bday = Birthday.get(client, userID);
-				if (!bday.date) {
+				if (!bday.date || bday.years <= 0) {
 					throw 'I don\'t know when your birthday is!';
 				}
 				let age = bday.years;
@@ -66,16 +66,40 @@ module.exports = {
 				}
 			},
 			'upcoming': {
-				aliases: ['list','users','server'],
+				aliases: ['next','list','users','server'],
 				title: 'Upcoming Birthdays',
-				info: 'List the upcoming birthdays of users in this server.',
+				info: 'List the next 10 birthdays in this server.',
 				fn({client, server}) {
 					let bdays = Birthday.getUpcomingBirthdays(client, server);
 					if (bdays.length) {
-						return 'Upcoming birthdays in the server:\n' + bdays.slice(0,10).map(({user,date}) => {
+						return bdays.slice(0,10).map(function ({user,date}) {
 							let daysLeft = Math.ceil((date.getTime() - Date.now()) / DAY) * DAY;
-							return `${date.toLocaleDateString()}: ${md.bold(md.atUser(user))} (${fmt.time(daysLeft)} left)`;
+							return `${date.toLocaleDateString()} (${fmt.time(daysLeft)} left): ${md.atUser(user)}`;
 						}).join('\n');
+					} else {
+						return 'Aww, nobody has any birthdays?';
+					}
+				}
+			},
+			'calendar': {
+				title: 'Birthday Calendar',
+				info: 'Display server birthdays on a calendar, grouped by month.',
+				fn({client, server}) {
+					let bdays = Birthday.getUpcomingBirthdays(client, server);
+					if (bdays.length) {
+						return {
+							fields: Date.MONTHS.map((month,m) => {
+								return {
+									inline: true,
+									name: month,
+									value: bdays.filter(({user,date}) => date.getMonth() === m)
+									.map(({user,date}) => {
+										let daysLeft = Math.ceil((date.getTime() - Date.now()) / DAY) * DAY;
+										return `${fmt.ordinal(date.getDate())} (${fmt.time(daysLeft)} left): ${md.mention(user)}`;
+									}).join('\n') || '--'
+								};
+							})
+						};
 					} else {
 						return 'Aww, nobody has any birthdays?';
 					}

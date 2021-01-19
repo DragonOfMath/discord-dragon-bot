@@ -2,7 +2,19 @@ const Jimp     = require('jimp');
 const {random} = require('./random');
 const {Color}  = require('./Color');
 const {Array}  = require('./Array');
-const {interp} = require('./Math');
+const {Path,Point,Polygon} = require('./2d');
+const {ThreeDee,ThreeDeeUtils} = require('./3d');
+
+const TAU = Math.TAU;
+const TRANSPARENT = new Color(0,0,0,0);
+
+function DEBUG({callee,data}) {
+	console.log('An unexpected infinite loop occurred in ' + callee.name);
+	for (let key in data) {
+		console.log('Data "' + key + '": ' + JSON.stringify(data[key]));
+	}
+	process.exit(1);
+}
 
 // https://github.com/oliver-moran/jimp/issues/90
 // update 8/4/2018:
@@ -59,10 +71,17 @@ Jimp.prototype.setPixelColor = function (c, x, y) {
 	return _setPixelColor.call(this, c, x, y);
 };
 Jimp.prototype.addPixelColor = function (c, x, y) {
-	this.setPixelColor(this.getPixelColor(x,y).add(c), x, y);
+	this.setPixelColor(this.getPixelColor(x,y,true).add(c), x, y);
 };
 Jimp.prototype.mixPixelColor = function (c, x, y, t = 0.5) {
-	this.setPixelColor(this.getPixelColor(x,y).interp(c, t), x, y);
+	this.setPixelColor(this.getPixelColor(x,y,true).interp(c, t), x, y);
+};
+
+Jimp.prototype.removeTransparency = function () {
+	this.scan(0,0,this.bitmap.width,this.bitmap.height,(x,y,i) => {
+		this.bitmap.data[i+3] = 0xFF;
+	});
+	return this;
 };
 
 /*
@@ -76,6 +95,7 @@ Jimp.measureText = function measureText(font, text) {
 
 // Monkeypatch for alignment bug
 let _print = Jimp.prototype.print;
+/*
 Jimp.prototype.print = function print(font, x, y, text, width, height) {
 	let alignmentX = Jimp.HORIZONTAL_ALIGN_CENTER;
 	let alignmentY = Jimp.HORIZONTAL_ALIGN_MIDDLE;
@@ -85,31 +105,35 @@ Jimp.prototype.print = function print(font, x, y, text, width, height) {
 	let textWidth  = Jimp.measureText(font, text);
 	let textHeight = Jimp.measureTextHeight(font, text, width);
 	
-	switch (alignmentX) {
-		case Jimp.HORIZONTAL_ALIGN_RIGHT:
-			if (isFinite(width)) x += width - textWidth;
-			break;
-		case Jimp.HORIZONTAL_ALIGN_CENTER:
-			if (isFinite(width)) x += (width - textWidth) / 2;
-			break;
-		case Jimp.HORIZONTAL_ALIGN_LEFT:
-		default:
-			break;
+	if (isFinite(width) && width > 0) {
+		switch (alignmentX) {
+			case Jimp.HORIZONTAL_ALIGN_RIGHT:
+				x += width - textWidth;
+				break;
+			case Jimp.HORIZONTAL_ALIGN_CENTER:
+				x += (width - textWidth) / 2;
+				break;
+			case Jimp.HORIZONTAL_ALIGN_LEFT:
+			default:
+				break;
+		}
 	}
-	
-	switch (alignmentY) {
-		case Jimp.VERTICAL_ALIGN_BOTTOM:
-			if (isFinite(height)) y += height - textHeight;
-			break;
-		case Jimp.VERTICAL_ALIGN_MIDDLE:
-			if (isFinite(height)) y += (height - textHeight) / 2;
-		case Jimp.VERTICAL_ALIGN_TOP:
-		default:
-			break;
+	if (isFinite(height) && height > 0) {
+		switch (alignmentY) {
+			case Jimp.VERTICAL_ALIGN_BOTTOM:
+				y += height - textHeight;
+				break;
+			case Jimp.VERTICAL_ALIGN_MIDDLE:
+				y += (height - textHeight) / 2;
+			case Jimp.VERTICAL_ALIGN_TOP:
+			default:
+				break;
+		}
 	}
 	
 	return _print.call(this, font, x|0, y|0, text, width, height);
 };
+*/
 
 Jimp.prototype.convoluteWithScale = function (convolutionMatrix, scale) {
 	return this.convolute(convolutionMatrix.map(row => row.map(x => x * scale)));
@@ -216,18 +240,42 @@ Jimp.prototype.deepfry = function () {
 		apply: 'saturate',
 		params: [random(20,100)]
 	}])
-	.posterize(random(4,15))
+	.quantize(random(4,15))
 	.quality(random(1,20));
 };
 
 Jimp.prototype.pixelate = function (pixels = 32) {
-	var w = this.bitmap.width;
-	var h = this.bitmap.height;
+	let w = this.bitmap.width;
+	let h = this.bitmap.height;
 	if (pixels <= Math.min(w,h)) {
 		return this.resize(pixels, Jimp.AUTO).resize(w, h, Jimp.RESIZE_NEAREST_NEIGHBOR);
 	} else {
 		return this.resize(pixels, Jimp.AUTO, Jimp.RESIZE_NEAREST_NEIGHBOR);
 	}
+};
+
+Jimp.prototype.glitchify = function glitchify(glitchAmount = 10) {
+	let w = this.bitmap.width;
+	let h = this.bitmap.height;
+	let gx, gy, gw, gh, ox, oy;
+	while (glitchAmount-- > 0) {
+		gx = random(0, w);
+		gy = random(0, h);
+		gw = random(10, w);
+		gh = random(10, h);
+		ox = random(-4, 4);
+		oy = random(-4, 4);
+		this.blip(this,gx+ox,gy+oy,gw,gh,gx,gy);
+	}
+	return this;
+};
+
+Jimp.prototype.aberrate = function aberrate(ax = 10, ay = 0) {
+	return this.map((color,x,y) => {
+		color.r = this.getPixelColor(x-ax,y-ay,true).r;
+		color.b = this.getPixelColor(x+ax,y+ay,true).b;
+		return color;
+	});
 };
 
 Jimp.prototype.cropCircle = Jimp.prototype.circleCrop = function cropCircle(resizeToFit = false) {
@@ -277,7 +325,7 @@ Jimp.prototype.fill = function fill(color, ox = 0, oy = 0, width = this.bitmap.w
 Jimp.prototype.bucket = function bucket(newColor, ox = 0, oy = 0, tolerance = 0.001) {
 	let jimp = this;
 	
-	let color1 = jimp.getPixelColor(ox, oy);
+	let color1 = jimp.getPixelColor(ox, oy, true);
 	
 	b(ox, oy);
 	return this;
@@ -285,7 +333,7 @@ Jimp.prototype.bucket = function bucket(newColor, ox = 0, oy = 0, tolerance = 0.
 	function b(x, y) {
 		if (x < 0 || x >= jimp.bitmap.width || y < 0 || y > jimp.bitmap.height) return;
 		
-		let color2 = jimp.getPixelColor(x, y);
+		let color2 = jimp.getPixelColor(x, y, true);
 		if (color2.equals(newColor)) return;
 		
 		if (Jimp.colorDiff(color1,color2) > tolerance) return;
@@ -296,50 +344,53 @@ Jimp.prototype.bucket = function bucket(newColor, ox = 0, oy = 0, tolerance = 0.
 };
 
 Jimp.prototype.map = function map(M) {
-	var clone = this.clone();
+	let clone = this.clone();
 	this.scan(0, 0, this.bitmap.width, this.bitmap.height, (x,y,i)	=> {
-		clone.setPixelColor(M(this.getPixelColor(x, y), x, y, i, this), x, y);
+		clone.setPixelColor(M(this.getPixelColor(x, y, true), x, y, i, this), x, y);
 	});
 	return clone;
 };
 
 Jimp.prototype.transform = function transform(T) {
+	let w = this.bitmap.width, h = this.bitmap.height;
 	return this.map((color,x,y,i,img) => {
 		// transform x and y
 		({x,y} = T(x,y,i,color));
-		return this.getAAPixelColor(x,y);
+		if (x < 0 || x > w || y < 0 || y > h) {
+			return TRANSPARENT;
+		} else {
+			return this.getAAPixelColor(x,y);
+		}
 	});
 };
 
 Jimp.prototype.differentialBlur = function differentialBlur(D) {
-	var w = this.bitmap.width;
-	var h = this.bitmap.height;
-	var d = Math.hypot(w,h); // diagonal
-	return this.map((color,x,y,i,img) => {
-		var color2;
-		
+	let w = this.bitmap.width;
+	let h = this.bitmap.height;
+	let d = Math.hypot(w,h); // diagonal
+	return this.map((color,x,y) => {
 		// get the differential at the x and y
-		var {dx,dy} = D(x,y);
+		let {dx,dy} = D(x,y);
 		
 		// find its scalar value
-		var dist = Math.hypot(dx, dy);
+		let dist = Math.hypot(dx, dy);
 		if (isFinite(dist)) {
 			// normalize the stepping values
 			dx /= dist;
 			dy /= dist;
 			
 			// calculate the starting point and the line length
-			var count = 1, step = 0, max = Math.min(dist, d);
+			let count = 1, step = 0, max = Math.min(dist, d);
 			
 			// start at one end of the slope line
-			var tx = x - dx * max / 2;
-			var ty = y - dy * max / 2;
+			let tx = x - dx * max / 2;
+			let ty = y - dy * max / 2;
 			
-			for (; step < max; ++step) {
+			for (let color2; step < max; ++step) {
 				if (tx < 0 || tx > w || ty < 0 || ty > h) {
 					// skip out of bounds
 				} else {
-					color2 = this.getPixelColor(tx|0, ty|0);
+					color2 = this.getPixelColor(tx|0, ty|0, true);
 					color.r += color2.r;
 					color.g += color2.g;
 					color.b += color2.b;
@@ -352,20 +403,79 @@ Jimp.prototype.differentialBlur = function differentialBlur(D) {
 			color.r /= count;
 			color.g /= count;
 			color.b /= count;
-			
-			return color;
 		}
+		return color;
 	});
 };
 
-Jimp.prototype.swirl = function swirl(strength, radius) {
-	var w = this.bitmap.width;
-	var h = this.bitmap.height;
-	var ox = w / 2;
-	var oy = h / 2;
-	if (!radius) {
-		radius = Math.log(2) * Math.min(w,h) / 5;
-	}
+Jimp.prototype.directionalBlur = function directionalBlur(dx, dy) {
+	return this.differentialBlur(() => ({dx,dy}));
+};
+
+Jimp.prototype.circularBlur = function circularBlur(strengthX = 100, strengthY = 100, ox, oy) {
+	let w = this.bitmap.width;
+	let h = this.bitmap.height;
+	ox = ox === undefined ? w / 2 : ox;
+	oy = oy === undefined ? h / 2 : oy;
+	return this.differentialBlur((x,y) => ({
+		dx: strengthX * (oy - y) / h,
+		dy: strengthY * (x - ox) / w
+	}));
+};
+
+Jimp.prototype.radialBlur = function radialBlur(strength = 100, ox, oy) {
+	let w = this.bitmap.width;
+	let h = this.bitmap.height;
+	ox = ox === undefined ? w / 2 : ox;
+	oy = oy === undefined ? h / 2 : oy;
+	return this.differentialBlur((x,y) => ({
+			dx: strength * (x - ox) / w,
+			dy: strength * (y - oy) / h
+	}));
+};
+
+Jimp.prototype.explode = Jimp.prototype.fisheye = function fisheye(strength = 100, ox, oy) {
+	let w = this.bitmap.width;
+	let h = this.bitmap.height;
+	ox = ox === undefined ? w / 2 : ox;
+	oy = oy === undefined ? h / 2 : oy;
+	return this.transform((x,y) => {
+		let dx = ox - x;
+		let dy = oy - y;
+		let dd = Math.hypot(dx, dy);
+		dd = Math.exp(-(dd*dd)/(strength*strength));
+		dx *= dd;
+		dy *= dd;
+		x += dx;
+		y += dy;
+		return {x,y};
+	});
+};
+
+Jimp.prototype.implode = function implode(strength = 100, ox, oy) {
+	let w = this.bitmap.width;
+	let h = this.bitmap.height;
+	ox = ox === undefined ? w / 2 : ox;
+	oy = oy === undefined ? h / 2 : oy;
+	return this.transform((x,y) => {
+		let dx = ox - x;
+		let dy = oy - y;
+		let dd = Math.hypot(dx, dy);
+		dd = Math.exp(-(dd*dd)/(strength*strength));
+		dx *= dd;
+		dy *= dd;
+		x -= dx;
+		y -= dy;
+		return {x,y};
+	});
+};
+
+Jimp.prototype.swirl = function swirl(strength, radius, ox, oy) {
+	let w = this.bitmap.width;
+	let h = this.bitmap.height;
+	ox = ox === undefined ? w / 2 : ox;
+	oy = oy === undefined ? h / 2 : oy;
+	radius = radius === undefined ? Math.log(2) * Math.min(w,h) / 5 : radius;
 	return this.transform((x,y) => {
 		var dx = x - ox;
 		var dy = y - oy;
@@ -378,10 +488,10 @@ Jimp.prototype.swirl = function swirl(strength, radius) {
 };
 
 Jimp.prototype.tilt = function tilt(angle = Math.PI/6) {
-	var w = this.bitmap.width;
-	var h = this.bitmap.height;
-	var ox = w / 2;
-	var oy = h / 2;
+	let w = this.bitmap.width;
+	let h = this.bitmap.height;
+	let ox = w / 2;
+	let oy = h / 2;
 	return this.transform((x,y) => {
 		var dx = x - ox;
 		var dy = y - oy;
@@ -389,6 +499,22 @@ Jimp.prototype.tilt = function tilt(angle = Math.PI/6) {
 		x = ox + dx * z;
 		y = oy + dy * Math.cos(angle) * z;
 		return {x,y};
+	});
+};
+
+Jimp.prototype.posterize = function posterize(palette) {
+	palette = palette.map(c => c instanceof Color ? c : new Color(c));
+	return this.map(color => {
+		let nearestColor = palette[0], nearestDistance = 5, dist;
+		for (let nodeColor of palette) {
+			dist = color.manhattan(nodeColor);
+			if (dist < nearestDistance) {
+				nearestDistance = dist;
+				nearestColor = nodeColor;
+			}
+		}
+		//console.log('Distance from ' + color.toString() + ' to ' + nearestColor.toString() + ': ' + nearestDistance);
+		return nearestColor;
 	});
 };
 
@@ -467,6 +593,63 @@ Jimp.prototype.drawVertScanline  = Jimp.prototype.drawScanY = function scany(x, 
 	while (y0 <= y1) this.setPixelColor(color, x, y0++);
 	return this;
 };
+// draws pixels from a texture (current affine)
+Jimp.prototype.textureScanX = function (xyuv0,xyuv1,texture,perspective=false) {
+	if (xyuv0[1] < 0 || xyuv0[1] > this.bitmap.height-1) return this;
+	if (xyuv0[0] > xyuv1[0]) [xyuv0,xyuv1] = [xyuv1,xyuv0];
+	if (xyuv1[0] < 0 || xyuv0[0] > this.bitmap.width-1) return this;
+	let width = texture.bitmap.width, height = texture.bitmap.height;
+	let dx = (xyuv1[0] - xyuv0[0]);
+	let du = (xyuv1[2] - xyuv0[2]) / dx;
+	let dv = (xyuv1[3] - xyuv0[3]) / dx;
+	let dw = (xyuv1[4] - xyuv0[4]) / dx;
+	let [x,y,u,v,w] = xyuv0, xend = Math.min(xyuv1[0]|0,this.bitmap.width-1);
+	if (x < 0) {
+		u += du * -x;
+		v += dv * -x;
+		w += dw * -x;
+		x = 0;
+	} else {
+		x = x | 0;
+	}
+	if (!perspective) {
+		w  = 1;
+		dw = 0;
+	}
+	while (x <= xend) {
+		this.setPixelColor(texture.getAAPixelColor(width * u/w, height * v/w),x,y);
+		x += 1; u += du; v += dv; w += dw;
+	}
+	return this;
+};
+Jimp.prototype.textureScanY = function (xyuv0,xyuv1,texture) {
+	if (xyuv0[0] < 0 || xyuv0[0] > this.bitmap.width-1) return this;
+	if (xyuv0[1] > xyuv1[1]) [xyuv0,xyuv1] = [xyuv1,xyuv0];
+	if (xyuv1[1] < 0 || xyuv0[1] > this.bitmap.height-1) return this;
+	let width = texture.bitmap.width, height = texture.bitmap.height;
+	let dy = (xyuv1[1] - xyuv0[1]);
+	let du = (xyuv1[2] - xyuv0[2]) / dy;
+	let dv = (xyuv1[3] - xyuv0[3]) / dy;
+	let dw = (xyuv1[4] - xyuv0[4]) / dy;
+	let [x,y,u,v,w] = xyuv0, yend = Math.min(xyuv1[1]|0,this.bitmap.height-1);
+	if (y < 0) {
+		u += du * -y;
+		v += dv * -y;
+		w += dw * -y;
+		y = 0;
+	} else {
+		y = y | 0;
+	}
+	if (!perspective) {
+		w = 1;
+		dw = 0;
+	}
+	while (y <= yend) {
+		this.setPixelColor(texture.getAAPixelColor(width*u/w,height*v/w),x,y);
+		y += 1; u += du; v += dv; w += dw;
+	}
+	return this;
+};
 
 // https://en.wikipedia.org/wiki/Midpoint_circle_algorithm
 // Need to find Wu algorithm to provide correct anti-aliasing
@@ -531,7 +714,6 @@ Jimp.prototype.drawCircle = function drawCircle(x0, y0, radius, color = 0x000000
 	} while (bx > by);
 };
 
-// TODO: copy the above function but use lines to plot instead
 Jimp.prototype.fillCircle = Jimp.prototype.circleFill = function fillCircle(color, x0 = 0, y0 = 0, radius = 100) {
 	x0=x0|0;y0=y0|0;radius=radius|0;
 	
@@ -553,28 +735,127 @@ Jimp.prototype.fillCircle = Jimp.prototype.circleFill = function fillCircle(colo
 // http://www-users.mat.uni.torun.pl/~wrona/3d_tutor/tri_fillers.html
 Jimp.prototype.fillTriangle = Jimp.prototype.triFill = function fillTriangle(x0, y0, x1, y1, x2, y2, color = 0x000000FF) {
 	x0=x0|0;y0=y0|0;x1=x1|0;y1=y1|0;x2=x2|0;y2=y2|0;
-	let [start, mid, end] = [[x0,y0],[x1,y1],[x2,y2]].sort((p0,p1) => p0[1] > p1[1] ? 1 : p0[1] < p1[1] ? -1 : 0);
+	let [start, mid, end] = [[x0,y0],[x1,y1],[x2,y2]].sort((p0,p1) => p0[1] > p1[1] ? 1 : p0[1] < p1[1] ? -1 : p0[0] > p1[0] ? 1 : 0);
 	if (start[1] == mid[1] && start[1] == end[1]) return this.drawScanX(start[0], start[1], end[0], color);
 	if (start[0] == mid[0] && start[0] == end[0]) return this.drawScanY(start[0], start[1], end[1], color);
-	let startToEnd = [end[0] - start[0], end[1] - start[1]];
-	let startToMid = [mid[0] - start[0], mid[1] - start[1]];
-	let midToEnd   = [end[0] - mid[0],   end[1] - mid[1]];
+	let startToEnd = ThreeDeeUtils.sub(end,start);
+	let startToMid = ThreeDeeUtils.sub(mid,start);
+	let midToEnd   = ThreeDeeUtils.sub(end,mid);
 	let dx0 = startToEnd[0] / startToEnd[1];
 	let dx1 = startToMid[0] / startToMid[1];
 	let dx2 = midToEnd[0]   / midToEnd[1];
-	let x = start[0], y = start[1], z = x;
-	while (y < mid[1]) this.drawScanX(x,y,z,color), x += dx0, y++, z += dx1;
-	x = startToEnd[0] + dx0 * startToMid[1], y = mid[1], z = mid[0];
-	while (y < end[1]) this.drawScanX(x,y,z,color), x += dx0, y++, z += dx2;
+	let xstart = start[0], y = start[1], xend = xstart, xmid = xstart + dx0 * startToMid[1];
+	while (y < mid[1]) {
+		this.drawScanX(xstart,y++,xend,color);
+		xstart += dx0;
+		xend   += dx1;
+	}
+	xstart = xmid;
+	xend   = mid[0];
+	while (y < end[1]) {
+		this.drawScanX(xstart,y++,xend,color);
+		xstart += dx0;
+		xend   += dx2;
+	}
 	return this;
 };
 
+/**
+ * Render textured triangles onto this bitmap using another bitmap as a texture.
+ * @param {Object|Array} geometry  - descriptor of geometric object which can be a list of tris containing vertex and UV data or an object with the following keys:
+ * @param {Array} [geometry.verts] - a list of vert coordinates
+ * @param {Array} [geometry.uvs]   - a list of UV texture coordinates
+ * @param {Array} [geometry.tris]  - a list of tris by their vertex indices in the verts array.
+ * @param {Jimp}  texture          - the Jimp bitmap to use for texturing
+ */
+Jimp.prototype.renderTris = function renderTris(geometry, texture) {
+	if (typeof(geometry) === 'object' && !(geometry instanceof Array)) {
+		geometry = geometry.tris.map(tri => [
+			tri[0].map(i => geometry.verts[i]),
+			tri[1].map(i => geometry.uvs[i])
+		]);
+	}
+	for (let tri of geometry) {
+		let [verts,uvs] = tri;
+		let [vert0,vert1,vert2] = verts;
+		if (uvs) {
+			let [uv0,uv1,uv2] = uvs;
+			if (uv0.length === 3) {
+				this.textureTriangle(vert0[0],vert0[1],vert1[0],vert1[1],vert2[0],vert2[1],texture,uv0[0],uv0[1],uv1[0],uv1[1],uv2[0],uv2[1],true,uv0[2],uv1[2],uv2[2]);
+			} else {
+				this.textureTriangle(vert0[0],vert0[1],vert1[0],vert1[1],vert2[0],vert2[1],texture,uv0[0],uv0[1],uv1[0],uv1[1],uv2[0],uv2[1]);
+			}
+			
+		} else {
+			this.fillTriangle(vert0[0],vert0[1],vert1[0],vert1[1],vert2[0],vert2[1]);
+		}
+	}
+	return this;
+};
+
+// Draw a textured triangle on this bitmap using another bitmap.
+Jimp.prototype.textureTriangle = function textureTriangle(x0,y0,x1,y1,x2,y2,texture,u0,v0,u1,v1,u2,v2,perspective=false,w0=1,w1=1,w2=1) {
+	/* this is broke ;-;
+	switch (arguments.length) {
+		case 2:
+			[[[[x0,y0],[x1,y1],[x2,y2]], [[u0,v0],[u1,v1],[u2,v2]]], texture] = arguments;
+			break;
+		case 3:
+			[[[x0,y0],[x1,y1],[x2,y2]], [[u0,v0],[u1,v1],[u2,v2]], texture] = arguments;
+			break;
+		case 4:
+			[[[x0,y0],[u0,v0]], [[x1,y1],[u0,v0]], [[x2,y2],[u2,v2]], texture] = arguments;
+			break;
+		case 7:
+			[[x0,y0], [x1,y1], [x2,y2], texture, [u0,v0], [u1,v1], [u2,v2]] = arguments;
+			break;
+	}
+	*/
+	x0=x0|0;y0=y0|0;x1=x1|0;y1=y1|0;x2=x2|0;y2=y2|0;
+	let [start, mid, end] = [[x0,y0,u0,v0,w0],[x1,y1,u1,v1,w1],[x2,y2,u2,v2,w2]].sort((p0,p1) => 
+		p0[1] > p1[1] ? 1 : p0[1] < p1[1] ? -1 : 
+		p0[0] > p1[0] ? 1 : p0[0] < p1[0] ? -1 : 0);
+	if (start[1] == mid[1] && start[1] == end[1]) return this.textureScanX(start, end, texture, perspective);
+	if (start[0] == mid[0] && start[0] == end[0]) return this.textureScanY(start, end, texture, perspective);
+	let startToEnd = ThreeDeeUtils.sub(end,start);
+	let startToMid = ThreeDeeUtils.sub(mid,start);
+	let midToEnd   = ThreeDeeUtils.sub(end,mid);
+	let d0   = ThreeDeeUtils.scale(startToEnd, 1/startToEnd[1]); d0[1]=1;
+	let d1   = ThreeDeeUtils.scale(startToMid, 1/startToMid[1]); d1[1]=1;
+	let d2   = ThreeDeeUtils.scale(midToEnd,   1/midToEnd[1]);   d2[1]=1;
+	let mid2 = ThreeDeeUtils.add(start, ThreeDeeUtils.scale(d0,startToMid[1]));
+	let tmp  = start.slice();
+	while (start[1] < mid[1]) {
+		this.textureScanX(start, tmp, texture, perspective);
+		start = ThreeDeeUtils.add(start, d0);
+		tmp   = ThreeDeeUtils.add(tmp, d1);
+	}
+	start = mid2;
+	tmp   = mid;
+	while (start[1] < end[1]) {
+		this.textureScanX(start, tmp, texture, perspective);
+		start = ThreeDeeUtils.add(start, d0);
+		tmp   = ThreeDeeUtils.add(tmp, d2);
+	}
+	return this;
+};
+
+Jimp.prototype.drawPolygon = Jimp.prototype.drawPoly = function drawPolygon(x0, y0, radius, sides = 3, color = 0x000000FF, AA = false) {
+	let path = new Polygon(x0, y0, sides, radius).toPath();
+	this.drawPath(new Path(path, 'linear', true, 1), color, AA);
+};
+
+Jimp.prototype.fillPolygon = Jimp.prototype.fillPoly = function fillPolygon(x0, y0, radius, sides = 3, color = 0x000000FF) {
+	let path = new Polygon(x0, y0, sides, radius).toPath();
+	this.fillPath(new Path(path, 'linear', true, 1), color);
+};
+
 Jimp.prototype.drawPath = function drawPath(path = new Path(), color = 0x000000FF, AA = false) {
-	let start = path.getPoint(0), next;
+	let start = path.points[0], next;
 	let step  = path.smoothing == 'linear' ? 1 : path.step;
 	for (let t = 0; t < path.degree || (t == path.degree && path.closed); t += step) {
 		next = path.getPos(t);
-		this.drawLine(start[0], start[1], next[0], next[1], color, AA);
+		this.drawLine(start.x, start.y, next.x, next.y, color, AA);
 		start = next;
 	}
 	return this;
@@ -587,14 +868,14 @@ Jimp.prototype.fillPath = function fillPath(path = new Path(), color = 0x000000F
 	let step  = path.smoothing == 'linear' ? 1 : path.step;
 	for (let t = 0; t < path.degree || (t < (path.degree + 1) && path.closed); t += step) {
 		p1 = path.getPos(t);
-		if (p1[1] < min) {
-			min = p1[1];
+		if (p1.y < min) {
+			min = p1.y;
 		}
-		if (p1[1] > max) {
-			max = p1[1];
+		if (p1.y > max) {
+			max = p1.y;
 		}
-		dx = p1[0]-p0[0];
-		dy = p1[1]-p0[1];
+		dx = p1.x-p0.x;
+		dy = p1.y-p0.y;
 		edges.push([p0,p1,dx,dy]);
 		p0 = p1;
 	}
@@ -605,14 +886,14 @@ Jimp.prototype.fillPath = function fillPath(path = new Path(), color = 0x000000F
 		// find the edges that the scanline intersects
 		for (intersects = [], e = 0; e < edges.length; e++) {
 			[p0,p1,dx,dy] = edges[e];
-			if ((p0[1] <= y && y < p1[1]) || (p1[1] <= y && y < p0[1])) {
+			if ((p0[1] <= y && y < p1.y) || (p1.y <= y && y < p0.y)) {
 				if (dy == 0) {
 					// handle flat line case
-					intersects.push(p0[0]);
-					intersects.push(p1[0]);
+					intersects.push(p0.x);
+					intersects.push(p1.x);
 				} else {
 					// calculate the intersection with the edge
-					intersects.push(p0[0] + (y - p0[1]) * dx / dy);
+					intersects.push(p0.x + (y - p0.y) * dx / dy);
 				}
 			}
 		}
@@ -628,136 +909,12 @@ Jimp.prototype.fillPath = function fillPath(path = new Path(), color = 0x000000F
 	
 	/*
 	this.drawPath(path, color);
-	let center = [0,0];
-	for (let p of path.points) {
-		center[0] += p[0];
-		center[1] += p[1];
-	}
-	center[0] /= path.degree;
-	center[1] /= path.degree;
-	this.bucket(center[0], center[1], color);
+	let center = path.center;
+	this.bucket(center.x, center.y, color);
 	*/
 	
 	return this;
 };
-
-class Path {
-	constructor(dataPoints = [], smoothing = 'linear', closed = false, step = 0.1) {
-		this.points    = dataPoints;
-		this.smoothing = smoothing;
-		this.closed    = closed;
-		this.step      = step;
-	}
-	get degree() {
-		return this.points.length;
-	}
-	get center() {
-		let center = [0,0];
-		for (let p of this.points) {
-			center[0] += p[0];
-			center[1] += p[1];
-		}
-		center[0] /= this.points.length;
-		center[1] /= this.points.length;
-		return center;
-	}
-	addPoint(x,y) {
-		if (typeof(x) === 'object') {
-			if (x.length == 2) {
-				[x,y] = x;
-			} else {
-				({x,y} = x);
-			}
-		}
-		this.points.push([x,y]);
-		return this;
-	}
-	removePoint(x,y) {
-		if (typeof(x) === 'object') {
-			({x,y} = x);
-		}
-		if (typeof(y) === 'number') {
-			for (let i = 0; i < this.points.length; i++) {
-				if (this.points[i][0] == x && this.points[i][1] == y) {
-					x = i;
-					break;
-				}
-			}
-		}
-		return this.points.splice(x,1);
-	}
-	closePath() {
-		this.closed = true;
-	}
-	getPoint(offset = 0) {
-		return this.points[Math.floor(offset) % this.points.length];
-	}
-	getPos(t = 0) {
-		switch (this.smoothing) {
-			case 'linear':
-				return this.getLinearPos(t);
-			case 'bezier':
-				return this.getBezierPos(t);
-			case 'smooth':
-				return this.getSmoothPos(t);
-			default:
-				return this.getPoint(t);
-		}
-	}
-	getLinearPos(offset = 0, t = 0) {
-		let p0 = this.getPoint(offset);
-		let p1 = this.getPoint(offset + 1);
-		t = (offset + t) % 1;
-		return [
-			interp(p0[0],p1[0],t),
-			interp(p0[1],p1[1],t)
-		];
-	}
-	getBezierPos(t = 0) {
-		t = t % 1;
-		let points = this.points.slice();
-		while (points.length > 1) {
-			for (let o = 0; o < points.length - 1; o++) {
-				points[o][0] = interp(points[o][0],points[o+1][0],t);
-				points[o][1] = interp(points[o][1],points[o+1][1],t);
-			}
-			points.pop();
-		}
-		return points[0];
-	}
-	getSmoothPos(offset = 0, t = 0) {
-		let len = this.points.length, p0, p1, d0, d1;
-		if (!this._dirs) {
-			// calculate initial spline vectors
-			let dirs = this._dirs = this.points.map((p0,i) => {
-				let p1 = this.getPoint(i+1);
-				return [p1[0] - p0[0], p1[1] - p0[1]];
-			});
-			
-			// correctively smooth the directions
-			do {
-				for (let i = len - 1, j; i > 0; i--) {
-					j  = (i+1) % len;
-					dirs[i][0] -= dirs[j][0] / 2;
-					dirs[i][1] -= dirs[j][1] / 2;
-				}
-				// TODO: determine a break condition
-				break;
-			} while (true);
-		}
-		
-		// perform cubic spline interpolation
-		p0 = this.getPoint(offset);
-		p1 = this.getPoint(offset + 1);
-		d0 = this._dirs[Math.floor(offset) % len];
-		d1 = this._dirs[Math.floor(offset+1) % len];
-		t = (offset + t) % 1;
-		return [
-			interp(p0[0] + t * d0[0], p1[0] - (1 - t) * d1[0], t),
-			interp(p0[1] + t * d0[1], p1[1] - (1 - t) * d1[1], t)
-		];
-	}
-}
 
 class PixelNode {
 	constructor(color) {
@@ -1041,4 +1198,4 @@ Jimp.prototype.magik = function magik() {
 	           .liquid_rescale(1.0 * w, 1.0 * h, 1, 1);
 };
 
-module.exports = {Jimp,Path};
+module.exports = {Jimp};

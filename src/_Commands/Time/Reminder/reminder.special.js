@@ -1,4 +1,5 @@
 const Reminder = require('./Reminder');
+const {Format:fmt} = require('../../../Utils');
 
 module.exports = {
 	id: 'reminder-scheduler',
@@ -7,21 +8,27 @@ module.exports = {
 	permissions: 'public',
 	events: {
 		tick(client) {
-			var clientTable = client.database.get('client');
-			var reminders = clientTable.get(client.id).reminders;
-			var changed = false;
-			var now = Date.now();
-			for (var r = 0; r < reminders.length;) {
-				var rem = reminders[r];
+			let reminders = client.storage.reminders || [];
+			let changed = false;
+			let now = Date.now();
+			for (let r = 0; r < reminders.length;) {
+				let rem = reminders[r];
 				if (now > rem.when) {
-					console.log('Fulfilled',rem);
-					client.send(rem.who, '**Reminder!** ' + rem.what).catch(e => client.error(e));
-					reminders.splice(r, 1);
+					let timePassed = now - rem.when;
+					client.send(rem.who, `**Reminder!** ${timePassed > 5000 ? fmt.time(timePassed) + ' ago' : 'Right now'}: ${rem.what}`)
+					.catch(e => client.error(e));
+					if (rem.repeat > 0) {
+						client.log('Repeating', rem);
+						rem.when += rem.repeat * Math.ceil(timePassed / rem.repeat);
+					} else {
+						client.log('Fulfilled',rem);
+						reminders.splice(r, 1);
+					}
 					changed = true;
 				} else ++r;
 			}
 			if (changed) {
-				clientTable.save();
+				client.database.get('client').save();
 			}
 		}
 	}

@@ -6,6 +6,8 @@ const WEEK   = 7  * DAY;
 const MONTH  = 30 * DAY;
 const YEAR   = 12 * MONTH;
 
+const MONTHS = Date.MONTHS = ['january','february','march','april','may','june','july','august','september','october','november','december'];
+
 /**
 	Timezone offsets by abbreviation
 	Some timezone abbreviations have ambigious meaning, so don't use this for official stuff
@@ -213,89 +215,164 @@ Date.Timezones = {
 	IDLW: '-12:00'  // International Day Line West
 };
 
-Date.parseDuration = function (tokens, time = 0) {
-	if (typeof tokens === 'string') {
-		tokens = [tokens];
+function parseHHMMSS(input) {
+	let sign = input[0];
+	if (sign == '+' || sign == '-') {
+		input = input.substring(1);
+		sign = Number(sign+'1');
+	} else {
+		sign = 1;
 	}
-	if (tokens.length == 1) {
-		let t = tokens[0];
-		let sign = t[0];
-		if (sign == '+' || sign == '-') {
-			t = t.substring(1);
-			sign = Number(sign+'1');
-		} else {
-			sign = 1;
-		}
-		let [h,m,s] = t.split(/:/);
-		if (!m) {
-			time += sign * (h * SECOND);
-		} else if (!s) {
-			time += sign * ((h * MINUTE) + (m * SECOND));
-		} else {
-			time += sign * ((h * HOUR) + (m * MINUTE) + (s * SECOND));
-		}
-		return time;
+	let [h,m,s] = input.split(/:/);
+	if (!m) {
+		return sign * (h * SECOND);
+	} else if (!s) {
+		return sign * ((h * MINUTE) + (m * SECOND));
+	} else {
+		return sign * ((h * HOUR) + (m * MINUTE) + (s * SECOND));
 	}
-	for (var i = 0, n; i < tokens.length; ++i) {
-		n = Number(tokens[i]);
+}
+function parseYYYYMMDD(input) {
+	let [y,m,d] = input.split(/\/-/);
+	return (DAY * d) + (MONTH * m) + (YEAR * y);
+}
+
+/**
+ * Parses tokenized input that is valid for these formats:
+ * - HH:MM:SS
+ * - AdBhCmDs
+ * - A days B hours C minutes D seconds
+ * Outputs an integer that is the time added from the reference.
+ */
+Date.parseDuration = function (input, timeRef = 0) {
+	if (typeof input === 'number') {
+		return input + timeRef;
+	}
+	if (typeof input === 'string') {
+		input = [input];
+	}
+	
+	let first = input[0];
+	
+	// for HH:MM:SS format
+	if (/\d{1,2}:\d{2}$/.test(first)){
+		input.shift();
+		return timeRef + parseHHMMSS(first);
+	}
+	
+	// for untokenized shorthand times such as 1d3h2m
+	if (/\d[a-z]+/.test(first)) {
+		input.shift();
+		let sh = first.match(/^(\d+)|([a-z]+)$/gi);
+		return Date.parseDuration(sh, timeRef);
+	}
+	
+	for (let i = 0, n; i < input.length; ++i) {
+		n = Number(input[i]);
 		if (isFinite(n)) {
-			switch (tokens[++i].toLowerCase()) {
+			switch (input[++i].toLowerCase()) {
 				case 's':
 				case 'sec':
 				case 'secs':
 				case 'second':
 				case 'seconds':
-					time += n * SECOND;
+					timeRef += n * SECOND;
 					break;
 				case 'm':
 				case 'min':
 				case 'mins':
 				case 'minute':
 				case 'minutes':
-					time += n * MINUTE;
+					timeRef += n * MINUTE;
 					break;
 				case 'h':
 				case 'hr':
 				case 'hrs':
 				case 'hour':
 				case 'hours':
-					time += n * HOUR;
+					timeRef += n * HOUR;
 					break;
 				case 'd':
 				case 'day':
 				case 'days':
-					time += n * DAY;
+					timeRef += n * DAY;
 					break;
 				case 'w':
 				case 'wk':
 				case 'wks':
 				case 'week':
 				case 'weeks':
-					time += n * WEEK;
+					timeRef += n * WEEK;
 					break;
 				case 'mo':
 				case 'mos':
 				case 'month':
 				case 'months':
-					time += n * MONTH;
+					timeRef += n * MONTH;
 					break;
 				case 'y':
 				case 'yr':
 				case 'yrs':
 				case 'year':
 				case 'years':
-					time += n * YEAR;
+					timeRef += n * YEAR;
 					break;
 				default:
-					time += n * SECOND;
+					timeRef += n * SECOND;
 					break;
 			}
 		} else {
-			tokens.splice(0, i);
+			input.splice(0, i);
 			break;
 		}
 	}
-	return Math.round(time);
+	return Math.round(timeRef);
+};
+
+/**
+ * Parses tokenized input that is valid in the following formats:
+ * - HH:MM:SS am/pm
+ * - HH o' clock
+ * - month day, year
+ * - month day
+ * - day(th) of month
+ * Outputs the timestamp ahead of the current time reference.
+ */
+Date.parseFuzzyDateOrTime = function (input, timeRef = 0) {
+	if (!(timeRef instanceof Date)) {
+		timeRef = new Date(timeRef);
+	}
+	
+	// for HH:MM:SSam/pm format
+	if (/\d{1,2}:\d{1,2} ?(am|pm)$/i.test(input.join(' '))){
+		let first = input.shift();
+		return timeRef + parseHHMMSS(first);
+	}
+	
+	if (/\d{4}\/\d{2}\/\d{2}/.test(input.join(' '))) {
+		let first = input.shift();
+		return timeRef + parseYYYYMMDD(first);
+	}
+	for (let i = 0, n; i < input.length; i++) {
+		n = input[i];
+		if (n == 'on' || n == 'at') {
+			continue;
+		}
+		if (MONTHS.includes(String(n).toLowerCase())) {
+			timeRef.setMonth(MONTHS.indexOf(n.toLowerCase()));
+			if (input[i-1] == 'of') {
+				timeRef.setDate(ordinal(input[i-2]));
+			} else {
+				timeRef.setDate(ordinal(input[i+1]));
+			}
+		} else if (isFinite(n) && Number(n) > 31) {
+			timeRef.setYear(Number(n));
+		} else if (input[i+1] == 'o\'' && input[i+2] == 'clock') {
+			timeRef.setHour(Number(n));
+			i+=2;
+		}
+	}
+	return Math.round(timeRef);
 };
 
 /**
@@ -349,9 +426,29 @@ Date.prototype.difference = function (date = 0) {
 	return this.getTime() - (date instanceof Date ? date.getTime() : date);
 };
 
+Date.compare = function (d1, d2) {
+	if (d1 instanceof Date && d2 instanceof Date) {
+		if (d1.getMonth() > d2.getMonth()) {
+			return 1;
+		} else if (d1.getMonth() < d2.getMonth()) {
+			return -1;
+		} else if (d1.getDate() >  d2.getDate()) {
+			return 1;
+		} else if (d1.getDate() <  d2.getDate()) {
+			return -1;
+		} else {
+			return 0;
+		}
+	} else {
+		return d1 > d2 ? 1 : d1 < d2 ? -1 : 0;
+	}
+};
 
 async function wait(t=0) {
 	return await new Promise((resolve,reject) => setTimeout(resolve, t));
+}
+function ordinal(n) {
+	return Number(String(n).match(/\d+/));
 }
 
 module.exports = {Date,wait};

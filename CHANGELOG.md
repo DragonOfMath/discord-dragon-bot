@@ -1,5 +1,142 @@
 # Changelog
 
+## Version 3.0 Coming soon...
+
+I have made the decision to replace the core dependency on discord.io with discord.js instead. Due to the lack of maintenance, the old library is broken in newer versions of the Discord API. Besides, having an up-to-date library with 100% support of Discord features makes things a whole lot easier for me.
+
+I will be archiving the current code in this repo before I begin overhauling it all to ES6 modules and cleaning things up for version 3...
+
+## 2.1.0 Big Update
+
+It has been a while since the last update, and this one brings tons of new features to the table as well as many bugfixes. I can't call this a major major update, though, as it just extends the command list some more without changing the core framework that much.
+
+Commands now support a per-user cooldown feature that replaces the legacy method of storing cooldowns in the database. This prevents computationally-expensive features and freebie commands from being spammed.
+
+### New Commands/Functions
+ * `beg`: beg for small amounts of money
+ * `checkers`: play a game of checkers
+ * `chess`: play a game of chess
+ * `color.palette`: now accepts multiple arguments to make a palette from CSS color values
+ * `commands.alias`: add aliases to commands
+ * `commands.cooldown`: set cooldowns for commands
+ * `commands.settings`: admin command to modify a command's settings
+ * `complex`: evaluate or graph a complex function
+ * `df`: generate a Dwarf Fortress world (experimental until I can better tune its tax on my computer)
+ * `e621.ify`: posterizes an image to the e621 color palette
+ * `food`: order food from a variety of fast food restaurants (for fun, not a real ordering system)
+ * `fractal`: replacement for `mset` that renders for any iterative complex function of z, not just z^2+c
+ * `halloween`: transform your avatar/any image to Halloween colors!
+ * `how`: a question command, e.g. "how X is Y", with numerous adjectives to use
+ * `job/work`: make a fake living in your dream job
+ * `mc.armor`: make an armor set from any blocks or items[4]
+ * `mc.items`: display a list of all valid Minecraft items[4]
+ * `pokemon.spawns`: assign a channel for spawning pokemon during activity[1]
+ * `pokemon.hint`: provide a hint about a pokemon that has spawned
+ * `reddit.comments`: read top-level comments on a post
+ * `reddit.download`: use ripsave.com to get a downloadable link for reddit videos
+ * `reminder -repeat`: receive a reminder at given intervals
+ * `reminder.repeat`: modify an existing reminder to repeat or stop repeating
+ * `reminder.upcoming`: list all your upcoming reminders in the order that you'll receive them
+ * `retrowave`: transform your avatar/any image to the Retrowave/Outrun style!
+ * `rolemenu`: new interface to create and manage interactable role selection menus
+ * `sb`: render text in Scratchblocks[2]
+ * `unzws`: obscure text command to remove hidden unicode characters from a string[3]
+ * `vaporwave`: text command to write in "vaporwave" letters
+ * `vslots`: video slots, a 5-column variant of slot machine with multiple ways of winning each spin
+
+### New Utilities
+ * `Generic`, a new abstract class for predictable serialization
+ * `Complex`, `ComplexFunction`, `ComplexGraph`, `ComplexShader`, and `Ratio`
+ * `Tokenizer` for parsing math expressions
+ * `Object`, `Array`, `Function`, `String`, `Date`, and `Math` extended
+ * `2d.js` extended
+   * `Dimensions` renamed to `Area`
+   * `Rectangle`, `Triangle`, and `Polygon` added
+   * `Path` from `jimp.js` moved to here
+ * `Jimp#posterize`, `Jimp#drawPolygon`, and `Jimp#fillPolygon` added
+ * `Color#hex` and `Color#manhattan` added
+ * `ColorGradient` constructor accepts an array of Colors
+ * `ColorGradient#sample` to make getting a color simpler
+ * `DiscordUtils.serializeReaction` and `DiscordUtils.emojifyReaction` (originally from `Poll.js`)
+
+### Bugfixes/Misc changes
+ * Client can open SyntaxError locations in Notepad++ during bootup.
+ * `DragonClient#moveMessages` more flexible than ever
+ * `Command#init` called when client first connects after startup, allowing certain features to persist.
+ * fixed a crash when a command token was a non-string
+ * `membercount` graph supports a dark mode setting
+ * downtime duration is recorded
+ * `info.snowflake` checks for role
+ * `info.token` is public
+ * fixed message search
+ * updated user and role search results
+ * `handleUserAction` method name change
+ * `welcome.role` accepts a role name or ID
+ * fixed transferring money
+ * `slots.table` merged into parent command
+ * slot machine payout rebalanced again for the last time
+ * `rate` message improved
+ * text commands moved into their own folder
+ * `thesaurize` fixed
+ * `portmanteau` improved when combining dissimilar things
+ * `gif.spin` downsizes large images to 100x100
+ * `graph` applies dark mode instead of `Graph`
+ * `Graph` auto-fitting and interval marking greatly improved
+ * `image-utils` simplified
+ * `poly` supports dark mode
+ * `Interpreter` debugging fixed
+ * `Piet` interpreter fixed
+ * `Piet` debug tracing avoids massively inflated output file dimensions
+ * `Whitespace` interpreter/debugging fixed
+ * `roman` numeral conversion fixed
+ * url and username banlists fixed
+ * `fa.user` embed fixed
+ * `bank.leaderboard` fixed
+ * `bank.invest check all` added
+ * pokemon spawning events
+ * reddit session cancels subscriptions for deleted channels
+ * removing all subreddits from a subscription resets the polling time ref
+ * `reminder` messages describe how long ago it should've been fulfilled when the bot is down for long periods
+ * original principle invested is displayed in `Investment` embeds
+ * `DARK_MODE` copied to client
+ * more event handlers for guild updating, channels, and message deletion
+ * better error logging for websocket responses
+ * global mention filtering affects non-embed messages only
+ * `DragonClient#getConstant` method added
+ * choice parameters are case-sensitive, always
+ * extended `RECONNECT_AFTER` from 1 minute to 5 minutes
+ * added symbol constants for BOM, ZWS, and NBSP
+ * `Parser` ignores hidden whitespace except in quoted arguments
+ * `LiveMessage` and `Session` now use async/await
+ * `LiveMessage`s have new `persistent` flag to save their data and remember a message after shutdown
+ * `Asset.load` accepts encoding parameter
+ * `FilePromise` directory deletion added (with failsafes)
+ * `Handler.resolve` null handling fixed
+ * `MessageContext` now has `links` and `images`
+ * `DiscordUtils.getCreationTime` fixed for >32-bit values
+ * `DiscordUtils.find` supports more search filters: by user, including text, and before/after a message ID
+ * table embed fixed
+ * `extend` util improved
+ * `Markdown` ID resolution improved
+ * `Date.parseDuration` fixed and more versatile
+ * `MessageContext` now collects images from attachments and embeds correctly
+ * `Array2D` removed
+ * `pi` digit generator now uses native BigInt instead of a third-party library
+ * `Sudoku` autosolver and randomizer properly implemented
+ 
+### Removed Commands
+ * `commands.enable`/`commands.disable`. The original functions have been merged with the supercommand. The new functions are now aliases for `commands.toggle` which is a private command for toggling commands globally.`
+ * `fish.wait` removed with the push for a cooldown feature for all commands.
+ * `alias` has been moved to a subcommand under `commands`.
+ * `pokemon.identify` removed due to Pokecord shutting down.
+ * `mandelbrot` has been replaced by `fractal`, a much more flexible IFS renderer.
+
+### Footnotes:
+[1] Pokecord is (later, was) a popular Discord Bot that spawned pokemon during times of activity in a server, which made for long term competitions to catch rare variants of them. Due to shutting down unexpectedly, I have implemented my own pokemon spawner into this bot. All pokemon are copyright of Nintendo:tm:.
+[2] Parser and shader written by @blob8108 on GitHub. Scratch:tm: is a product of the LifeLong Kindergarten Group at MIT in Cambridge, Massachusetts.
+[3] Dank Memer's minigames use an anti-cheat to detect copying and pasting. This command fulfills the role of circumventing it.
+[4] As of Minecraft 1.15.2; Minecraft is a product of Mojang Studios.
+
 ## 2.0.3: Assets, Time, Minecraft, COTD, Pi, Last Online, many bugfixes
 
 ### Major Changes

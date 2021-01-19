@@ -1,6 +1,6 @@
-const Asset = require('../../Structures/Asset');
+const Asset = require('../../../Structures/Asset');
 const TYPES = Asset.load('Text/fancytext.json');
-const {random} = require('../../Utils');
+const {random} = require('../../../Utils');
 
 class FancyText {
 	static translate(text, type) {

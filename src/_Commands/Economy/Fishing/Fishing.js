@@ -2,19 +2,157 @@ const Bank     = require('../../../Bank/Bank');
 const Resource = require('../../../Structures/Resource');
 const Session  = require('../../../Sessions/Session');
 const {Markdown:md,Format:fmt,random,strcmp,paginate,tableify} = require('../../../Utils');
-const BaseFishTable = require('./fishes.json');
 
-var   COOLDOWN = 20000; // TODO: reduce to 15000?
+const BaseFishTable = [
+	{
+		name: 'Piece of Trash',
+		type: 'junk',
+		info: 'Worthless junk floating in the virtual ocean.',
+		things: [':battery:', ':athletic_shoe:', ':mans_shoe:', ':gear:', ':paperclip:', ':paperclips:', ':chains:', ':shopping_cart:', ':shell:'],
+		rarity: 25,
+		value: 0
+	},
+	{
+		name: 'Piece of Treasure',
+		type: 'treasure',
+		info: 'A valuable scrap of treasure that floated away from somewhere.',
+		things: [':dollar:', ':yen:', ':euro:', ':pound:', ':gem:', ':ring:', ':crown:', ':stopwatch:'],
+		rarity: 3,
+		value: 15.0
+	},
+	{
+		name: 'Bug',
+		type: 'bug',
+		info: 'Small critters that aren\'t that valuable for how rare they are.',
+		things: [':bug:',':snail:',':ant:',':spider:'],
+		rarity: 15,
+		value: 0.6
+	},
+	{
+		name: 'Cool Bug',
+		type: 'bug',
+		info: 'Rare bugs, which are much more valuable.',
+		things: [':butterfly:', ':beetle:', ':bee:'],
+		rarity: 5,
+		value: 5.0
+	},
+	{
+		name: 'Fish',
+		type: 'fish',
+		info: 'Basic nameless fish, common and only nominally valuable.',
+		things: [':fish:'],
+		rarity: 35,
+		value: 1.2
+	},
+	{
+		name: 'Cool Fish',
+		type: 'fish',
+		info: 'An interesting species of fish, rare and quite valuable.',
+		things: [':tropical_fish:', ':blowfish:'],
+		rarity: 10,
+		value: 3.2
+	},
+	{
+		name: 'Critter',
+		type: 'critter',
+		info: 'Various animals you might catch, they fetch a nice price.',
+		things: [':snake:', ':crab:', ':shrimp:', ':lizard:', ':frog:'],
+		rarity: 5,
+		value: 8.0
+	},
+	{
+		name: 'Cool Critter',
+		type: 'critter',
+		info: 'Unique and rare animals, worth quite a lot.',
+		things: [':turtle:', ':crocodile:', ':octopus:', ':squid:'],
+		rarity: 2.5,
+		value: 20.0
+	},
+	{
+		name: 'Awesome Critter',
+		type: 'critter',
+		info: 'Even more rare, and that much more awesome. They\'re very valuable.',
+		things: [':whale:', ':whale2:', ':shark:', ':dolphin:'],
+		rarity: 1,
+		value: 100.0
+	},
+	{
+		name: 'Legendary Creature',
+		type: 'legendary',
+		info: 'The rarest and most valuable creatures of them all.',
+		things: [':dragon:', ':unicorn:'],
+		rarity: 0.1,
+		value: 10000.0
+	},
+	{
+		name: 'Key',
+		type: 'item',
+		info: 'A peculiar key, not worth anything, but might become useful...',
+		things: [':key:', ':key2:'],
+		rarity: 1,
+		value: 0
+	},
+	{
+		name: 'Small Treasure Chest',
+		type: 'chest',
+		info: 'A chest holding a small reward. Needs a **Key** to open, or else it is discarded.',
+		things: [':moneybag:', ':gift:', ':package:', ':confetti_ball:', ':tada:'],
+		rarity: 1.2,
+		value: 200.0
+	},
+	{
+		name: 'Large Treasure Chest',
+		type: 'chest',
+		info: 'A chest holding a large reward. Needs a **Key** to open, or else it is discarded.',
+		things: [':moneybag:', ':gift:', ':package:', ':confetti_ball:', ':tada:'],
+		rarity: 0.5,
+		value: 2000.0
+	},
+	{
+		name: 'Legendary Treasure Chest',
+		type: 'chest',
+		info: 'A chest holding a massive reward. Needs a **Key** to open, or else it is discarded.',
+		things: [':moneybag:', ':gift:', ':package:', ':confetti_ball:', ':tada:'],
+		rarity: 0.075,
+		value: 20000.0
+	},
+	{
+		name: 'Bird',
+		type: 'bird',
+		info: 'Pesky birds that steal yo\' catch and yo\' money.\nYou will need **Ammo** for your gun to fend yourself.',
+		things: [':bird:',':eagle:',':duck:'],
+		rarity: 12,
+		value: -2.0
+	},
+	{
+		name: 'Ammo',
+		type: 'item',
+		info: 'Some firepower! Next time a **Bird** tries to steal your catch, you can shoot them down. If you do, you get your fish back!\nTo view the probability of hitting, use `fish.hittable`.',
+		things: [':gun:'],
+		rarity: 1.5,
+		value: 0
+	},
+	{
+		name: 'Artifact',
+		type: 'item',
+		info: 'A strange object, said to alter reality and luck itself.\nTo see what happens, try `fish.artifact`.',
+		things: [':white_flower:'],
+		rarity: 2,
+		value: 0
+	}
+];
+
+const COOLDOWN = 20000;
 const COST     = 5;
 const HEADER   = ':fishing_pole_and_fish:Fishing Game:tropical_fish:';
 const COLOR    = 0x0080ff;
 const EVENT_CHANCE      = 0.05; // % chance of a fishing event starting on any catch
 const RARE_EVENT_CHANCE = 0.10; // % chance of a fishing event being rare
 const HIT_CHANCE        = 0.20; // % chance of shooting a bird
+const AUTO_OPEN_CHANCE  = 0.03; // % chance of opening a chest without a key
 
 const FISHING_TEMPLATE = {
 	inventory: {},
-	cooldown: 0,
 	chests: 0,
 	birds: 0,
 	artifacts: 0
@@ -201,7 +339,7 @@ class FishingAccount extends Resource {
 				this.chests++;
 				message += '\nYou unlocked it with a **Key** and received the reward within!\n(1 **Key** was consumed)';
 			} catch (e) {
-				if (random() < 0.03) {
+				if (random() < AUTO_OPEN_CHANCE) {
 					reward *= 0.5;
 					message += '\n' + random([
 						'By sheer strength, you pry open the chest like a brute!',
@@ -400,16 +538,16 @@ class FishTable {
 }
 
 class Fishing {
-	static get cooldown() {
+	static get COOLDOWN() {
 		return COOLDOWN;
 	}
-	static get cost() {
+	static get COST() {
 		return COST;
 	}
-	static get header() {
+	static get HEADER() {
 		return HEADER;
 	}
-	static get color() {
+	static get COLOR() {
 		return COLOR;
 	}
 	static get(client, userID) {
@@ -454,15 +592,8 @@ class Fishing {
 	static fish(client, userID, channelID, serverID) {
 		return this.modify(client, userID, (fishing, bank) => {
 			// check bank credits
-			if (bank.credits < Fishing.cost) {
-				throw `You need at least ${Bank.formatCredits(Fishing.cost)} to fish!`;
-			}
-			
-			// check fishing cooldown
-			var now = Date.now();
-			var timeRemaining = fishing.cooldown - now;
-			if (timeRemaining > 0) {
-				throw `Wait **${Math.round(timeRemaining/100)/10} seconds** before fishing again!`;
+			if (bank.credits < Fishing.COST) {
+				throw `You need at least ${Bank.formatCredits(Fishing.COST)} to fish!`;
 			}
 			
 			// copy the base fishing table and apply event modifiers
@@ -480,7 +611,6 @@ class Fishing {
 			}
 			
 			// apply reward and restriction
-			fishing.cooldown = now + COOLDOWN;
 			bank.changeCredits(reward + bonus - COST);
 			
 			// roll for a random fishing event
@@ -663,10 +793,6 @@ class Fishing {
 		var evt = new FishingEvent(serverID, channelID, descriptor);
 		client.sessions.start(evt);
 		return evt.toEmbed();
-	}
-	static setCooldown(wait) {
-		COOLDOWN = wait;
-		return `Fishing now allowed every ${wait/1000} seconds.`;
 	}
 }
 

@@ -1,20 +1,20 @@
 # DragonBot Commands
-There are **566** commands in **13** categories.
+There are **595** commands in **13** categories.
 
 ## Catgories
- * [Admin](#admin) (44)
+ * [Admin](#admin) (43)
  * [Audio](#audio) (13)
- * [Discord](#discord) (91)
- * [Economy](#economy) (25)
- * [Fun](#fun) (99)
- * [Image](#image) (108)
+ * [Discord](#discord) (95)
+ * [Economy](#economy) (26)
+ * [Fun](#fun) (105)
+ * [Image](#image) (119)
  * [Meta](#meta) (17)
- * [Misc](#misc) (52)
+ * [Misc](#misc) (55)
  * [Moderation](#moderation) (41)
- * [NSFW](#nsfw) (34)
+ * [NSFW](#nsfw) (35)
  * [Programming](#programming) (10)
- * [Text](#text) (18)
- * [Web](#web) (14)
+ * [Text](#text) (21)
+ * [Web](#web) (15)
 ## Admin
 
 ### `runjs ...code` *Private*
@@ -52,10 +52,6 @@ Display the raw arguments, which can be the output of an expression.
 Aliases: `ghost`, `reply`
 
 Send a message through the bot to another dimension.
-
-### `alias ...command:alias` *Private*
-
-Adds a temporary alias for a command.
 
 ### `toggle -embeds -tts -typing -invites -globalmentions -ignore -errors -logging` *Private*
 
@@ -337,25 +333,37 @@ Aliases: `membergrowth`, `servergrowth`
 
 Displays the server's growing member count over the past 100 days.
 
-### `commands` *Privileged*
+### `commands <allow|deny> ...commands [...targets]` *Privileged*
 
-Aliases: `cmds`
+Aliases: `command`, `cmds`, `cmd`
 
 Interface for enabling and disabling commands. *You should configure commands in a private channel to avoid mentioning users and roles.*
 
 If you are looking for a list of commands, try using the `category` command (there are simply too many commands to list them all!).
 
-### `commands.enable ...commands [...targets]` *Privileged*
+### `commands.create id code -title -category -info -suppress -analytics -private -super` *Private*
 
-Aliases: `allow`
+Aliases: `new`
 
-Enables command(s) for the current channel/channel(s)/user(s)/role(s).
+Create a new temporary command. Surround the code in a code block for proper parsing. By default, unlimited arguments may be passed and all known context members are defined. Pass flag values for additional (but optional) settings.
 
-### `commands.disable ...commands [...targets]` *Privileged*
+### `commands.settings command -enabled -nsfw -suppress -analytics -cooldown` *Private*
 
-Aliases: `deny`
+Modify settings of a command.
 
-Disables command(s) for the current channel/channel(s)/user(s)/role(s).
+### `commands.toggle ...commands` *Private*
+
+Aliases: `enable`, `disable`
+
+Enables or disabled command(s) globally.
+
+### `commands.alias ...command:alias` *Private*
+
+Add aliases for commands. Key/value pairs are separated by a colon.
+
+### `commands.cooldown ...command:cooldown` *Private*
+
+Set cooldowns for commands. Key/value pairs are separated by a colon.
 
 ### `commands.clear ...commands` *Privileged*
 
@@ -381,15 +389,15 @@ Retrieves ALL server permissions for a single command.
 
 ### `commands.move ...old:new` *Private*
 
-Aliases: `replace`, `alias`, `rename`
+Aliases: `replace`, `rename`
 
 Replace permission entry keys with new ones, in case the names of commands change and are no longer binded. :warning: Warning! This is a low-level command, it will create or delete data regardless of validation!
 
-### `commands.create name code` *Private*
+### ~~`commands.export ...commands`~~ *Privileged*
 
-Aliases: `new`
+Aliases: `download`
 
-Create a new temporary command. Surround the code in a code block for proper parsing. By default, unlimited arguments may be passed and all known context members are defined.
+Serialize command(s) to a JS file.
 
 ### `bot`
 
@@ -417,9 +425,15 @@ Displays uptime, ping, and memory usage.
 
 ### `bot.uptime`
 
-Aliases: `up`
+Aliases: `up`, `downtime`, `down`
 
 Displays how long the bot has been running.
+
+### `bot.downtime`
+
+Aliases: `down`
+
+Displays how long it had lost connection to Discord since starting up.
 
 ### `bot.ping`
 
@@ -509,17 +523,17 @@ Displays information about a role.
 
 Reveals information about a server invite. (doesn't work on vanity invites)
 
-### `info.snowflake id` *Private*
+### `info.snowflake id`
 
 Aliases: `id`
 
 Analyze and identify information about a snowflake ID.
 
-### `info.token token` *Private*
+### `info.token token`
 
-Analyze and identify information about a Discord Token
+Analyze and identify information about a Discord Token. (Devnote: don't worry, this bot can only produce fake tokens to play around with)
 
-### `info.permissions value` *Private*
+### `info.permissions value`
 
 Get a list of permissions.
 
@@ -890,7 +904,7 @@ Displays the top ranking users with the highest bank balances.
 
 ### `casino`
 
-Aliases: `gambling`, `gamble`
+Aliases: `gambling`, `gamble`, `bet`
 
 Assortment of fun and risky minigames. Place your bets and win big!
 
@@ -904,21 +918,27 @@ Aliases: `cointoss`, `coinflip`
 
 Toss a coin and call it right.
 
-### `slots [bet]`
+### `slots [bet] -t/-table`
 
-Aliases: `slotmachine`
+Aliases: `slotmachine`, `slots3`
 
-3-column slot machine game! Now with extra betting and free spins!
+3-column slot machine game! Now with extra betting and free spins! To see the payout table, use this command with the `-table` flag.
 
-### `slots.table`
+### `vslots [bet] -t/-table`
 
-Aliases: `info`, `payout`
+Aliases: `videoslots`, `slots5`
 
-Displays the multipliers and chances of the slot items.
+Video slots, a more advanced version of slots, with 5 columns instead of 3 and multiple ways of winning on a single screen! Rewards are reduced for balancing.
 
 ### `blackjack [...co-players] [bet]`
 
 Classic Blackjack card game, now with other players! Have the highest hand without going over 21 to win. For a more thorough explanation, see the Wikipedia page https://en.wikipedia.org/wiki/Blackjack
+
+### `beg`
+
+Aliases: `panhandle`
+
+Beg for money because you're poor lol.
 
 ### `currency amount from [to]`
 
@@ -930,11 +950,15 @@ Convert an amount from any currency to another. Default target currency is USD.
 
 Aliases: `money`, `cash`, `freebie`, `welfare`, `877-cash-now`
 
+Cooldown: 1 day
+
 Earn free money every day!
 
 ### `fish`
 
 Aliases: `fishy`, `fishing`, `feesh`
+
+Cooldown: 20 seconds
 
 Catch critters of the sea to win big prizes! Each try costs **5 credits** and you must wait **20 seconds** between tries. :new: Events are here! For a limited time, fish will be harder/easier to catch, or be more/less valuable!
 
@@ -974,9 +998,23 @@ Displays the current catch rates of all fish types. Can sort by name, value, cha
 
 Calculates the probability of hitting a bird, given a few sample Ammo values and the current hit percentage.
 
-### `fish.wait [time]` *Private*
+### `food [restaurant]`
 
-Temporarily set the cooldown for `fish` usage.
+Aliases: `fastfood`, `menu`, `foodmenu`
+
+Get a list of food that can be delivered to you! Pay via credits, wait a bit, and enjoy fresh food! You can specify which restaurant's menu to look at.
+
+### `food.order`
+
+Order food! Use the reactions to select a restaurant, choose food items with sides and drinks, then confirm!
+
+### `food.cancel orderID`
+
+Cancel a pending order, but only if it is still being prepared. You will be refunded half of what you paid for.
+
+### `food.check [orderID]`
+
+Check on your pending orders. For more info, use the ID of an order you made.
 
 ### `lottery amount`
 
@@ -1082,17 +1120,15 @@ Aliases: `chan`, `4ch`, `4`
 
 Gets a random post from one of the boards on 4chan.org (You can specify which board, else one is chosen at random)
 
-### `8chan [board]`
-
-Aliases: `8ch`, `infinichan`
-
-Gets a random post from one of the boards on 8ch.net (You can specify which board, else one is chosen at random)
-
 ### `rate`
 
 Aliases: `outta10`
 
 I will rate anything out of 10 points.
+
+### `how <cool|awesome|strong|smart|hot|sexy|gay|dank|cursed|blessed|thicc|cute|thot|valid|pro|rich> [am/is/are (subject)]`
+
+I will rate something on a percentage basis of a given trait!
 
 ### `decide ...choices`
 
@@ -1310,7 +1346,9 @@ Pick up the phone and see who answers! As this is a rather privacy-sensitive com
 
 Aliases: `pkmn`
 
-Catches a random Pokémon. Cooldown: **2 hours**
+Cooldown: 2 hours
+
+Catches a random Pokémon.
 
 ### `pokemon.pokedex [query]`
 
@@ -1341,12 +1379,6 @@ Give one of your Pokémon a new name (limit 40 characters).
 Aliases: `count`, `progress`
 
 Shows how many Pokemon you've caught out of the total.
-
-### `pokemon.refresh [user]` *Private*
-
-Aliases: `f5`
-
-Skip cooldown for catching, scavenging, and training.
 
 ### `pokemon.reset [user]` *Private*
 
@@ -1392,7 +1424,9 @@ Battle against the bot or another player, using your active pokémon!
 
 Aliases: `scavenge`
 
-Scavenge for items that you can use in battle or sell for cash! Cooldown: **1 hour**
+Cooldown: 1 hour
+
+Scavenge for items that you can use in battle or sell for cash!
 
 ### `pokemon.candy pokemon`
 
@@ -1404,7 +1438,9 @@ Gets or sets your Active Pokémon, which you can use for training and battling.
 
 ### `pokemon.train [pokemon]`
 
-Give **5 XP** to one Pokémon of your choice, or one at random. Cooldown: **30 minutes**
+Cooldown: 30 minutes
+
+Give **5 XP** to one Pokémon of your choice, or one at random.
 
 ### `pokemon.shop`
 
@@ -1426,9 +1462,18 @@ Purchase an item from the PokéShop.
 
 Sell an item to the PokéShop.
 
-### `pokemon.identify [imageURL]`
+### `pokemon.spawns channel`
 
-Identify a pokémon based on its picture. Either link the image or upload it.
+Get or change channel for spawning pokemon.
+
+### `pokemon.hint`
+
+Provide a clue about the current Pokemon that spawned in this channel.
+
+### `pokemon.identify [imageURL] -auto -hash`
+
+Identify a pokémon based on its picture from Bulbapedia. You can link the image or upload it.
+Additionally, pass the `-auto` flag to toggle automatic identification when possible. Or pass the `-hash` flag to get/set the hash of a pokemon.
 
 ### `reddit [subreddit] -type -time -limit`
 
@@ -1436,6 +1481,10 @@ Retrieve reddit posts from a sub of your choice or one at random.
 **Post Types**: __hot__, __new__, __rising__, __top__, __controversial__, or __gilded__.
 **Time Ranges**: __day__, __week__, __month__, __year__, or from __all__ time.
 Default flag values are `type=hot`, `time=all`, and `limit=200`.
+
+### `reddit.comments [subreddit] [post] -limit`
+
+List comments on a Reddit post or subreddit (limited to top-level comments only). Use a subreddit and post ID, or a reddit link.
 
 ### `reddit.subbed`
 
@@ -1461,9 +1510,9 @@ Aliases: `disable`, `toggle`
 
 Toggle the use of the subscription service for this channel.
 
-### `reddit.options -polling/-interval -type -time -limit -threshold -crossposts/-xposts -media`
+### `reddit.options -polling/-interval -type -time -limit -threshold -crossposts/-xposts -media -nsfw -spoilers -blacklisted`
 
-Aliases: `subopts`
+Aliases: `subopts`, `settings`
 
 Set subscription options for this channel, which include what type of posts to get, in what time span, and how many posts to poll for.
  * `-polling` is the interval in seconds between fetching posts.
@@ -1478,37 +1527,71 @@ Set subscription options for this channel, which include what type of posts to g
 
 Aliases: `isitdown`
 
-Check the health status of reddit.
+Check the health status of Reddit.
+
+### `reddit.download linkOrID` *Private*
+
+Aliases: `dl`, `ripsave`, `lewla`
+
+Get downloadable link for a video from Reddit.
 
 ## Image
+
+### `df [seed] [<POCKET|SMALLER|SMALL|MEDIUM|LARGE>] [<REGION|ISLAND>] -a/-ascii` *Private*
+
+Aliases: `dwarffortress`
+
+Cooldown: 10 minutes
+
+Generate a worldmap through Dwarf Fortress. You can specify a seed and world size/type, and whether to send the ASCII or rendered version.
 
 ### `gif`
 
 GIF image module.
 
-### `gif.spin [imageURL] [frames] [speed] [<cw|ccw>]`
+### `gif.debug [imageURL]` *Private*
+
+Debug a gif by showing the individual frames and delays.
+
+### `gif.spin [imageURL] [frames] [speed]`
 
 Aliases: `roll`
 
-Spin an image! Optionally set how many frames to spin and at what rate (in frames per second).
+Spin an image! Optionally set how many frames to spin and at what rate (in frames per second). Use a negative speed to spin counter-clockwise.
 
-### ~~`gif.shake [imageURL] [intensity]`~~
+### `gif.3dspin [imageURL] [yawSpeed] [pitchSpeed] -f/-fov -d/-distance`
+
+Aliases: `spin3d`, `revolve`
+
+Spin an image in the third dimension! Yaw speed is for rotation along the XZ plane, and pitch speed is for rotation along the YZ plane.
+
+### `gif.cube [imageURL] [yawSpeed] [pitchSpeed] -f/-fov -d/-distance -y/-yaw -p/-pitch`
+
+Aliases: `pyramid`, `icosahedron`, `dodecahedron`, `sphere`
+
+G E O M E T R I C A L.
+
+### `gif.shake [imageURL] [intensity]`
 
 Aliases: `intensify`
 
-Shake an image! Optionally, set how violent the shaking is (in percentage of image size).
+Shake an image or GIF! Optionally, set how "violent" the shaking is as a scale of the image's size.
 
-### ~~`gif.reverse [gifURL]`~~
+### `gif.reverse [gifURL]`
 
 Aliases: `backwards`
 
 Reverse a GIF
 
-### ~~`gif.trigger [imageURL]`~~
+### `gif.speed [imageURL] [fps]`
 
-Aliases: `triggered`
+Aliases: `fps`, `speedup`, `slowdown`
 
-Make an image into the triggered gif meme.
+Speed up (or slow down) a GIF. Specify an FPS or a % of current framerate. Default is 60 fps, 200%, or 50%, depending on which alias you use.
+
+### ~~`gif.crop [imageURL] left top width height`~~
+
+Crop a GIF by a rectangular area.
 
 ### ~~`gif.corrupt [gifURL]`~~
 
@@ -1521,6 +1604,12 @@ Corrupt a GIF
 Aliases: `gmagik`
 
 Apply the magik filter to a GIF.
+
+### `gif.caption [gifURL] [toptext] [bottomtext]`
+
+Aliases: `text`, `meme`
+
+Add top and bottom text to the GIF. Use quotation marks for exact texts to put in each, otherwise the bot will try to divide it.
 
 ### `graph <line|scatter|bar|pie> ...(x,y) -w/-width -h/-height -t/-title -x/-xaxis -y/-yaxis -b/-borders -o/-origin -g/-grid`
 
@@ -1540,11 +1629,11 @@ Aliases: `phash`, `perceptualhash`
 
 Get the perceptual hash of an image. Optionally, specify the base you wish to output in, default is 16.
 
-### `image.test [<blank|grid|checkerboard|color|noise|random>] [size]`
+### `image.test [<blank|grid|checkerboard|color|gradient|noise|random>] [size]`
 
 Aliases: `testing`, `generate`
 
-Creates a testing image. Specify what preset to use and at what size.
+Creates a testing image. Specify what pattern to use and at what size.
 
 ### `image.brailleify [imageURL] [threshold] [scale] [invert]`
 
@@ -1604,7 +1693,13 @@ Calculates the image gradient.
 
 ### `image.sepia [imageURL]`
 
-Applies sepia filter to an image.
+Applies a sepia filter to an image.
+
+### `image.aberration [aX] [aY]`
+
+Aliases: `aberrate`, `chromatic`, `ca`, `spherochromatism`
+
+Applies chromatic aberration to an image. Parameters for direction of aberration.
 
 ### `image.hue [imageURL] [value]`
 
@@ -1620,7 +1715,7 @@ Adjust the saturation of an image.
 
 Aliases: `lightness`, `brighten`, `lighten`
 
-Adjust the brightness of an image.
+Adjust the brightness of an image. Use a number between -1 and 1.
 
 ### `image.contrast [imageURL] [value]`
 
@@ -1638,7 +1733,7 @@ Pixelate an image. Default is 32x32 pixels.
 
 ### `image.crop [imageURL] [tolerance]`
 
-Crop an image. Tolerance is a percentage of pixel difference.
+Crop an image. Tolerance is a percentage of pixel difference along the border of the image.
 
 ### `image.resize [imageURL] [width] [height] [fit]`
 
@@ -1930,17 +2025,29 @@ Aliases: `minecraft`, `meinkraft`
 
 Minecraft-related image commands.
 
+### `mc.items`
+
+Aliases: `ingredients`, `blocks`, `things`, `list`
+
+Displays a browser for Minecraft items.
+
 ### `mc.craft ...ingredients`
 
 Aliases: `crafting`, `table`
 
 Generates a Minecraft crafting recipe. Ingredients are minecraft:identifers or block names, and separated by commas. Empty slots can be any non-valid identifer. To set the output, use 10 ingredients with the output as the last.
 
-### `mc.furnace input fuel output`
+### `mc.furnace ...components`
 
 Aliases: `cooking`
 
 Generates a Minecraft furnace recipe. Ingredients are minecraft:identifiers or block names, and separated by commas.
+
+### `mc.armor ...parts`
+
+Aliases: `clothing`
+
+Generates a Minecraft set of armor (from 4 parts). Use minecraft:identifiers or item names, and separated by commas.
 
 ### `mc.achievement text -title -icon`
 
@@ -1948,11 +2055,11 @@ Aliases: `achvmnt`, `ag`
 
 Generates a Minecraft achievement.
 
-### `meme [imageURL] [toptext]`
+### `meme [imageURL|memeID] [...text] -macro`
 
-Aliases: `maymay`, `dankify`, `whenyou`
+Aliases: `caption`, `maymay`, `dankmeme`
 
-Make a simple text+image meme.
+Make a meme with some caption at the top. When using the `-macro` flag, provide top text and bottom text using quote marks.
 
 ### `meme.deepfry [imageURL]`
 
@@ -2031,6 +2138,18 @@ Aliases: `damnsmile`, `damnedsmile`, `thatdamnsmile`, `thatdamnedsmile`
 Aliases: `whodidthis`, `ifunny`, `9gag`, `funwaa`, `smartphowned`, `weedbro`, `thisissosad`, `xbox`
 
 Add one of these watermarks to an image (and optional text for some): `whodidthis`, `ifunny`, `9gag`, `funwaa`, `smartphowned`, `weedbro`, `thisissosad`, `xbox`. (Tip: you can use a command alias or a parameter to specify the watermark you want)
+
+### `halloween [imageURL] [palette]`
+
+Aliases: `halloweenify`, `hallowify`, `spookify`, `spoopify`
+
+Available only during October: posterizes your avatar (or any image) to halloween colors. Palettes to choose from: devil, birthday, ghost, pumpkin, goldandblack, fashionista, scared, witch, love, cake, nightmare, trickortreat, dark, playful, makeup, deadly, monster, horror, simple, happyhalloween
+
+### ~~`retrowave [imageURL] [palette] -a/-aberration -g/-glitch`~~
+
+Aliases: `synthwave`, `outrun`, `retrofy`, `outrunify`
+
+Posterizes your avatar (or any image) to a color palette used in Retrowave/Synthwave/Outrun media. Optional customization includes chromatic aberration and "glitch" effects. Palettes to choose from: outrun1, outrun2, outrun3
 
 ### `place [color] [xpos] [ypos]`
 
@@ -2163,12 +2282,6 @@ Enumerates a range of values. If `enumerable` is a number, it iterates from 0 up
 
 Get/set a user's note.
 
-### ~~`uno ...co-players`~~
-
-Aliases: `unocardgame`
-
-Play the UNO card game!
-
 ### `color [red] [green] [blue]`
 
 View a color.
@@ -2187,11 +2300,11 @@ Aliases: `oftheday`, `daily`
 
 Get the color of the day.
 
-### `color.palette [number]`
+### `color.palette [number] [...colors]`
 
 Aliases: `pallete`, `colors`
 
-Generate a palette of random colors, up to 10 max (default 5).
+Generate a palette from CSS hex color values, or of random colors, up to 10 max (default 5).
 
 ### `exercise [difficulty]`
 
@@ -2345,6 +2458,10 @@ Aliases: `polynomial`, `solvepoly`, `solvepolynomial`, `roots`
 
 Attempts to solve for the roots of a polynomial. in `a_0x^n + a_1x^(n-1) + ... a_n = 0` form.
 
+### `latex ...expression -fsize -fcolor`
+
+Render text as LaTeX. https://quicklatex.com
+
 ### `poll topic ...emoji=choice -m/-mention` *Privileged*
 
 Aliases: `polling`, `vote`, `voting`
@@ -2381,6 +2498,12 @@ Aliases: `reset`, `redo`
 
 Clear all objectives from your to-do list.
 
+### `sb ...blocks -v/-version` *Private*
+
+Aliases: `scratch`, `scratchblocks`
+
+Render text as scratchblocks (as seen at <http://scratchblocks.github.io>). Version 2.0 supported only.
+
 ### `birthday [date]`
 
 Aliases: `bday`, `birthdays`, `bdays`
@@ -2411,17 +2534,29 @@ Aliases: `delete`, `undo`, `forget`
 
 If you change your mind and don't want me knowing your birthday, you can remove it from my database.
 
-### `reminder ...time ...text`
+### `reminder <on|at|in|after> time ...text -every/-repeat`
 
 Aliases: `remindme`, `setreminder`
 
-Set a reminder to be sent to your DMs after a specified time. After setting, you will be given the ID of the reminder in case you want to cancel it.
+Set a reminder to be sent to your DMs at or after a specified time. After setting, you will be given the ID of the reminder in case you want to cancel it. If you wish to repeat a reminder at intervals starting at your scheduled time, use the flag `-every`/`-repeat`, ex:`-repeat:1d` to send a reminder every day (minimum of 1 hour).
 
 ### `reminder.cancel reminderID`
 
 Aliases: `stop`, `ignore`, `end`, `fulfill`
 
 Cancel a reminder to you using its ID.
+
+### `reminder.repeat reminderID <stop|every> [...interval]`
+
+Aliases: `loop`, `toggle`
+
+Set a reminder to repeat at intervals or stop repeating (fulfills after its last update). Interval minimum is 1 hour.
+
+### `reminder.upcoming`
+
+Aliases: `list`, `check`
+
+List your upcoming reminders.
 
 ### `timer ...time`
 
@@ -2473,11 +2608,11 @@ Aliases: `channel`, `channelid`
 
 Gets or sets the archive channel ID.
 
-### `cleanup [count] -b/-bot -c/-cmds -t/-text -m/-media -p/-pinned` *Privileged*
+### `cleanup [count] -b/-bot -c/-cmds -t/-text -m/-media -p/-pinned -by/-user -includes/-contains -before -after` *Privileged*
 
 Aliases: `delete`, `nuke`, `prune`, `purge`, `tidy`
 
-Delete messages in the current channel. Use flags to specify the kinds of messages to filter out.
+Delete messages in the current channel. Use flags to specify the kinds of messages to look for.
 
 ### `snipe [user]` *Privileged*
 
@@ -2535,7 +2670,7 @@ Remove a strike from a user. This is if they display continuous good behavior.
 
 Aliases: `codered`
 
-In the event of a raid/attack, lockdown mode will delete recent invites, set the server to maximum verification level (TODO: monkey-patch this in discord.io?), and observe new members. Should any user spam messages in a short amount of time or mention anyone, they will be kicked immediately.
+In the event of a raid/attack, lockdown mode will delete recent invites, set the server to maximum verification level (TODO: monkey-patch this in discord.io?), and observe new members. Should any user spam messages/images in a short amount of time or mention anyone, they will be kicked immediately.
 
 ### `mods`
 
@@ -2637,13 +2772,13 @@ Clears the URL banlist.
 
 ### `mod.urls.add ...urls` *Privileged*
 
-Aliases: `ban`
+Aliases: `ban`, `blacklist`
 
 Add URLs to the banlist.
 
 ### `mod.urls.remove ...urls` *Privileged*
 
-Aliases: `unban`
+Aliases: `unban`, `allow`
 
 Remove URLs from the banlist.
 
@@ -2659,13 +2794,13 @@ Clears all banned username filters.
 
 ### `mod.names.add` *Privileged*
 
-Aliases: `ban`
+Aliases: `ban`, `blacklist`
 
 Add username filters to the name banlist.
 
 ### `mod.names.remove` *Privileged*
 
-Aliases: `unban`
+Aliases: `unban`, `allow`
 
 Remove username filters from the name banlist.
 
@@ -2742,6 +2877,12 @@ Search the oldest posts on e621.
 Aliases: `worst`, `worstof`
 
 Search the *worst* posts on e621. Beware these treacherous waters, because your blacklist won't apply!
+
+### `e621.ify [imageURL]`
+
+Aliases: `imageify`, `posterize`
+
+Posterize an image into an e621-like style.
 
 ### `e926 tag1 [tag2] [tag3] [tag4] [tag5]`
 
@@ -2959,13 +3100,19 @@ Aliases: `wtfdoesitsay`, `unzuul`
 
 Removes the zalgo corruption from text.
 
+### `unzws ...text`
+
+Aliases: `strclean`, `stringclean`, `dmcheat`
+
+Remove zero-width spaces and other hidden characters from a string.
+
 ### `caps ...text`
 
 Aliases: `mixedcaps`, `mcaps`, `mock`
 
 SuPer WacKY aND zAnY tExT!1!
 
-### `owo ...text`
+### `owo [...text]`
 
 Aliases: `uwu`, `hewwo`, `babytalk`
 
@@ -2976,6 +3123,12 @@ H-hewwo?!
 Aliases: `l33t`, `1337`
 
 Change your text into leetspeak. -> Ch4ng3 y0ur +3x+ !n+0 13375p34k.
+
+### `vaporwave ...text`
+
+Aliases: `aesthetic`, `widechar`
+
+
 
 ### `reverse ...text`
 
@@ -2989,17 +3142,17 @@ Aliases: `howdy`
 
 Creates an Emoji Sheriff meme.
 
-### `nato [from] ...text`
+### `nato [from] [...text]`
 
 Convert to and from the NATO phonetic alphabet. (See <https://en.wikipedia.org/wiki/NATO_phonetic_alphabet>)
 
-### `base64 [from] ...text`
+### `base64 [from] [...text]`
 
 Aliases: `b64`
 
 Convert to and from Base 64.
 
-### `hash [algorithm] ...text`
+### `hash [algorithm] [...text]`
 
 Aliases: `crypto`, `DSA`, `DSA-SHA`, `DSA-SHA1`, `DSA-SHA1-old`, `RSA-MD4`, `RSA-MD5`, `RSA-MDC2`, `RSA-RIPEMD160`, `RSA-SHA`, `RSA-SHA1`, `RSA-SHA1-2`, `RSA-SHA224`, `RSA-SHA256`, `RSA-SHA384`, `RSA-SHA512`, `dsaEncryption`, `dsaWithSHA`, `dsaWithSHA1`, `dss1`, `ecdsa-with-SHA1`, `md4`, `md4WithRSAEncryption`, `md5`, `md5WithRSAEncryption`, `mdc2`, `mdc2WithRSA`, `ripemd`, `ripemd160`, `ripemd160WithRSA`, `rmd160`, `sha`, `sha1`, `sha1WithRSAEncryption`, `sha224`, `sha224WithRSAEncryption`, `sha256`, `sha256WithRSAEncryption`, `sha384`, `sha384WithRSAEncryption`, `sha512`, `sha512WithRSAEncryption`, `shaWithRSAEncryption`, `ssl2-md5`, `ssl3-md5`, `ssl3-sha1`, `whirlpool`
 
@@ -3017,6 +3170,12 @@ Aliases: `fancytext`, `cancer`
 
 Turns your text into fancy text! Types: default, math-bold, math-bold-fraktur, math-fraktur, math-bold-italic, math-bold-script, math-double-struck, math-monospace, math-sans, math-sans-bold, math-sans-bold-italic, math-sans-italic, regional, squared-small, squared-neg, squared-big, superscript, subscript, enclosed-circled, enclosed-circled2, enclosed-paren, enclosed-list, acute, dots, small-caps, stroked, upside-down, reversed, curvy1, curvy2, curvy3, cyrillic, ethiopic, fullwidth
 
+### `thesaurus ...text`
+
+Aliases: `thesaurusize`, `thesaurize`
+
+Expandify your verbiages.
+
 ### `portmanteau word1|user1 word2|user2`
 
 Aliases: `combine`
@@ -3024,6 +3183,12 @@ Aliases: `combine`
 Combine two words into a portmanteau.
 
 ## Web
+
+### `inspirobot`
+
+Cooldown: 10 seconds
+
+Generates an inspirational poster from inspirobot.me.
 
 ### ~~`google query`~~
 
@@ -3095,4 +3260,4 @@ Aliases: `ygo`, `yugiohwiki`, `ygowiki`, `yugipedia`
 
 Get info about a Yu-Gi-Oh! card, archetype, character, etc.
 
-*Documentation generated in 36 milliseconds.*
+*Documentation generated in 32 milliseconds.*

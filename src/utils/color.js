@@ -1,4 +1,4 @@
-const {minmax,interp,quantize} = require('./Math');
+const {minmax,interp,quantize,modulo} = require('./Math');
 function clamp(x) {
 	return Math.max(0, Math.min(x|0, 0xFF));
 }
@@ -6,7 +6,9 @@ function clamp(x) {
 class Color {
 	constructor(r=0,g=0,b=0,a=0xFF) {
 		if (arguments.length == 1) {
-			if (typeof(r) === 'number') {
+			if (typeof(r) === 'string') {
+				this.hex = r;
+			} else if (typeof(r) === 'number') {
 				this.rgba = r;
 			} else if (typeof(r) === 'object') {
 				if (r instanceof Array) {
@@ -101,6 +103,10 @@ class Color {
 	get hex() {
 		return '#' + this.rgb.toString(16).padStart(6, '0');
 	}
+	set hex(x) {
+		if (x[0] === '#') x = x.substring(1);
+		this.rgb = parseInt(x, 16);
+	}
 	compare(c) {
 		c = c instanceof Color ? c.rgb : c;
 		var mine = this.rgb;
@@ -108,11 +114,11 @@ class Color {
 		if (mine < c) return -1;
 		return 0;
 	}
-	equals(c) {
+	equals(c, isRGB) {
 		if (c instanceof Color) {
-			return this.rgba === c.rgba;
+			return isRGB ? this.rgb === c.rgb : this.rgba === c.rgba;
 		} else {
-			return this.rgba === c;
+			return isRGB ? this.rgb === c : this.rgba === c;
 		}
 	}
 	set(c) {
@@ -197,8 +203,12 @@ class Color {
 		return this.greyscale(correct);
 	}
 	distance(c) {
+		var d = this.sub(c).mult(1/255);
+		return Math.sqrt((d.r * d.r) + (d.g * d.g) + (d.b * d.b));
+	}
+	manhattan(c) {
 		var d = this.sub(c);
-		return Math.sqrt((d.r * d.r) + (d.g * d.g) + (d.b * d.b)) / 255;
+		return (Math.abs(d.r) + Math.abs(d.g) + Math.abs(d.b))/255;
 	}
 	invert(c = 0xFF) {
 		if (c instanceof Color) {
@@ -281,7 +291,7 @@ class Color {
 	}
 	// https://en.wikipedia.org/wiki/HSL_and_HSV#From_HSL
 	static hsl(hue, saturation, lightness) {
-		hue        = minmax(hue, 0, 360);
+		hue        = modulo(hue, 360);
 		saturation = minmax(saturation, 0, 1);
 		lightness  = minmax(lightness, 0, 1);
 		
@@ -342,8 +352,6 @@ class Color {
 			return new Color(args[0]);
 		} if (args.length == 3) {
 			return new Color(...args);
-		} else {
-			return new Color();
 		}
 	}
 }
@@ -358,8 +366,8 @@ Color.BLACK = new Color(0, 0, 0);
 Color.WHITE = new Color(0xFF, 0xFF, 0xFF);
 
 class ColorPalette {
-	constructor() {
-		this.colors = [];
+	constructor(colors = []) {
+		this.colors = colors;
 	}
 	get length() {
 		return this.colors.length;
@@ -368,8 +376,8 @@ class ColorPalette {
 		this.colors = [];
 	}
 	add() {
-		if (this.colors.length == 20) {
-			throw 'Limit of 20 colors.';
+		if (this.colors.length == 10) {
+			throw 'Limit of 10 colors.';
 		}
 		var color = new Color(...arguments);
 		if (arguments.length == 0) color.random();
@@ -389,8 +397,8 @@ class ColorPalette {
 		return this;
 	}
 	get(x) {
-		let c1 = this.colors[(x|0) % this.colors.length];
-		let c2 = this.colors[(1+x|0) % this.colors.length];
+		let c1 = this.colors[Math.floor(x) % this.colors.length];
+		let c2 = this.colors[Math.ceil(x) % this.colors.length];
 		return c1.interp(c2, x % 1);
 	}
 	random(x) {
@@ -415,22 +423,37 @@ class ColorPalette {
 }
 
 class ColorGradient extends ColorPalette {
-	constructor() {
-		super();
+	constructor(colors = [], scale = 1) {
+		super(colors);
 		this.gradientCache = [];
-		this.scale = 4;
+		this.scale = scale;
 	}
+	// create a discrete color table blending the base colors linearly
 	blend(size) {
 		this.gradientCache.length = 0;
 		for (var t=0;t<size;++t) {
-			this.gradientCache.push(this.get(t/this.scale));
+			this.gradientCache.push(this.sample(t));
 		}
 		return this;
+	}
+	sample(x) {
+		return this.get(x / this.scale);
 	}
 	embed() {
 		return Object.assign(super.embed(), {
 			description: `Scale: ${this.scale}`
 		});
+	}
+	toJSON() {
+		return {
+			scale: this.scale,
+			colors: this.colors
+		};
+	}
+	fromJSON(data = {}) {
+		this.scale  = data.scale ?? 1;
+		this.colors = data.colors?.map(c => new Color(c)) ?? [];
+		return this;
 	}
 }
 

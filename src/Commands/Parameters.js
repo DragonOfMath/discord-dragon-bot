@@ -24,7 +24,7 @@ class Parameters extends TypeMapBase {
 		for (var p in this) {
 			if (typeof(args[a]) !== 'undefined') {
 				if (this[p].isChoice) {
-					if (this[p].choices.includes(String(args[a]).toLowerCase())) a++;
+					if (this[p].choices.includes(String(args[a]))) a++;
 					else return Grant.denied(`"${args[a]}" is not a valid choice: ${this[p].choices.join(', ')}`);
 				} else if (this[p].isBlock) {
 					if (this[p].isMulti) {

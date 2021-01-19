@@ -74,17 +74,17 @@ module.exports = {
 				title: 'Welcome | Channel',
 				info: 'Gets or sets the server\'s channel where welcome messages may be displayed.',
 				parameters: ['[channel]'],
-				fn({client, serverID, channelID, arg}) {
+				fn({client, server, channelID, arg}) {
 					let serverTable = client.database.get('servers');
 					let channel = '';
 					if (arg) {
-						serverTable.modify(serverID, server => {
-							server.welcome = new Welcome(server.welcome);
-							channel = server.welcome.channel = md.channelID(arg);
-							return server;
+						serverTable.modify(server.id, data => {
+							data.welcome = new Welcome(data.welcome);
+							channel = data.welcome.channel = md.channelID(arg);
+							return data;
 						}).save();
 					} else {
-						let welcome = new Welcome(serverTable.get(serverID));
+						let welcome = new Welcome(serverTable.get(server.id));
 						channel = welcome.channel;
 					}
 					return channel ? 'Saved as ' + md.channel(channel) : '(No channel set.)';
@@ -94,20 +94,24 @@ module.exports = {
 				title: 'Welcome | Role',
 				info: 'Gets or sets the server\'s standard role for new members.',
 				parameters: ['[role]'],
-				fn({client, serverID, channelID, arg}) {
+				fn({client, server, channelID, arg}) {
 					let serverTable = client.database.get('servers');
-					let role = '';
+					let roleID = '';
 					if (arg) {
-						serverTable.modify(serverID, server => {
-							server.welcome = new Welcome(server.welcome);
-							role = server.welcome.role = md.roleID(arg);
-							return server;
+						serverTable.modify(server.id, data => {
+							data.welcome = new Welcome(data.welcome);
+							roleID = md.roleID(arg);
+							if (roleID == server.id) {
+								throw 'You cannot use at-everyone as a role!';
+							} 
+							data.welcome.role = roleID;
+							return data;
 						}).save();
 					} else {
-						let welcome = new Welcome(serverTable.get(serverID));
-						role = welcome.role;
+						let welcome = new Welcome(serverTable.get(server.id));
+						roleID = welcome.role;
 					}
-					return role ? 'Saved as ' + md.role(role) : '(No role set.)';
+					return (roleID && roleID in server.roles) ? 'Saved as ' + md.bold(server.roles[roleID].name) : '(No role set.)';
 				}
 			},
 			'goodbye': {

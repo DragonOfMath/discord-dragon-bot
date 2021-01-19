@@ -30,11 +30,9 @@ module.exports = {
 		},
 		TEMPLATE: {
 			state: OPEN,
-			created: (x) => (x ? (typeof(x) === 'number' ? x : Date.parse(x)) : Date.now()),
 			credits: DEFAULT_AMOUNT,
 			authorized: false,
-			investments: [],
-			dailyReceived: 0
+			investments: []
 		}
 	},
 	Investment: {
@@ -48,8 +46,7 @@ module.exports = {
 			principle: 0,
 			rate: RATE,
 			compounding: COMPOUNDING,
-			started: (s) => (s || Date.now()),
-			current: () => Date.now()
+			started: (s) => (s || Date.now())
 		}
 	}
 };

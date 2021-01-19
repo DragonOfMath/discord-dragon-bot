@@ -100,9 +100,10 @@ module.exports = {
 	info: 'Reply with maymays',
 	permissions: 'public',
 	data: {
-		dejavu: 0
+		dejavu: 0,
+		cj: {}
 	},
-	resolver({message}) {
+	resolver({message,channelID,userID}) {
 		if (message.toLowerCase() == 'f') return 'payrespects';
 		else if (/doot|calcium|strong bones/i.test(message)) return 'doot';
 		else if (/^me(.{1,4}|<.*>)?irl$/i.test(message)) return 'me_irl';
@@ -117,7 +118,8 @@ module.exports = {
 		else if (/ay{2,} ?lmao/i.test(message)) return 'ayylmao';
 		else if (/(\w+)-ass (\w+)/i.test(message)) return 'x_ass_y';
 		else if (/(alexa|siri|google|dragon|dragonbot),? play (.+)/i.test(message)) return 'despacito';
-		else if (/(thanks|thank you),? (dragon|dragonbot|draggy)/i.test(message)) return 'thankyou';
+		else if (/(thanks|thank you),? (dragon|draggy)(bot)?/i.test(message)) return 'thankyou';
+		else if (/party rock(ers| is) in the hou/i.test(message)) return 'se_tonight';
 		else {
 			let msg = message.toLowerCase().replace(/[',.!?]/g,'');
 			for (let l = this.data.dejavu, line; l < DEJAVU.length; l++) {
@@ -128,6 +130,21 @@ module.exports = {
 				}
 			}
 			this.data.dejavu = 0;
+			
+			// when 3 people send the same message in a channel in succession, join in on the fun
+			let cj = this.data.cj[channelID] = this.data.cj[channelID] || {message:'',users:[]};
+			if (message == cj.message && !cj.users.includes(userID)) {
+				cj.users.push(userID);
+				if (cj.users.length == 3) {
+					return 'cj';
+				}
+			} else if (message.length > 50) {
+				cj.message = '';
+				cj.users = [];
+			} else {
+				cj.message = message;
+				cj.users = [userID];
+			}
 		}
 	},
 	events: {
@@ -136,6 +153,9 @@ module.exports = {
 		},
 		ayylmao({client, channelID, messageID}) {
 			client.addReaction({channelID, messageID, reaction: '👽'}).catch(e => client.error(e));
+		},
+		cj({channelID}) {
+			return this.data.cj[channelID].message;
 		},
 		doot() {
 			return 'doot doot thank mr skeltal';
@@ -254,6 +274,9 @@ module.exports = {
 		},
 		dejavu() {
 			return DEJAVU[this.data.dejavu];
+		},
+		se_tonight() {
+			return 'se tonight';
 		}
 	}
 };

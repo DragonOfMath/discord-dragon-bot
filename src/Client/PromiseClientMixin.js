@@ -71,6 +71,8 @@ module.exports = (Client) => {
 						case 403: // FORBIDDEN
 						case 404: // NOT FOUND
 						case 405: // METHOD NOT ALLOWED
+							console.log(`${e.statusMessage} with ${method}`);
+							console.log('Payload:', JSON.stringify(payload));
 						default:
 							throw e;
 					}

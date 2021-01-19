@@ -78,28 +78,28 @@ class Markdown {
 		try {
 			return x.match(/[:@#&!]?(\d+)>$/)[1];
 		} catch (e) {
-			return '';
+			return isNaN(x) ? '' : x;
 		}
 	}
 	static userID(x) {
 		try {
 			return x.match(/^<@!?(\d+)>$/)[1];
 		} catch (e) {
-			return '';
+			return isNaN(x) ? '' : x;
 		}
 	}
 	static channelID(x) {
 		try {
 			return x.match(/^<#(\d+)>$/)[1];
 		} catch (e) {
-			return '';
+			return isNaN(x) ? '' : x;
 		}
 	}
 	static roleID(x) {
 		try {
 			return x.match(/^<@&(\d+)>$/)[1];
 		} catch (e) {
-			return '';
+			return isNaN(x) ? '' : x;
 		}
 	}
 	static emojiName(x) {
@@ -113,7 +113,7 @@ class Markdown {
 		try {
 			return x.match(/^<a?:(.+):(\d+)>$/)[2];
 		} catch (e) {
-			return '';
+			return isNaN(x) ? '' : x;
 		}
 	}
 	static atUser(user, discriminator) {

@@ -1,5 +1,5 @@
 const Constants = require('../../Constants/Pokemon');
-const {Markdown:md,Format:fmt,random,strcmp} = require('../../Utils');
+const {Markdown:md,Format:fmt,random,strcmp,showDifference} = require('../../Utils');
 
 const PokemonMain = require('./PokemonMain');
 
@@ -31,8 +31,9 @@ module.exports = {
 		aliases: ['pkmn'],
 		category: 'Fun',
 		title: Constants.HEADER,
-		info: `Catches a random Pokémon. Cooldown: ${md.bold(fmt.time(Constants.CATCH_COOLDOWN))}`,
+		info: `Catches a random Pokémon.`,
 		permissions: 'inclusive',
+		cooldown: Constants.CATCH_COOLDOWN,
 		fn({client, userID, serverID}) {
 			let result = PokemonMain.catchPokemon(client, userID);
 			
@@ -110,19 +111,6 @@ module.exports = {
 				fn({client, userID}) {
 					let results = PokemonMain.howMany(client, userID);
 					return `${md.mention(userID)} You caught ${md.bold(results.count)}/${md.bold(PokemonMain.pokemon.length)} Pokémon, and ${md.bold(results.lgdcount)}/${md.bold(PokemonMain.specialPokemon.length)} legendary Pokémon.`;
-				}
-			},
-			'refresh': {
-				aliases: ['f5'],
-				title: Constants.HEADER + ' | Refresh Cooldown',
-				info: 'Skip cooldown for catching, scavenging, and training.',
-				parameters: ['[user]'],
-				permissions: 'private',
-				suppress: true,
-				fn({client, args, userID}) {
-					userID = resolveTargetUser(args, userID);
-					PokemonMain.refreshCooldown(client, userID);
-					return `${md.mention(userID)}'s cooldowns for catching, scavenging, and training have been skipped.`;
 				}
 			},
 			'reset': {
@@ -208,7 +196,8 @@ module.exports = {
 			'item': {
 				aliases: ['scavenge'],
 				title: Constants.HEADER + ' | Scavenge',
-				info: `Scavenge for items that you can use in battle or sell for cash! Cooldown: ${md.bold(fmt.time(Constants.SCAVENGE_COOLDOWN))}`,
+				info: `Scavenge for items that you can use in battle or sell for cash!`,
+				cooldown: Constants.SCAVENGE_COOLDOWN,
 				fn({client, userID}) {
 					let item = PokemonMain.scavengeItem(client, userID);
 					return `${md.mention(userID)} got a ${md.bold(item.name)}!`;
@@ -243,8 +232,9 @@ module.exports = {
 			},
 			'train': {
 				title: Constants.HEADER + ' | Train',
-				info: `Give **5 XP** to one Pokémon of your choice, or one at random. Cooldown: ${md.bold(fmt.time(Constants.TRAIN_COOLDOWN))}`,
+				info: `Give **5 XP** to one Pokémon of your choice, or one at random.`,
 				parameters: ['[pokemon]'],
+				cooldown: Constants.TRAIN_COOLDOWN,
 				fn({client, arg, userID}) {
 					let results = PokemonMain.trainPokemon(client, userID, arg);
 					return `${md.mention(userID)} you trained ${md.bold(results.pokemon.name)} for ${md.bold(results.xp + ' XP')}!`;
@@ -282,23 +272,99 @@ module.exports = {
 					}
 				}
 			},
+			'spawns': {
+				title: Constants.HEADER + ' | Spawns',
+				info: 'Get or channel for spawning pokemon, or use "disable" to clear the channel.',
+				parameters: ['[channel|disable]'],
+				fn({client,serverID,arg}) {
+					let table = client.database.get('servers'), channelID;
+					if (arg) {
+						channelID = md.channelID(arg) || null;
+						table.modify(serverID, data => {
+							data.pkmnSpawnChannelID = channelID;
+							return data;
+						}).save();
+						if (channelID) {
+							return 'Pokemon spawn channel set to ' + md.channel(channelID);
+						} else if (arg == 'disable') {
+							return 'Pokemon spawning disabled.';
+						}
+						
+					} else {
+						channelID = table.get(serverID).pkmnSpawnChannelID;
+						return channelID ? 'Pokemon currently spawn in ' + md.channel(channelID) : 'No channel assigned for pokemon spawning.';
+					}
+				}
+			},
+			'hint': {
+				title: Constants.HEADER + ' | Hint',
+				info: 'Provide a clue about the current Pokemon that spawned in this channel.',
+				fn({client,serverID,channelID}) {
+					let spawn = client.sessions.pokemon.data.spawns[serverID];
+					if (spawn && spawn.channelID == channelID) {
+						if (spawn.hints) {
+							spawn.hints--;
+							let pkmn = spawn.pkmn.name, hint, hidden;
+							do {
+								hint = '';
+								hidden = 0;
+								for (let i = 0; i < pkmn.length; i++) {
+									if (pkmn[i] != ' ' && Math.random() < 0.5) {
+										hint += '\\_';
+										hidden++;
+									} else hint += pkmn[i];
+								}
+							} while (hidden > 1 && hidden < pkmn.length - 1);
+							return hint;
+						} else {
+							return 'No more hints!';
+						}
+					} else {
+						return 'There are no pokemon here!';
+					}
+				}
+			},
 			'identify': {
 				title: Constants.HEADER + ' | Identify',
-				info: 'Identify a pokémon based on its picture. Either link the image or upload it.',
+				info: 'Identify a pokémon based on its picture from Bulbapedia. You can link the image or upload it.\nAdditionally, pass the `-auto` flag to toggle automatic identification when possible. Or pass the `-hash` flag to get/set the hash of a pokemon.',
 				parameters: ['[imageURL]'],
-				fn({client, args, attachments, embeds}) {
+				flags: ['auto','hash'],
+				fn({client, serverID, flags, args, attachments, embeds, userID}) {
+					throw 'Pokecord is discontinued.';
+					if (flags.has('auto')) {
+						let enable;
+						client.database.get('servers').modify(serverID, srvr => {
+							enable = srvr.autoPkmnID = flags.get('auto') == '' ? !srvr.autoPkmnID : !!flags.get('auto');
+							return srvr;
+						}).save();
+						return `Auto-identification of Pokemon is now ${enable?'enabled':'disabled'} in this server.`;
+					}
+					
 					let pokemonImageURL = resolveImageArg(args, attachments, embeds);
 					if (!pokemonImageURL) {
 						throw 'Please link to or upload an image.';
 					}
-					return PokemonMain.identify(pokemonImageURL)
-					.then(pokemon => {
-						if (pokemon) {
-							return `It's... ${md.bold(pokemon)}!`;
+					
+					if (flags.has('hash')) {
+						let pokemon = flags.get('hash');
+						if (pokemon && userID == client.ownerID) {
+							return PokemonMain.updateHash(pokemonImageURL, pokemon)
+							.then(hash => `New hash for ${md.bold(pokemon)}: ${hash}`);
 						} else {
-							return 'I couldn\'t identify the pokémon... try using one from the wiki.';
+							return PokemonMain.identify(pokemonImageURL, true)
+							.then(results => {
+								let {pokemon,hash,matchedHash,confidence} = results;
+								return `I am ${fmt.percent(confidence,1)} sure it is ${md.bold(pokemon)}:\n` + md.codeblock((
+									'# ' + matchedHash + ' (Matched)\n' +
+									'+ ' + hash        + ' (Actual)\n' + 
+									'- ' + showDifference(hash, matchedHash)
+								), 'diff');
+							});
 						}
-					});
+					} else {
+						return PokemonMain.identify(pokemonImageURL)
+						.then(pokemon => `It's... ${md.bold(pokemon)}!`);
+					}
 				}
 			}
 		}

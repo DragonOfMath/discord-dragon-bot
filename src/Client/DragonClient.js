@@ -30,6 +30,9 @@ const {
 	pipe
 } = Utils;
 
+//const Asset   = require('../Structures/Asset');
+//const BotList = Asset.require('Discord/bots.json');
+
 /**
 	@class DragonClient
 	@extends Discord.Client
@@ -99,10 +102,13 @@ class DragonClient extends pipe(Discord.Client, PromiseClientMixin, LoggerMixin)
 			this.VERSION = '2.0-test';
 		}
 		
+		this.DARK_MODE = Constants.Client.DARK_MODE;
+		
 		// Storage
 		this.emojis    = this.es   = new EmojiStore(this);
 		this.database  = this.db   = new Database(this);
         this.variables = this.vars = new VariableStore(this);
+		this.tempData  = this.TEMP = {}; // temporary data storage
 		
 		// Utilities
 		this.bank   = Bank;
@@ -126,6 +132,7 @@ class DragonClient extends pipe(Discord.Client, PromiseClientMixin, LoggerMixin)
 		
 		// Internal client settings
 		this._started      = Date.now();
+		this._initialized  = false;
 		this._tryReconnect = false;
 		this._suspended    = false;
 		this._ignoreUsers  = true;
@@ -142,15 +149,24 @@ class DragonClient extends pipe(Discord.Client, PromiseClientMixin, LoggerMixin)
 		this._allowInviteLinks    = true;
 		
 		// Event Handlers
+		this._level = 3;
 		//this.on('any', console.log);
+		this.on('error', this.error.bind(this)); // what in the world is going on when the bot is randomly reconnecting?
+		
 		this.on('ready',             this.handleConnect.bind(this));
 		this.on('disconnect',        this.handleDisconnect.bind(this));
 		this.on('guildCreate',       this.handleGuildCreate.bind(this));
+		this.on('guildUpdate',       this.handleGuildUpdate.bind(this));
 		this.on('guildDelete',       this.handleGuildDelete.bind(this));
+		this.on('channelCreate',     this.handleChannelCreate.bind(this));
+		this.on('channelUpdate',     this.handleChannelUpdate.bind(this));
+		this.on('channelDelete',     this.handleChannelDelete.bind(this));
 		this.on('guildMemberAdd',    this.handleMemberAdd.bind(this));
 		this.on('guildMemberRemove', this.handleMemberRemove.bind(this));
 		//this.on('guildMemberUpdate', this.handleMemberUpdate.bind(this));
 		this.on('message',           this.handleMessageCreate.bind(this));
+		//this.on('messageUpdate',     this.handleMessageUpdate.bind(this));
+		//this.on('messageDelete',     this.handleMessageDelete.bind(this));
 		this.on('messageReactionAdd', this.handleMessageReactionAdd.bind(this));
 		this.on('messageReactionRemove', this.handleMessageReactionRemove.bind(this));
 	}
@@ -172,6 +188,12 @@ class DragonClient extends pipe(Discord.Client, PromiseClientMixin, LoggerMixin)
 	get ping() {
 		return this.internals.ping;
 	}
+	get __dirname() {
+		return __dirname.replace(/\\/g, '/');
+	}
+	get __filename() {
+		return __filename.replace(/\\/g, '/');
+	}
 
 	async latency(channelID) {
 		let messageID = this.channels[channelID].last_message_id;
@@ -191,10 +213,10 @@ class DragonClient extends pipe(Discord.Client, PromiseClientMixin, LoggerMixin)
 		await this.wait(Constants.Client.DISCONNECT_DELAY);
 		this.disconnect();
 	}
-	async suspend(time) {
+	async suspend(time = 60000) {
 		this._tryReconnect = false;
 		this._suspended    = true;
-		if (this._connected) this.disconnect();
+		if (this._connected) this.disconnect(); // TODO: fix?
 		await this.wait(time);
 		this._tryReconnect = true;
 		this._suspended    = false;
@@ -279,7 +301,7 @@ class DragonClient extends pipe(Discord.Client, PromiseClientMixin, LoggerMixin)
 		return this.database.get('client').get(this.id);
 	}
 	set storage(x) {
-		return this.database.get('client').set(this.id, x).save();
+		this.database.get('client').set(this.id, x).save();
 	}
 	getVar(name, namespace) {
         return this.variables.get(namespace, name);
@@ -421,6 +443,9 @@ class DragonClient extends pipe(Discord.Client, PromiseClientMixin, LoggerMixin)
 		if (typeof(file) !== 'string' && typeof(filename) !== 'string') {
 			throw 'File buffer requires filename.';
 		}
+		if (typeof(file) === 'object' && file instanceof Buffer && file.length > Constants.Client.MAX_FILE_SIZE) {
+			throw 'Filesize exceeds Discord\'s limit: ' + fmt.bytes(file.length);
+		}
 		if (typeof(message) === 'string' && message.length > Constants.Client.MAX_MESSAGE_LENGTH) {
 			throw 'Message length exceeds Discord\'s limit: ' + message.length;
 		}
@@ -505,27 +530,37 @@ class DragonClient extends pipe(Discord.Client, PromiseClientMixin, LoggerMixin)
 		});
 		return members;
 	}
-
 	/**
-	 * Move messages from one channel to another
-	 * @param {Object}    options          - the options for moving messages
-	 * @param {Snowflake} options.from     - the channel to take messages from
-	 * @param {Snowflake} options.to       - the channel to move messages to
-	 * @param {Number}    options.limit    - the max number of messages to search for
-	 * @param {Snowflake} [options.before] - the message ID to search before
-	 * @param {Snowflake} [options.after]  - the message ID to search after
-	 * @param {Function}  [options.filter] - filter messages before moving them
-	 * @param {Function}  [options.map]    - map messages prior to reposting them
-	 * @param {Array<Object>} [options.messages] - instead of moving a number of messages from the channel, move only selected messages
-	 * @param {Boolean}   [options.keepOriginalMessages] - don't delete the original messages; false by default
-	 * @param {Boolean}   [options.stripMentions] - avoid mentioning users
+	 * Send multiple messages to a channel.
+	 * @param {Snowflake} channelID
+	 * @param {Array<Object>} messages
 	 */
-	async moveMessages(options = {}) {
-		let serverID = this.channels[options.to].guild_id;
-		if (!options.map) {
-			options.map = ({author,content,attachments,embeds}) => {
-				let message = `By ${md.mention(author.id)} in ${md.channel(options.from)}:\n${content}`;
-				if (options.stripMentions) {
+	async multisend(channelID, messages = []) {
+		for (let message of messages) {
+			await this.send(channelID, message);
+		}
+		//return Promise.all(messages.map(message => this.send(channelID, message)));
+	}
+	/**
+	 * Move messages from one channel to another, with the option to preserve the original messages.
+	 * @param {Object}                  options                       - the options for moving messages
+	 * @param {Snowflake}               options.from                  - the channel to take messages from
+	 * @param {Snowflake}               options.to                    - the channel to move messages to
+	 * @param {Array}                  [options.messages]             - the message IDs or Messages to remove
+	 * @param {Number}                 [options.limit]                - number of prior messages in history (mutually exclusive with options.messages)
+	 * @param {Snowflake}              [options.before]               - the message ID to search before
+	 * @param {Snowflake}              [options.after]                - the message ID to search after
+	 * @param {Function|RegExp|String} [options.filter]               - filter messages before returning them.
+	 * @param {Function}               [options.map]                  - custom map messages prior to reposting them
+	 * @param {Boolean}                [options.keepOriginalMessages] - don't delete the original messages; false by default
+	 * @param {Boolean}                [options.stripMentions]        - avoid mentioning users
+	 */
+	async moveMessages({from,to,messages=[],limit=0,before,after,filter,map,keepOriginalMessages=false,stripMentions=true}) {
+		let serverID = this.channels[to].guild_id;
+		if (!map) {
+			map = ({author,content,attachments,embeds},idx) => {
+				let message = `By ${md.mention(author.id)} in ${md.channel(from)}:\n${content}`;
+				if (stripMentions) {
 					message = message.replace(/@(here|everyone)/g, (at,m) => m);
 					message = this.fixMessage(message, serverID);
 				}
@@ -537,41 +572,32 @@ class DragonClient extends pipe(Discord.Client, PromiseClientMixin, LoggerMixin)
 			};
 		}
 		
-		let messages = [];
-		if (options.messages) {
-			for (let message of options.messages) {
-				if (typeof(message) === 'string') {
-					message = await this.getMessage({channelID: options.from, messageID: message});
-				} else if (!options.from) {
-					options.from = message.channel_id;
+		if (limit > 0) {
+			messages = await this.getMessages({channelID: from, limit, before, after, filter});
+		} else if (messages.length) {
+			for (let m = 0; m < messages.length; m++) {
+				if (typeof(messages[m]) === 'string') {
+					messages[m] = await this.getMessage({channelID: from, messageID: messages[m]});
+				} else if (!from) {
+					from = messages[m].channel_id;
 				}
-				messages.push(message);
 			}
-		} else {
-			messages = await this.getMessages({
-				channelID: options.from,
-				before: options.before,
-				after: options.after,
-				limit: options.limit,
-				filter: options.filter
-			});
 		}
 
 		if (messages.length === 0) {
-			this.warn(`No messages to move from ${options.from} to ${options.to}`);
-			return;
+			this.warn(`No messages to move from ${from} to ${to}.`);
+			throw 'No messages found.';
 		}
 
-		this.notice(`Moving ${messages.length} messages from ${options.from} to ${options.to}...`);
+		this.notice(`Moving ${messages.length} messages from ${from} to ${to}...`);
 
 		// messages are originally from newest to oldest, but we want to start with the oldest first
 		messages = messages.sort((m1,m2) => m1.id < m2.id ? -1 : m1.id > m2.id ? 1 : 0);
-		for (let message of messages) {
-			await this.send(options.to, options.map(message));
+		await this.multisend(to, messages.map(map));
+		if (!keepOriginalMessages) {
+			await this.deleteMessages({channelID: from, messageIDs: messages});
 		}
-		if (!options.keepOriginalMessages) {
-			await this.deleteMessages({channelID: options.from, messageIDs: messages});
-		}
+		return messages;
 	}
 	
 	/**
@@ -607,7 +633,7 @@ class DragonClient extends pipe(Discord.Client, PromiseClientMixin, LoggerMixin)
 	 * Get unlimited messages from a channel, but also have the ability to filter messages.
 	 * @param {Object}                 options           - the options for getting messages
 	 * @param {Snowflake}              options.channelID - the channel ID
-	 * @param {Number}                 options.limit     - the max number of messages to get, default is 100
+	 * @param {Number}                 [options.limit]   - the max number of messages to get, default is 100
 	 * @param {Snowflake}              [options.before]  - the message ID to search before
 	 * @param {Snowflake}              [options.after]   - the message ID to search after
 	 * @param {Function|RegExp|String} [options.filter]  - filter messages before returning them.
@@ -620,7 +646,7 @@ class DragonClient extends pipe(Discord.Client, PromiseClientMixin, LoggerMixin)
 				let m = await this.getMessage({channelID,messageID});
 				messages.push(m);
 			}
-		}else do {
+		} else do {
 			let _messages = await super.getMessages({
 				channelID,
 				limit: Math.max(2, Math.min(limit, 100)),
@@ -654,26 +680,42 @@ class DragonClient extends pipe(Discord.Client, PromiseClientMixin, LoggerMixin)
 
 	/**
 	 * Deletes unlimited messages in a channel (younger than 2 weeks).
-	 * @param {Object}                   options            - the options for deleting messages
-	 * @param {Snowflake}                options.channelID  - the channel ID of the messages
-	 * @param {Array<Snowflake|Message>} options.messageIDs - the array of messages or message IDs
+	 * @param {Object}                   options             - the options for deleting messages
+	 * @param {Snowflake}                [options.channelID] - the channel ID of the message(s)
+	 * @param {Array<Snowflake|Message>} options.messageIDs  - the array of messages or message IDs
 	 */
-	async deleteMessages({channelID, messageIDs}) {
-		messageIDs = messageIDs.map(m => m.id || m);
-
-		while (messageIDs.length) {
-			if (messageIDs.length == 1) {
-				await this.deleteMessage({
+	async deleteMessages({channelID, messageIDs, messages}) {
+		messageIDs = messages || messageIDs;
+		if (!channelID) {
+			let channels = {};
+			for (let message of messageIDs) {
+				if (!(message.channel_id in channels)) {
+					channels[message.channel_id] = [];
+				}
+				channels[message.channel_id].push(message.id);
+			}
+			for (let channelID in channels) {
+				await this.deleteMessages({
 					channelID,
-					messageID: messageIDs.pop()
-				});
-			} else {
-				await super.deleteMessages({
-					channelID,
-					messageIDs: messageIDs.splice(0,100)
+					messageIDs: channels[channelID]
 				});
 			}
-			await this.wait(Constants.Client.MESSAGE_POLL_TIME);
+		} else {
+			messageIDs = messageIDs.map(m => m.id || m);
+			while (messageIDs.length) {
+				if (messageIDs.length == 1) {
+					await this.deleteMessage({
+						channelID,
+						messageID: messageIDs.pop()
+					});
+				} else {
+					await super.deleteMessages({
+						channelID,
+						messageIDs: messageIDs.splice(0,100)
+					});
+				}
+				await this.wait(Constants.Client.MESSAGE_POLL_TIME);
+			}
 		}
 	}
 	
@@ -952,7 +994,7 @@ class DragonClient extends pipe(Discord.Client, PromiseClientMixin, LoggerMixin)
 	
 	/* Event Handlers */
 
-	handleConnect() {
+	async handleConnect() {
 		if (this._disconnectTime) {
 			this.downtime += Date.now() - this._disconnectTime;
 			this._disconnectTime = 0;
@@ -965,10 +1007,21 @@ class DragonClient extends pipe(Discord.Client, PromiseClientMixin, LoggerMixin)
 		this._suspended    = false;
 		this._reconnectTries = 0;
 		
+		if (!this._initialized) {
+			for (let cmd in this.commands) {
+				let command = this.commands[cmd];
+				if (command.enabled && command.init) {
+					await command.init(this);
+					this.notice('Initialized command "' + cmd + '"');
+				}
+			}
+			this._initialized = true;
+		}
+		
 		this.presenceText = this.PREFIX + `help`;
 		this.sessions.startTimer();
 	}
-	handleDisconnect(error) {
+	async handleDisconnect(error) {
 		if (!this.disconnectTime) {
 			this._disconnectTime = Date.now();
 		}
@@ -996,13 +1049,60 @@ class DragonClient extends pipe(Discord.Client, PromiseClientMixin, LoggerMixin)
 		
 		this.sessions.stopTimer();
 	}
+	handleChannelCreate(channel, WSMessage) {
+		try {
+			if (channel.id in this.directMessages) {
+				this.log('Opened DM channel with', md.atUser(channel.recipients[0]));
+			} else {
+				this.log(md.atChannel(channel),'was created in',this.servers[channel.guild_id].name);
+			}
+		} catch (e) {
+			this.error(e, WSMessage);
+		}
+	}
+	handleChannelUpdate(oldChannel, channel, WSMessage) {
+		try {
+			if (channel.id in this.directMessages) {
+				this.log('DM channel with', md.atUser(channel.recipients[0]), 'was edited');
+			} else {
+				this.log(md.atChannel(channel),'was updated in',this.servers[channel.guild_id].name);
+			}
+		} catch (e) {
+			this.error(e, WSMessage);
+		}
+	}
+	handleChannelDelete(channel, WSMessage) {
+		try {
+			if (channel.id in this.directMessages) {
+				this.log('Closed DM channel with', md.atUser(channel.recipients[0]));
+			} else {
+				this.log(md.atChannel(channel),'was deleted in',this.servers[channel.guild_id].name);
+				this.database.get('channels').delete(channel.id).save();
+			}
+		} catch (e) {
+			this.error(e, WSMessage);
+		}
+	}
 	handleGuildCreate(server, WSMessage) {
-		if (server) this.log(md.atUser(this),'has joined',server.name);
-		else this.error(md.atUser(this),'has apparently joined a server, but the server object is undefined.\n',WSMessage);
+		try {
+			this.log(md.atUser(this),'has joined',server.name);
+		} catch (e) {
+			this.error(e, WSMessage);
+		}
+	}
+	handleGuildUpdate(oldServer, server, WSMessage) {
+		try {
+			this.log(server.name,'was updated');
+		} catch (e) {
+			this.error(e, WSMessage);
+		}
 	}
 	handleGuildDelete(server, WSMessage) {
-		if (server) this.log(md.atUser(this),'has left',server.name);
-		else this.error(md.atUser(this),'has apparently left a server, but the server object is undefined.\n',WSMessage);
+		try {
+			this.log(md.atUser(this),'has left',server.name);
+		} catch (e) {
+			this.error(e, WSMessage);
+		}
 	}
 	handleMemberAdd(member, WSMessage) {
 		try {
@@ -1045,7 +1145,7 @@ class DragonClient extends pipe(Discord.Client, PromiseClientMixin, LoggerMixin)
 				this.send(channel, this.normalize(message, context));
 			}
 		} catch (e) {
-			this.error(e);
+			this.error(e, WSMessage);
 		}
 	}
 	handleMemberRemove(member, WSMessage) {
@@ -1074,7 +1174,7 @@ class DragonClient extends pipe(Discord.Client, PromiseClientMixin, LoggerMixin)
 			let context = new MessageContext(this, user.id, channel, goodbye);
 			this.send(channel, this.normalize(goodbye, context));
 		} catch (e) {
-			this.error(e);
+			this.error(e, WSMessage);
 		}
 	}
 	handleMessageCreate(user, userID, channelID, message, WSMessage) {
@@ -1091,18 +1191,15 @@ class DragonClient extends pipe(Discord.Client, PromiseClientMixin, LoggerMixin)
 			// create a Context object that describes the who/where/what of the message
 			let context = new MessageContext(this, userID, channelID, message, WSMessage);
 			
-			if (context.server) {
-				this.log(`${context.server.name} > ${md.atChannel(context.channel)} > ${md.atUser(context.user)}: ${context.message||'<empty>'} ${context.attachments.length ? ' [' + fmt.plural('attachment',context.attachments.length) + ']' : ''}`);
-			} else {
-				this.log(`Direct Messages > ${md.atUser(context.user)}: ${context.message||'<empty>'}`);
-			}
+			this.log(context.server ? context.server.name + ' > ' + md.atChannel(context.channel) : 'Direct Messages',
+			         `> ${md.atUser(context.user)}:`, context.message || '<empty>', ...context.attachments, ...context.embeds);
 
 			// create an input block from the raw message, and if necessary, interpret it as a command
 			let prefix = this.evalPrefix(context);
 			let input = Parser.createBlock(context.message, !!prefix);
 			return this.run(context, input).catch(e => this.error(e));
 		} catch (e) {
-			this.error(e);
+			this.error(e, WSMessage);
 		}
 	}
 	handleMessageUpdate(oldMessage, newMessage, WSMessage) {
@@ -1112,16 +1209,27 @@ class DragonClient extends pipe(Discord.Client, PromiseClientMixin, LoggerMixin)
 		}
 		try {
 			let context = new MessageContext(this, newMessage.user_id, newMessage.channel_id, newMessage.content, WSMessage);
-
-			if (context.server) {
-				this.log(`${context.server.name} > ${md.atChannel(context.channel)} > ${md.atUser(context.user)} edited their message: ${context.message}`);
-			} else {
-				this.log(`Direct Messages > ${md.atUser(context.user)} edited their message: ${context.message}`);
-			}
+			
+			this.log(context.server ? context.server.name + ' > ' + md.atChannel(context.channel) : 'Direct Messages',
+			         `> ${md.atUser(context.user)} edited message ${context.messageID}:`, context.message);
 			
 			// TODO: do something with the new and old message
 		} catch (e) {
-			this.error(e);
+			this.error(e, WSMessage);
+		}
+	}
+	handleMessageDelete(WSMessage) {
+		try {
+			let context = new MessageContext(this, WSMessage.d, WSMessage);
+			
+			this.log(context.server ? context.server.name + ' > ' + md.atChannel(context.channel) : 'Direct Messages',
+			         `> ${md.atUser(context.user)} deleted message ${context.messageID}:`, context.message);
+			
+			if (message.id in this.liveMessages) {
+				this.liveMessages[message.id].close(this);
+			}
+		} catch (e) {
+			this.error(e, WSMessage);
 		}
 	}
 	handleMessageReactionAdd(channelID, messageID, userID, emoji, WSMessage) {
@@ -1133,16 +1241,12 @@ class DragonClient extends pipe(Discord.Client, PromiseClientMixin, LoggerMixin)
 		try {
 			let context = new ReactionContext(this, userID, channelID, messageID, emoji, WSMessage);
 
-			if (context.server) {
-				this.log(`${context.server.name} > ${md.atChannel(context.channel)} > ${md.atUser(context.user)} reacted with ${md.emoji(context.emoji)}`);
-			} else {
-				this.log(`Direct Messages > ${md.atUser(context.user)} reacted with ${md.emoji(context.emoji)}`);
-			}
+			this.log(context.server ? context.server.name + ' > ' + md.atChannel(context.channel) : 'Direct Messages',
+			         `> ${md.atUser(context.user)} reacted to message ${context.messageID}: ${md.emoji(context.emoji)}`);
 
 			this.liveMessages.resolve(context);
 		} catch (e) {
-			this.error(e);
-			console.log(channelID, messageID, userID, emoji);
+			this.error(e, WSMessage);
 		}
 	}
 	handleMessageReactionRemove(channelID, messageID, userID, emoji, WSMessage) {
@@ -1154,22 +1258,18 @@ class DragonClient extends pipe(Discord.Client, PromiseClientMixin, LoggerMixin)
 		try {
 			let context = new ReactionContext(this, userID, channelID, messageID, emoji, WSMessage);
 
-			if (context.server) {
-				this.log(`${context.server.name} > ${md.atChannel(context.channel)} > ${md.atUser(context.user)} removed their reaction ${md.emoji(context.emoji)}`);
-			} else {
-				this.log(`Direct Messages > ${md.atUser(context.user)} removed their reaction ${md.emoji(context.emoji)}`);
-			}
+			this.log(context.server ? context.server.name + ' > ' + md.atChannel(context.channel) : 'Direct Messages',
+			         `> ${md.atUser(context.user)} removed their reaction from message ${context.messageID}: ${md.emoji(context.emoji)}`);
 
 			this.liveMessages.resolve(context);
 		} catch (e) {
-			this.error(e);
-			console.log(channelID, messageID, userID, emoji);
+			this.error(e, WSMessage);
 		}
 	}
 	
 	_cleanupMessage(payload) {
 		if (!this._allowGlobalMentions) {
-			// avoid mentioning @everyone/@here
+			// avoid mentioning @everyone/@here (okay if it's in an embed, those don't ping)
 			payload.replaceOnly(/@(everyone|here)/g, '[REMOVED]', ['message']);
 		}
 		if (!this._allowInviteLinks) {
@@ -1181,6 +1281,14 @@ class DragonClient extends pipe(Discord.Client, PromiseClientMixin, LoggerMixin)
 		const CENSOR = new RegExp(__dirname.split('\\').slice(1,3).join('\\\\'), 'gi');
 		return payload.replaceAll(CENSOR, '[REDACTED]')
 		.replaceAll(this.internals.token, '[REDACTED]');
+	}
+	
+	getConstant(ns, name) {
+		try {
+			return Constants[ns][name];
+		} catch (e) {
+			return undefined;
+		}
 	}
 }
 

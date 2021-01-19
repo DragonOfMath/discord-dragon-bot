@@ -1,8 +1,7 @@
-const Bank = require('../../Bank/Bank');
-const {Markdown:md,random} = require('../../Utils');
-//const RollDice    = require('./RollDice');
-//const CoinToss    = require('./CoinToss');
+const Bank = require('../../../Bank/Bank');
+const {Markdown:md,random} = require('../../../Utils');
 const SlotMachine = require('./Slots');
+const VideoSlots  = require('./VideoSlots');
 const Blackjack   = require('./Blackjack');
 
 class Gamble {
@@ -25,9 +24,9 @@ class Gamble {
 }
 
 function RollDice(bet, callback) {
-	var multiplier = 0;
-	var r1 = random(1,6);
-	var r2 = random(1,6);
+	let multiplier = 0;
+	let r1 = random(1,6);
+	let r2 = random(1,6);
 	
 	if (r1 == r2) {
 		if (r1 == 1 || r1 == 6) {
@@ -41,7 +40,7 @@ function RollDice(bet, callback) {
 		multiplier = -1;
 	}
 	
-	return callback(bet * multiplier, `rolled **${r1 == 1 ? ':game_die:' : r1}** and **${r2 == 1 ? ':game_die:' : r2}**.`);
+	return callback(bet * multiplier, `rolled **${r1 == 1 ? '🎲' : r1}** and **${r2 == 1 ? '🎲' : r2}**.`);
 }
 function CoinToss(bet, prediction = 'heads', callback) {
 	prediction = prediction.toLowerCase();
@@ -60,13 +59,13 @@ function CoinToss(bet, prediction = 'heads', callback) {
 			throw 'Only call `heads` or `tails`!';
 	}
 	
-	var result = random('heads','tails');
+	let result = random('heads','tails');
 	return callback(prediction == result ? bet : -bet, `it's ${md.bold(result)}.`);
 }
 
 module.exports = {
 	'casino': {
-		aliases: ['gambling','gamble'],
+		aliases: ['gambling','gamble','bet'],
 		category: 'Economy',
 		title: 'Casino Minigames',
 		info: 'Assortment of fun and risky minigames. Place your bets and win big!',
@@ -81,8 +80,8 @@ module.exports = {
 						if (user.investing) {
 							throw 'You can\'t gamble when your account is investing.';
 						}
-						var gamble = new Gamble(args[0], user.credits);
-						var {reward,message} = gamble.resolve(RollDice);
+						let gamble = new Gamble(args[0], user.credits);
+						let {reward,message} = gamble.resolve(RollDice);
 						user.changeCredits(reward);
 						return message;
 					});
@@ -98,24 +97,37 @@ module.exports = {
 						if (user.investing) {
 							throw 'You can\'t gamble when your account is investing.';
 						}
-						var gamble = new Gamble(args[0], user.credits);
-						var {reward,message} = gamble.resolve(CoinToss, args[1]);
+						let gamble = new Gamble(args[0], user.credits);
+						let {reward,message} = gamble.resolve(CoinToss, args[1]);
 						user.changeCredits(reward);
 						return message;
 					});
 				}
-			}
+			},/*
+			'rps': {
+				aliases: ['rockpaperscissors'],
+				title: 'Casino | Rock Paper Scissors',
+				info: 'Classic hand gesture game but with an ante!',
+				parameters: ['[bet]', '<r|rock|p|paper|s|scissors>'],
+				fn() {
+					
+				}
+			}*/
 		}
 	},
 	'slots': {
-		aliases: ['slotmachine'],
+		aliases: ['slotmachine','slots3'],
 		category: 'Economy',
 		title: 'Slot Machine:slot_machine:',
-		info: '3-column slot machine game! Now with extra betting and free spins!',
+		info: '3-column slot machine game! Now with extra betting and free spins! To see the payout table, use this command with the `-table` flag.',
 		parameters: ['[bet]'],
+		flags: ['t|table'],
 		permissions: 'inclusive',
-		fn({client, context, userID, channelID, args}) {
-			let bank = Bank.get(client, userID);
+		fn({client, context, args, flags}) {
+			if (flags.has('t') || flags.has('table') || flags.has('payout')) {
+				return SlotMachine.showPayoutTable();
+			}
+			let bank = Bank.get(client, context.userID);
 			if (bank.investing) {
 				throw 'You can\'t gamble when your account is investing.';
 			}
@@ -124,40 +136,44 @@ module.exports = {
 			
 			slots.on('creditchange', (amount) => {
 				if (!amount) return;
-				Bank.modify(client, userID, bank => {
+				Bank.modify(client, context.userID, bank => {
 					bank.changeCredits(amount);
 				});
 			});
 			
 			slots.startGame(client);
-		},
-		subcommands: {
-			'table': {
-				aliases: ['info', 'payout'],
-				title: 'Slot Machine:slot_machine: | Payout Table',
-				info: 'Displays the multipliers and chances of the slot items.',
-				fn() {
-					return SlotMachine.showPayoutTable();
-				}
-			}
 		}
-	},/*
-	'videoslots': {
-		aliases: ['vslots'],
+	},
+	'vslots': {
+		aliases: ['videoslots','slots5'],
 		category: 'Economy',
 		title: 'Video Slots:tv::slot_machine:',
-		info: 'Video slots, a more advanced version of slots, with 5 columns instead of 3 and multiple ways of winning on a single screen!',
+		info: 'Video slots, a more advanced version of slots, with 5 columns instead of 3 and multiple ways of winning on a single screen! Rewards are reduced for balancing.',
 		parameters: ['[bet]'],
+		flags: ['t|table'],
 		permissions: 'inclusive',
-		fn({client, context, args}) {
-			return 'Not ready yet, sorry!';
-			var user = Bank.get(client, context.userID);
-			if (user.investing) {
+		fn({client, context, args, flags}) {
+			if (flags.has('t') || flags.has('table') || flags.has('payout')) {
+				return VideoSlots.showPayoutTable();
+			}
+			
+			let bank = Bank.get(client, context.userID);
+			if (bank.investing) {
 				throw 'You can\'t gamble when your account is investing.';
 			}
-			var gamble = new Gamble(args[0], user.credits);
+			let gamble = new Gamble(args[0], bank.credits);
+			let slots  = new VideoSlots(context, bank, gamble.bet);
+			
+			slots.on('creditchange', (amount) => {
+				if (!amount) return;
+				Bank.modify(client, context.userID, bank => {
+					bank.changeCredits(amount);
+				});
+			});
+			
+			slots.startGame(client);
 		}
-	},*/
+	},
 	'blackjack': {
 		category: 'Economy',
 		title: 'Blackjack:hearts::diamonds::clubs::spades:',
@@ -199,6 +215,53 @@ module.exports = {
 			});
 
 			blackjack.startGame(client);
+		}
+	},
+	'beg': {
+		aliases: ['panhandle'],
+		category: 'Economy',
+		info: 'Beg for money because you\'re poor lol.',
+		permissions: 'inclusive',
+		fn({client, userID}) {
+			if (Math.random() < 0.5) {
+				return random([
+					'no',
+					'no money for you',
+					'stop begging',
+					'go beg somewhere else',
+					'lol nah',
+					'get a job loser',
+					'get help',
+					'you need professional help',
+					'I\'m not gonna feed your gambling addiction',
+					'I\'m not giving you money for drugs',
+					'I\'m not giving you money for booze',
+					'you smell bad',
+					'sorry, I don\'t have any spare change',
+					'money don\'t grow on trees',
+					'I\'m not made of money, well actually I am but',
+					'you need jesus, not money :)',
+					'sorry mate, can\'t help you',
+					'[walks away faster]',
+					'sure, take these arcade tokens',
+					'ohoho, you want my money? come and take it!',
+					'begone thot',
+					'keep your filthy peasant hands off me',
+					'ew, poor people',
+					'stop being poor',
+					'`Math.random() < 0.5` returned true, so no money',
+					'I regret to inform you that I do not have any currency on me at the moment'
+				]);
+			} else {
+				return Bank.modify(client, userID, account => {
+					let money = random(1,10);
+					if (Math.random() < 0.1) {
+						money *= random(5,10);
+					}
+					account.changeCredits(money);
+					return 'A kind stranger gave you ' + Bank.formatCredits(money);
+				});
+			}
 		}
 	}
 };

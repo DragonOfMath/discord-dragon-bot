@@ -33,8 +33,17 @@ module.exports = {
 			let change = false;
 			
 			channelTable.entries().forEachAsync(async ([channelID, channel]) => {
+				if (!(channelID in client.channels)) {
+					client.notice(`Reddit Subscription: terminating subscription for ${channelID} because channel was deleted`);
+					channelTable.delete(channelID);
+					change = true;
+					return;
+				}
 				if (!channel.reddit) return;
-				subscription = channel.reddit = new Reddit.Subscription(channel.reddit);
+				if (!(channel.reddit instanceof Reddit.Subscription)) {
+					channel.reddit = new Reddit.Subscription(channel.reddit);
+				}
+				subscription = channel.reddit;
 				if (subscription.active && subscription.subreddits.length && Date.now() - subscription.lastPollTime > subscription.pollInterval) {
 					change = true;
 					

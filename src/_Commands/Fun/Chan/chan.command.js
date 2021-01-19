@@ -12,18 +12,6 @@ module.exports = {
 			chan._4chan(args[0])
 			.then(embed => client.send(channelID, '', embed))
 		}
-	},
-	'8chan': {
-		aliases: ['8ch', 'infinichan'],
-		category: 'Fun',
-		title: '8chan Shitpost Roulette',
-		info: 'Gets a random post from one of the boards on 8ch.net (You can specify which board, else one is chosen at random)',
-		parameters: ['[board]'],
-		permissions: 'inclusive',
-		fn({client, args, channelID}) {
-			chan._8chan(args[0])
-			.then(embed => client.send(channelID, '', embed))
-		}
 	}
 }
 

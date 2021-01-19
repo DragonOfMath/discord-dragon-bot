@@ -8,21 +8,21 @@
 <body>
 <div class="index">
 <h1>DragonBot Commands</h1>
-<p>There are <b>566</b> commands in <b>13</b> categories.</p>
+<p>There are <b>578</b> commands in <b>13</b> categories.</p>
 <h2>Categories</h2>
 <ul id="categories">
 <li><a href="#Admin">Admin</a> <span>(44)</span></li>
 <li><a href="#Audio">Audio</a> <span>(13)</span></li>
 <li><a href="#Discord">Discord</a> <span>(91)</span></li>
 <li><a href="#Economy">Economy</a> <span>(25)</span></li>
-<li><a href="#Fun">Fun</a> <span>(99)</span></li>
-<li><a href="#Image">Image</a> <span>(108)</span></li>
+<li><a href="#Fun">Fun</a> <span>(101)</span></li>
+<li><a href="#Image">Image</a> <span>(111)</span></li>
 <li><a href="#Meta">Meta</a> <span>(17)</span></li>
-<li><a href="#Misc">Misc</a> <span>(52)</span></li>
+<li><a href="#Misc">Misc</a> <span>(55)</span></li>
 <li><a href="#Moderation">Moderation</a> <span>(41)</span></li>
-<li><a href="#NSFW">NSFW</a> <span>(34)</span></li>
+<li><a href="#NSFW">NSFW</a> <span>(35)</span></li>
 <li><a href="#Programming">Programming</a> <span>(10)</span></li>
-<li><a href="#Text">Text</a> <span>(18)</span></li>
+<li><a href="#Text">Text</a> <span>(21)</span></li>
 <li><a href="#Web">Web</a> <span>(14)</span></li>
 </ul>
 </div><div id="commands">
@@ -472,16 +472,16 @@ If you are looking for a list of commands, try using the `category` command (the
 <p>Reveals information about a server invite. (doesn't work on vanity invites)</p>
 </div>
 <div class="command" id="info.snowflake">
-<div><h3 class="command-id"><code>info.snowflake id</code></h3><i>Private</i></div>
+<div><h3 class="command-id"><code>info.snowflake id</code></h3></div>
 <div>Aliases: <span class="aliases"><code>id</code></span></div>
 <p>Analyze and identify information about a snowflake ID.</p>
 </div>
 <div class="command" id="info.token">
-<div><h3 class="command-id"><code>info.token token</code></h3><i>Private</i></div>
-<p>Analyze and identify information about a Discord Token</p>
+<div><h3 class="command-id"><code>info.token token</code></h3></div>
+<p>Analyze and identify information about a Discord Token. (Devnote: don't worry, this bot can only produce fake tokens to play around with)</p>
 </div>
 <div class="command" id="info.permissions">
-<div><h3 class="command-id"><code>info.permissions value</code></h3><i>Private</i></div>
+<div><h3 class="command-id"><code>info.permissions value</code></h3></div>
 <p>Get a list of permissions.</p>
 </div>
 <div class="command" id="list">
@@ -1277,12 +1277,20 @@ Credits can be used to play games, like Blackjack, Slots, Fishing, and Lottery. 
 <div><h3 class="command-id"><code>pokemon.identify [imageURL]</code></h3></div>
 <p>Identify a pokémon based on its picture. Either link the image or upload it.</p>
 </div>
+<div class="command" id="pokemon.identify.auto">
+<div><h3 class="command-id"><code>pokemon.identify.auto <enable|disable|on|off></code></h3><i>Privileged</i></div>
+<p>Enable or disable automatic identification of pokémon in this server as soon as it's posted by Pokecord.</p>
+</div>
 <div class="command" id="reddit">
 <div><h3 class="command-id"><code>reddit [subreddit] -type -time -limit</code></h3></div>
 <p>Retrieve reddit posts from a sub of your choice or one at random.
 **Post Types**: __hot__, __new__, __rising__, __top__, __controversial__, or __gilded__.
 **Time Ranges**: __day__, __week__, __month__, __year__, or from __all__ time.
 Default flag values are `type=hot`, `time=all`, and `limit=200`.</p>
+</div>
+<div class="command" id="reddit.comments">
+<div><h3 class="command-id"><code>reddit.comments [subreddit] [post] -limit</code></h3></div>
+<p>List comments on a Reddit post or subreddit (limited to top-level comments only). Use a subreddit and post ID, or a reddit link.</p>
 </div>
 <div class="command" id="reddit.subbed">
 <div><h3 class="command-id"><code>reddit.subbed</code></h3></div>
@@ -1718,15 +1726,25 @@ Default flag values are `type=hot`, `time=all`, and `limit=200`.</p>
 <div>Aliases: <span class="aliases"><code>minecraft</code>, <code>meinkraft</code></span></div>
 <p>Minecraft-related image commands.</p>
 </div>
+<div class="command" id="mc.items">
+<div><h3 class="command-id"><code>mc.items</code></h3></div>
+<div>Aliases: <span class="aliases"><code>ingredients</code>, <code>blocks</code>, <code>things</code>, <code>list</code></span></div>
+<p>Displays a browser for Minecraft items.</p>
+</div>
 <div class="command" id="mc.craft">
 <div><h3 class="command-id"><code>mc.craft ...ingredients</code></h3></div>
 <div>Aliases: <span class="aliases"><code>crafting</code>, <code>table</code></span></div>
 <p>Generates a Minecraft crafting recipe. Ingredients are minecraft:identifers or block names, and separated by commas. Empty slots can be any non-valid identifer. To set the output, use 10 ingredients with the output as the last.</p>
 </div>
 <div class="command" id="mc.furnace">
-<div><h3 class="command-id"><code>mc.furnace input fuel output</code></h3></div>
+<div><h3 class="command-id"><code>mc.furnace ...components</code></h3></div>
 <div>Aliases: <span class="aliases"><code>cooking</code></span></div>
 <p>Generates a Minecraft furnace recipe. Ingredients are minecraft:identifiers or block names, and separated by commas.</p>
+</div>
+<div class="command" id="mc.armor">
+<div><h3 class="command-id"><code>mc.armor ...parts</code></h3></div>
+<div>Aliases: <span class="aliases"><code>clothing</code></span></div>
+<p>Generates a Minecraft set of armor (from 4 parts). Use minecraft:identifiers or item names, and separated by commas.</p>
 </div>
 <div class="command" id="mc.achievement">
 <div><h3 class="command-id"><code>mc.achievement text -title -icon</code></h3></div>
@@ -1831,6 +1849,11 @@ Default flag values are `type=hot`, `time=all`, and `limit=200`.</p>
 <div><h3 class="command-id"><code>qr.encode ...text</code></h3></div>
 <div>Aliases: <span class="aliases"><code>write</code>, <code>encrypt</code>, <code>hack</code></span></div>
 <p>Write input text to a QR image file. (Note: emojis will not be preserved)</p>
+</div>
+<div class="command" id="df">
+<div><h3 class="command-id"><code>df [seed] [<POCKET|SMALLER|SMALL|MEDIUM|LARGE>] [<REGION|ISLAND>] -a/-ascii</code></h3><i>Private</i></div>
+<div>Aliases: <span class="aliases"><code>dwarffortress</code></span></div>
+<p>Generate a worldmap through Dwarf Fortress. You can specify a seed and world size/type, and whether to send the ASCII or rendered version.</p>
 </div>
 </div>
 <div class="category" id="Meta">
@@ -2109,6 +2132,11 @@ Default flag values are `type=hot`, `time=all`, and `limit=200`.</p>
 <div>Aliases: <span class="aliases"><code>reset</code>, <code>redo</code></span></div>
 <p>Clear all objectives from your to-do list.</p>
 </div>
+<div class="command" id="sb">
+<div><h3 class="command-id"><code>sb ...blocks -v/-version</code></h3><i>Private</i></div>
+<div>Aliases: <span class="aliases"><code>scratch</code>, <code>scratchblocks</code></span></div>
+<p>Render text as scratchblocks (as seen at <http://scratchblocks.github.io>). Version 2.0 supported only.</p>
+</div>
 <div class="command" id="birthday">
 <div><h3 class="command-id"><code>birthday [date]</code></h3></div>
 <div>Aliases: <span class="aliases"><code>bday</code>, <code>birthdays</code>, <code>bdays</code></span></div>
@@ -2135,14 +2163,24 @@ Default flag values are `type=hot`, `time=all`, and `limit=200`.</p>
 <p>If you change your mind and don't want me knowing your birthday, you can remove it from my database.</p>
 </div>
 <div class="command" id="reminder">
-<div><h3 class="command-id"><code>reminder ...time ...text</code></h3></div>
+<div><h3 class="command-id"><code>reminder time ...text -every/-repeat</code></h3></div>
 <div>Aliases: <span class="aliases"><code>remindme</code>, <code>setreminder</code></span></div>
-<p>Set a reminder to be sent to your DMs after a specified time. After setting, you will be given the ID of the reminder in case you want to cancel it.</p>
+<p>Set a reminder to be sent to your DMs after a specified time. After setting, you will be given the ID of the reminder in case you want to cancel it. If you wish to repeat a reminder at intervals starting at your scheduled time, use the flag `-every`/`-repeat`, ex:`-repeat:1d` to send a reminder every day (minimum of 1 hour).</p>
 </div>
 <div class="command" id="reminder.cancel">
 <div><h3 class="command-id"><code>reminder.cancel reminderID</code></h3></div>
 <div>Aliases: <span class="aliases"><code>stop</code>, <code>ignore</code>, <code>end</code>, <code>fulfill</code></span></div>
 <p>Cancel a reminder to you using its ID.</p>
+</div>
+<div class="command" id="reminder.repeat">
+<div><h3 class="command-id"><code>reminder.repeat reminderID <stop|every> [...interval]</code></h3></div>
+<div>Aliases: <span class="aliases"><code>loop</code>, <code>toggle</code></span></div>
+<p>Set a reminder to repeat at intervals or stop repeating (fulfills after its last update). Interval minimum is 1 hour.</p>
+</div>
+<div class="command" id="reminder.upcoming">
+<div><h3 class="command-id"><code>reminder.upcoming</code></h3></div>
+<div>Aliases: <span class="aliases"><code>list</code>, <code>check</code></span></div>
+<p>List your upcoming reminders.</p>
 </div>
 <div class="command" id="timer">
 <div><h3 class="command-id"><code>timer ...time</code></h3></div>
@@ -2188,9 +2226,9 @@ Default flag values are `type=hot`, `time=all`, and `limit=200`.</p>
 <p>Gets or sets the archive channel ID.</p>
 </div>
 <div class="command" id="cleanup">
-<div><h3 class="command-id"><code>cleanup [count] -b/-bot -c/-cmds -t/-text -m/-media -p/-pinned</code></h3><i>Privileged</i></div>
+<div><h3 class="command-id"><code>cleanup [count] -b/-bot -c/-cmds -t/-text -m/-media -p/-pinned -by/-user -includes/-contains -before -after</code></h3><i>Privileged</i></div>
 <div>Aliases: <span class="aliases"><code>delete</code>, <code>nuke</code>, <code>prune</code>, <code>purge</code>, <code>tidy</code></span></div>
-<p>Delete messages in the current channel. Use flags to specify the kinds of messages to filter out.</p>
+<p>Delete messages in the current channel. Use flags to specify the kinds of messages to look for.</p>
 </div>
 <div class="command" id="snipe">
 <div><h3 class="command-id"><code>snipe [user]</code></h3><i>Privileged</i></div>
@@ -2243,7 +2281,7 @@ Default flag values are `type=hot`, `time=all`, and `limit=200`.</p>
 <div class="command" id="lockdown">
 <div><h3 class="command-id"><code>lockdown <on|off|1|0|true|false></code></h3><i>Privileged</i></div>
 <div>Aliases: <span class="aliases"><code>codered</code></span></div>
-<p>In the event of a raid/attack, lockdown mode will delete recent invites, set the server to maximum verification level (TODO: monkey-patch this in discord.io?), and observe new members. Should any user spam messages in a short amount of time or mention anyone, they will be kicked immediately.</p>
+<p>In the event of a raid/attack, lockdown mode will delete recent invites, set the server to maximum verification level (TODO: monkey-patch this in discord.io?), and observe new members. Should any user spam messages/images in a short amount of time or mention anyone, they will be kicked immediately.</p>
 </div>
 <div class="command" id="mods">
 <div><h3 class="command-id"><code>mods</code></h3></div>
@@ -2334,12 +2372,12 @@ Default flag values are `type=hot`, `time=all`, and `limit=200`.</p>
 </div>
 <div class="command" id="mod.urls.add">
 <div><h3 class="command-id"><code>mod.urls.add ...urls</code></h3><i>Privileged</i></div>
-<div>Aliases: <span class="aliases"><code>ban</code></span></div>
+<div>Aliases: <span class="aliases"><code>ban</code>, <code>blacklist</code></span></div>
 <p>Add URLs to the banlist.</p>
 </div>
 <div class="command" id="mod.urls.remove">
 <div><h3 class="command-id"><code>mod.urls.remove ...urls</code></h3><i>Privileged</i></div>
-<div>Aliases: <span class="aliases"><code>unban</code></span></div>
+<div>Aliases: <span class="aliases"><code>unban</code>, <code>allow</code></span></div>
 <p>Remove URLs from the banlist.</p>
 </div>
 <div class="command" id="mod.names">
@@ -2353,12 +2391,12 @@ Default flag values are `type=hot`, `time=all`, and `limit=200`.</p>
 </div>
 <div class="command" id="mod.names.add">
 <div><h3 class="command-id"><code>mod.names.add</code></h3><i>Privileged</i></div>
-<div>Aliases: <span class="aliases"><code>ban</code></span></div>
+<div>Aliases: <span class="aliases"><code>ban</code>, <code>blacklist</code></span></div>
 <p>Add username filters to the name banlist.</p>
 </div>
 <div class="command" id="mod.names.remove">
 <div><h3 class="command-id"><code>mod.names.remove</code></h3><i>Privileged</i></div>
-<div>Aliases: <span class="aliases"><code>unban</code></span></div>
+<div>Aliases: <span class="aliases"><code>unban</code>, <code>allow</code></span></div>
 <p>Remove username filters from the name banlist.</p>
 </div>
 </div>
@@ -2425,6 +2463,11 @@ Default flag values are `type=hot`, `time=all`, and `limit=200`.</p>
 <div><h3 class="command-id"><code>e621.bad tag1 [tag2] [tag3] [tag4] [tag5]</code></h3></div>
 <div>Aliases: <span class="aliases"><code>worst</code>, <code>worstof</code></span></div>
 <p>Search the *worst* posts on e621. Beware these treacherous waters, because your blacklist won't apply!</p>
+</div>
+<div class="command" id="e621.ify">
+<div><h3 class="command-id"><code>e621.ify [imageURL]</code></h3></div>
+<div>Aliases: <span class="aliases"><code>imageify</code>, <code>posterize</code></span></div>
+<p>Posterize an image into an e621-like style.</p>
 </div>
 <div class="command" id="e926">
 <div><h3 class="command-id"><code>e926 tag1 [tag2] [tag3] [tag4] [tag5]</code></h3></div>
@@ -2615,6 +2658,11 @@ Default flag values are `type=hot`, `time=all`, and `limit=200`.</p>
 <div>Aliases: <span class="aliases"><code>wtfdoesitsay</code>, <code>unzuul</code></span></div>
 <p>Removes the zalgo corruption from text.</p>
 </div>
+<div class="command" id="unzws">
+<div><h3 class="command-id"><code>unzws ...text</code></h3></div>
+<div>Aliases: <span class="aliases"><code>strclean</code>, <code>stringclean</code>, <code>dmcheat</code></span></div>
+<p>Remove zero-width spaces and other hidden characters from a string.</p>
+</div>
 <div class="command" id="caps">
 <div><h3 class="command-id"><code>caps ...text</code></h3></div>
 <div>Aliases: <span class="aliases"><code>mixedcaps</code>, <code>mcaps</code>, <code>mock</code></span></div>
@@ -2629,6 +2677,11 @@ Default flag values are `type=hot`, `time=all`, and `limit=200`.</p>
 <div><h3 class="command-id"><code>leet ...text</code></h3></div>
 <div>Aliases: <span class="aliases"><code>l33t</code>, <code>1337</code></span></div>
 <p>Change your text into leetspeak. -> Ch4ng3 y0ur +3x+ !n+0 13375p34k.</p>
+</div>
+<div class="command" id="vaporwave">
+<div><h3 class="command-id"><code>vaporwave ...text</code></h3></div>
+<div>Aliases: <span class="aliases"><code>aesthetic</code>, <code>widechar</code></span></div>
+<p></p>
 </div>
 <div class="command" id="reverse">
 <div><h3 class="command-id"><code>reverse ...text</code></h3></div>
@@ -2663,6 +2716,11 @@ Default flag values are `type=hot`, `time=all`, and `limit=200`.</p>
 <div><h3 class="command-id"><code>fancy ...text -type</code></h3></div>
 <div>Aliases: <span class="aliases"><code>fancytext</code>, <code>cancer</code></span></div>
 <p>Turns your text into fancy text! Types: default, math-bold, math-bold-fraktur, math-fraktur, math-bold-italic, math-bold-script, math-double-struck, math-monospace, math-sans, math-sans-bold, math-sans-bold-italic, math-sans-italic, regional, squared-small, squared-neg, squared-big, superscript, subscript, enclosed-circled, enclosed-circled2, enclosed-paren, enclosed-list, acute, dots, small-caps, stroked, upside-down, reversed, curvy1, curvy2, curvy3, cyrillic, ethiopic, fullwidth</p>
+</div>
+<div class="command" id="thesaurus">
+<div><h3 class="command-id"><code>thesaurus ...text</code></h3></div>
+<div>Aliases: <span class="aliases"><code>thesaurusize</code>, <code>thesaurize</code></span></div>
+<p>Expandify your verbiages.</p>
 </div>
 <div class="command" id="portmanteau">
 <div><h3 class="command-id"><code>portmanteau word1|user1 word2|user2</code></h3></div>
@@ -2738,7 +2796,7 @@ Default flag values are `type=hot`, `time=all`, and `limit=200`.</p>
 </div>
 </div>
 <footer>
-Documentation generated in 21 milliseconds.
+Documentation generated in 15 milliseconds.
 </footer>
 </body>
 </html>

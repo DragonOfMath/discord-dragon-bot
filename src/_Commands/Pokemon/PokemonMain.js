@@ -60,9 +60,13 @@ class PokemonMain {
 		let pokemon = new Pokemon(PokemonList[pokeID]);
 		return pokemon.embedGIF();
 	}
-	static catchPokemon(client, userID) {
+	static catchPokemon(client, userID, caught) {
 		return this.modify(client, userID, pkmn => {
-			let caught = pkmn.catchARandomPokemon();
+			if (caught) {
+				pkmn.addPokemon(caught);
+			} else {
+				caught = pkmn.catchARandomPokemon();
+			}
 			let pokeID = pkmn.pokemon.getID(caught.name);
 			return { id: pokeID, pokemon: caught };
 		});
@@ -214,30 +218,52 @@ class PokemonMain {
 		//let battle = new PokemonBattle(context, opponentID);
 		//battle.startGame(context.client);
 	}
-	static identify(pokemonImageURL) {
+	static identify(pokemonImageURL, displayHash = false) {
 		return Jimp.read(pokemonImageURL)
 		.then(image => image.hash(2))
 		.then(hash => {
 			let closestMatch = '';
 			let closestDiff = 1;
+			let closestHash = '';
 			for (let name in PokemonHashTable) {
 				let pkmnHash = PokemonHashTable[name];
 				
 				if (hash == pkmnHash) {
 					// exact match
-					console.log('Exact:',name,hash);
-					return name;
+					closestMatch = name;
+					closestHash  = hash;
+					closestDiff  = 0;
+					break;
 				}
 				
 				let difference = Jimp.hashDistance(hash, pkmnHash);
 				if (difference < closestDiff) {
 					// close match
-					closestDiff  = difference;
 					closestMatch = name;
+					closestHash  = pkmnHash;
+					closestDiff  = difference;
 				}
 			}
-			console.log('Close:',closestMatch,closestDiff,hash);
-			return closestMatch;
+			//console.log('Close:',closestMatch,closestDiff,hash);
+			if (displayHash) {
+				return {
+					pokemon: closestMatch,
+					hash: hash,
+					matchedHash: closestHash,
+					confidence: 1 - closestDiff
+				};
+			} else {
+				return closestMatch;
+			}
+		});
+	}
+	static updateHash(pokemonImageURL, expectedPokemon) {
+		return Jimp.read(pokemonImageURL)
+		.then(image => image.hash(2))
+		.then(hash => {
+			PokemonHashTable[expectedPokemon] = hash;
+			Asset.save('Pokemon/hashes.json', JSON.stringify(PokemonHashTable, null, '\t'));
+			return hash;
 		});
 	}
 }

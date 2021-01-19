@@ -66,6 +66,18 @@ class BooruContent {
 			}
 		};
 	}
+	get isViolent() {
+		return this.containsAnyTags(['gore','rape','abuse','disembowelment','dissection','beheading','killing','death','self_harm','humiliation']);
+	}
+	get isFilthy() {
+		return this.containsAnyTags(['watersports','pissing','scat','scatplay','pooping','fart','fart_fetish','diaper','vomit']);
+	}
+	get isUnderage() {
+		return this.containsAnyTags(['young','underage','cub','ageplay','shota','loli','baby','child']);
+	}
+	containsAnyTags(tags) {
+		return tags.some(tag => this.tags.includes(tag));
+	}
 }
 
 module.exports = BooruContent;

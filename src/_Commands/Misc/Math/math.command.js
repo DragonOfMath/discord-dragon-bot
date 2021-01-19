@@ -1,4 +1,4 @@
-const {Markdown:md,Format:fmt,Math,dirtyFraction,pascalsTriangle} = require('../../../Utils');
+const {Markdown:md,Format:fmt,Math,Ratio,pascalsTriangle,fetch} = require('../../../Utils');
 const Calculator = require('./Calculator');
 const Polynomial = require('./Polynomial');
 
@@ -110,7 +110,7 @@ module.exports = {
 					}
 				}
 			},
-			'isprime':{
+			'isprime': {
 				title: MATH_TITLE + ' | Prime Finder',
 				info: 'Determine if a given number is prime (limit is 10^8, or 100 million)',
 				parameters: ['number'],
@@ -122,6 +122,9 @@ module.exports = {
 					a = Math.max(1,Math.min(~~a,1e8));
 					if (a == 1) {
 						throw 'Pick a higher number please.';
+					}
+					if (a > Math.MAX_SAFE_INTEGER) {
+						throw 'Pick a lower number please. This isn\'t a supercomputer.';
 					}
 					if (a % 2 == 0) {
 						return `${a} is **an even number**.`;
@@ -165,7 +168,7 @@ module.exports = {
 				aliases: ['sqrt','cbrt','nthroot','nroot'],
 				title: MATH_TITLE + ' | Root',
 				info: 'Calculate the nth root of a number. Default is the square root n = 2.',
-				parameters: ['base','[n]'],
+				parameters: ['number','[n]'],
 				fn({args}) {
 					let [base,n=2] = args.map(Number);
 					if (isNaN(base) || isNaN(n)) {
@@ -175,15 +178,33 @@ module.exports = {
 					return `The ${fmt.ordinal(n)} root of ${base} is ${md.bold(root)}.`;
 				}
 			},
+			'log': {
+				aliases: ['ln','logarithm'],
+				title: MATH_TITLE + ' | Logarithm',
+				info: 'Calculate the logarithm of a number. Default base is the natural number e.',
+				parameters: ['number','[base]'],
+				fn({args}) {
+					let [number,base=0] = args.map(Number);
+					if (isNaN(number) || isNaN(base)) {
+						throw 'Arguments must be numeric.';
+					}
+					let log = Math.log(number);
+					if (base) log /= Math.log(base);
+					return `The logarithm of ${number}${base ? ' in base '+base : ''} is ${md.bold(log)}.`;
+				}
+			},
 			'fraction': {
-				aliases: ['decimal2fraction','d2f'],
+				aliases: ['decimal2fraction','d2f','ratio'],
 				title: MATH_TITLE + ' | Dirty Fraction',
 				info: 'Convert a floating-point number to its approximated ratio (Experimental, might not work!)',
 				parameters: ['[number]'],
 				fn({args}) {
-					let [real = Math.random()] = args;
-					let {numerator,denominator} = dirtyFraction(real);
-					return `${real} ≈ ${md.bold(String(numerator) + ' / ' + String(denominator))}`;
+					let [number = Math.random()] = args;
+					if (isNaN(number)) {
+						throw 'Argument must be numeric.';
+					}
+					let ratio = new Ratio(number);
+					return `${number} ≈ ${md.bold(ratio.toString())}`;
 				}
 			},
 			'pascal': {
@@ -401,7 +422,14 @@ module.exports = {
 				let minX = Math.min(...interestingXs) - 1;
 				let maxX = Math.max(...interestingXs) + 1;
 				client.type(channelID);
-				return polynomial.graph(minX,maxX).image.getBufferAs('polynomial.png')
+				
+				let graph = polynomial.graph(minX,maxX).image;
+				
+				if (client.getConstant('Client','DARK_MODE')) {
+					graph = graph.invert();
+				}
+				
+				return graph.getBufferAs('polynomial.png')
 				.then(output => {
 					output.embed = embed;
 					return output;
@@ -409,6 +437,23 @@ module.exports = {
 			} else {
 				return embed;
 			}
+		}
+	},
+	'latex': {
+		category: 'Misc',
+		info: 'Render text as LaTeX. https://quicklatex.com',
+		parameters: ['...expression'],
+		flags: ['fsize','fcolor'],
+		permissions: 'inclusive',
+		fn({client, arg, flags}) {
+			return fetch('https://quicklatex.com/latex3.f', {
+				method: 'POST',
+				body: `formula=${arg}&&fsize=${flags.get('fsize')||17}px&fcolor=${flags.get('fcolor')||'000000'}&mode=0&out=1&remhost=quicklatex.com&preamble=\\usepackage{amsmath}\n\\usepackage{amsfonts}\n\\usepackage{amssymb}&rnd=${100*Math.random()}&errors=1`
+			}).then(data => {
+				let [s,i,v,w,h,e] = data.split(/\s+/);
+				if (s == '0') return i;
+				throw e;
+			});
 		}
 	}
 };

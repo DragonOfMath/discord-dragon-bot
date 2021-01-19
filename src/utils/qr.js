@@ -1,29 +1,30 @@
-const Jimp   = require('./jimp');
+const {Jimp} = require('./jimp');
 const jsQR   = require('jsqr');
 const QRcode = require('qrcode');
 
-module.exports.QR = {
-	read(image) {
-		if (typeof(image) === 'string') {
-			return Jimp.read(image).then(QR.read);
-		} else if (image instanceof Jimp) {
-			let bm = image.bitmap;
-			return new Promise((resolve,reject) => {
-				try {
-					let decoded = jsQR(bm.data, bm.height, bm.width);
-					if (!decoded) throw 'QR code is invalid.';
-					resolve(decoded.data);
-				} catch (e) {
-					reject(e);
-				}
-			});
-		} else {
-			return Promise.reject('Unrecognized image or URL: ' + image);
+async function read(data, width, height) {
+	if (typeof data === 'string') {
+		try {
+			data = await Jimp.read(data);
+		} catch (e) {
+			data = await Jimp.readAsDataURL(data);
 		}
-	},
-	write(input) {
-		return QRcode.toDataURL(input)
-		.then(dataURL => Buffer.from(dataURL.substring('data:image/png;base64,'.length), 'base64'))
-		.then(Jimp.read);
 	}
-};
+	if (typeof data === 'object') {
+		width  = width  ?? data.bitmap?.width  ?? data.width;
+		height = height ?? data.bitmap?.height ?? data.height;
+		data   = data.bitmap ?? data;
+	}
+	let decoded = jsQR(data, width, height);
+	if (decoded) {
+		return decoded.data;
+	} else {
+		throw 'Invalid QR code.';
+	}
+}
+
+async function write(data) {
+	return Jimp.readAsDataURL(QRcode.toDataURL(data));
+}
+
+module.exports.QR = {read,write};

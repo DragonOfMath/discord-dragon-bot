@@ -15,9 +15,16 @@ function ID(id) {
 	return ' (ID: ' + md.code(id) + ')';
 }
 
+function imageType(iconURL) {
+	return iconURL.startsWith('a_') ? 'gif' : 'png';
+}
+
+const NUMBERS = ['zero','one','two','three','four','five','six','seven','eight','nine'];
+const NUMBER_BOX = `0⃣`; // this is the stupidest emoji ever
+
 class DiscordUtils {
 	static getIconURL(server) {
-		return server ? `https://cdn.discordapp.com/icons/${server.id}/${server.icon}.png?size=512` : '';
+		return server ? `https://cdn.discordapp.com/icons/${server.id}/${server.icon}.${imageType(server.icon)}?size=512` : '';
 	}
 	static getSplashURL(server) {
 		return server ? `https://cdn.discordapp.com/splashes/${server.id}/${server.splash}.png` : '';
@@ -26,7 +33,7 @@ class DiscordUtils {
 		if (user.avatar == null) {
 			return this.getDefaultAvatarURL(user);
 		}
-		return `https://cdn.discordapp.com/avatars/${user.id}/${user.avatar}.${user.avatar.startsWith('a_')?'gif':'png'}?size=512`;
+		return `https://cdn.discordapp.com/avatars/${user.id}/${user.avatar}.${imageType(user.avatar)}?size=512`;
 	}
 	static getDefaultAvatarURL(user) {
 		return `https://cdn.discordapp.com/embed/avatars/${user.discriminator%5}.png`;
@@ -38,7 +45,9 @@ class DiscordUtils {
 		return `https://discord.gg/${invite.code||invite}`;
 	}
 	static getCreationTime(id) {
-		return new Date((+id >> 22) + Constants.EPOCH);
+		// id is a 64-bit integer, so 32-bit bitwise operations don't work
+		return new Date((+id / 4194304) + Constants.EPOCH);
+		//return new Date((+id >> 22) + Constants.EPOCH);
 	}
 	static find(o,a,x) {
 		for (var id in o) {
@@ -116,6 +125,7 @@ class DiscordUtils {
 		return this.getObjects(servers).find(server => role.id in server.roles);
 	}
 	static getServerByChannel(servers, channel) {
+		//return servers[channel.guild_id];
 		return this.getObjects(servers).find(server => channel.id in server.channels);
 	}
 	static getAllChannels(servers) {
@@ -161,6 +171,18 @@ class DiscordUtils {
 			return true;
 		}
 		if (message.pinned && (flags.has('pinned') || flags.has('p'))) {
+			return true;
+		}
+		if (flags.has('before') && message.id < flags.get('before')) {
+			return true;
+		}
+		if (flags.has('after') && message.id > flags.get('after')) {
+			return true;
+		}
+		if ((flags.has('by') || flags.has('user')) && (flags.get('by') || flags.get('user')).includes(message.author.id)) {
+			return true;
+		}
+		if ((flags.has('contains') || flags.has('includes')) && message.content.includes(flags.get('contains') || flags.get('includes'))) {
 			return true;
 		}
 		return false;
@@ -456,6 +478,10 @@ class DiscordUtils {
 		}
 		return embed;
 	}
+	static compareEmbeds(embed1,embed2) {
+		// TODO: make this more comprehensive
+		return embed1.title === embed2.title && embed1.description === embed2.description && embed1.color === embed2.color && embed1.fields?.every((f,i) => f.name === embed2.fields[i]?.name && f.value === embed2.fields[i]?.value) && embed1.footer?.text === embed2.footer?.text;
+	}
 	static debugMessage(message) {
 		let embed = this.embedMessage(message);
 		return DiscordEmbed.stringify(embed);
@@ -494,6 +520,29 @@ class DiscordUtils {
 		}
 
 		return reactions;
+	}
+	static serializeReaction(reaction) {
+		if (!isNaN(Number(reaction))) {
+			return reaction+NUMBER_BOX[1];
+		} else if (typeof(reaction) === 'object') {
+			return reaction.id ? `${reaction.name}:${reaction.id}` : reaction.name;
+		} else {
+			let id = md.emojiID(reaction);
+			if (!id) return reaction;
+			let name = md.emojiName(reaction);
+			return id ? `${name}:${id}` : name;
+		}
+	}
+	static emojifyReaction(reaction) {
+		if (reaction[1] == NUMBER_BOX[1]) {
+			return md.emoji(NUMBERS[reaction[0]]);
+		}
+		let e = reaction.split(':');
+		if(e.length == 3) {
+			return md.emoji(e[1], e[2], e[0]);
+		} else {
+			return md.emoji(e[0], e[1]);
+		}
 	}
 	static getServersInCommon(client, user) {
 		let servers = [];
@@ -591,6 +640,10 @@ class DiscordEmbed {
 		this.embed.fields = this.embed.fields || [];
 		inline = !!inline;
 		this.embed.fields.push({name,value,inline});
+		return this;
+	}
+	insertAttachment(filename) {
+		this.embed.image = {url:'attachment://'+filename};
 		return this;
 	}
 	/**

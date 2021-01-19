@@ -35,22 +35,9 @@ class Trainer extends Resource {
 		return to.addPokemon(p);
 	}
 	catchARandomPokemon() {
-		let now = Date.now();
-		let timeLeft = this.cooldown - now;
-		if (timeLeft > 0) {
-			throw `Wait ${md.bold(fmt.time(timeLeft))} before catching another Pokémon!`;
-		}
-		
-		this.cooldown = now + Constants.CATCH_COOLDOWN;
 		return this.addPokemon(random(PokemonList));
 	}
 	trainPokemon(pokeID) {
-		let now = Date.now();
-		let timeLeft = this.trained - now;
-		if (timeLeft > 0) {
-			throw `Wait ${md.bold(fmt.time(timeLeft))} before training your Pokémon!`;
-		}
-		
 		if (!pokeID) {
 			pokeID = random(this.pokemon.ids);
 		}
@@ -59,8 +46,6 @@ class Trainer extends Resource {
 		if (p) {
 			let xp = random(Constants.TRAIN_XP_MIN, Constants.TRAIN_XP_MAX);
 			p.xp += xp;
-			
-			this.trained = now + Constants.TRAIN_COOLDOWN;
 			
 			return { pokemon: p, xp };
 		} else {
@@ -110,14 +95,7 @@ class Trainer extends Resource {
 		}
 		return this;
 	}
-	scavengeForARandomItem() {
-		let now = Date.now();
-		let timeLeft = this.scavenged - now;
-		if (timeLeft > 0) {
-			throw `Wait ${md.bold(fmt.time(timeLeft))} before scavenging again!`;
-		}
-		this.scavenged = now + Constants.SCAVENGE_COOLDOWN;
-		
+	scavengeForARandomItem() {		
 		let totalRarity = PokemonItemList.reduce((r,i) => r += i.rarity, 0);
 		let magicNumber = totalRarity * Math.random();
 		for (var item of PokemonItemList) {

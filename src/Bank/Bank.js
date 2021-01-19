@@ -157,6 +157,12 @@ class Bank {
 		summary.title = 'Investment Progress';
 		return summary;
 	}
+	static checkInvestments(client, userID) {
+		let bank = this.get(client, userID);
+		let summary = bank.getInvestments(this);
+		summary.title = 'Ongoing Investments';
+		return summary;
+	}
 	
 	static getAuth(client, userID) {
 		return this.get(client, userID).authorized;
@@ -230,10 +236,9 @@ class Bank {
 			});
 			
 			return paginate(users, page, 20, (u, i) => {
-				let id = u[i].id;
 				return {
-					name: `#${i+1} | ${server.members[id].nick || client.users[id].username}`,
-					value: this.formatCredits(u[i].credits),
+					name: `#${i+1} | ${server.members[u.id].nick || client.users[u.id].username}`,
+					value: this.formatCredits(u.credits),
 					inline: true
 				};
 			});

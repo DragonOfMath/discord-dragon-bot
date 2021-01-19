@@ -125,6 +125,9 @@ class MapBase {
 		}
 		return this.keys.reduce((a, k) => fn(a, k, this[k], this), x);
 	}
+	pluck(key) {
+		return this.values.map(v => v[key]);
+	}
 	sort(fn) {
 		let keys = this.keys.sort(fn);
 		let obj = {};

@@ -27,7 +27,7 @@ function props(obj) {
 	Function that extends a base class with the methods of one or more other classes
 	The constructor of the base stays loyal to its parent, however.
 */
-function extend(Base, ...Classes) {
+function extendClass(Base, ...Classes) {
 	for (var C of Classes) {
 		console.log(Base,"+",C);
 		if (C.prototype.constructor == C) {
@@ -54,4 +54,15 @@ function extend(Base, ...Classes) {
 	return Base;
 }
 
-module.exports = {extend};
+function extend(object, data) {
+	for (var key in data) {
+		if (data.hasOwnProperty(key)) {
+			var prop = Object.getOwnPropertyDescriptor(data, key);
+			prop.enumerable = false;
+			Object.defineProperty(object, key, prop);
+		}
+	}
+	return object;
+}
+
+module.exports = {extendClass, extend};

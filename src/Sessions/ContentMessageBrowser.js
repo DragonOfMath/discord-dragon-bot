@@ -4,6 +4,9 @@ class ContentMessageBrowser extends MessageBrowser {
 	mapItem(item, index) {
 		return item;
 	}
+	toString() {
+		return '';
+	}
 	updateEmbed() {
 		super.updateEmbed();
 		this.embed.fields = [];
@@ -16,7 +19,7 @@ class ContentMessageBrowser extends MessageBrowser {
 		if (items.length == 0) {
 			this.embed.fields.push({
 				name: 'Nothing',
-				value: 'Looks like there are no items to display.'
+				value: 'There are no items to display.'
 			});
 			return this.embed;
 		}

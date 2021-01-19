@@ -48,7 +48,7 @@ class BankAccount extends Resource {
 		this.makeProp('file', new FileLogger(`${__dirname}/history/history_${userID}.log`));
 
 		// restore investments
-		this.investments = this.investments.map(i => new Investment(i));
+		this.investments = this.investments.map(i => (i instanceof Investment ? i : new Investment(i)));
 	}
 	toString() {
 		return '[BankAccount <@' + this.id + '>]';
@@ -88,13 +88,6 @@ class BankAccount extends Resource {
 	 */
 	get investing() {
 		return this.investments.length > 0;
-	}
-	/**
-	 * Daily Cooldown
-	 * The 1-day cooldown for adding daily credits.
-	 */
-	get dailyCooldown() {
-		return Math.max(Constants.DAILY.WAIT - (Date.now() - this.dailyReceived), 0);
 	}
 	/**
 	 * Get Account History
@@ -341,6 +334,21 @@ class BankAccount extends Resource {
 		return investment;
 	}
 	/**
+	 * Get a summary of all concurrent investments.
+	 */
+	getInvestments(bank) {
+		if (this.dead) {
+			throw new BankError('Account is shut down');
+		} else if (this.closed) {
+			throw new BankError('Account is currently closed');
+		} else if (!this.investing) {
+			throw new BankError('Account is not investing');
+		}
+		return {
+			fields: this.investments.map(iv => iv.shortSummary(bank))
+		};
+	}
+	/**
 	 * Receive the daily payroll if it has been at least a day since the last usage.
 	 */
 	daily() {
@@ -356,7 +364,9 @@ class BankAccount extends Resource {
 			throw new BankError(`Wait ${fmt.time(timeRemaining)} before receiving your daily money!`);
 		}
 		this.dailyReceived = Date.now();
-		return this.recordCreditChange('daily', Constants.DAILY.AMOUNT).then(() => Constants.DAILY.AMOUNT);
+		
+		let amt = Constants.DAILY.AMOUNT;
+		return this.recordCreditChange('daily', amt).then(() => amt);
 	}
 	/**
 	 * Create a random confirmation code. Don't know the use of this yet.

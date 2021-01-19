@@ -1,5 +1,5 @@
 const Asset = require('../../Structures/Asset');
-const {Markdown:md,random,fetch,DiscordUtils,UUID} = require('../../Utils');
+const {Markdown:md,random,fetch,DiscordUtils,UUID,Color} = require('../../Utils');
 const EmojiNames = Asset.require('Text/emoji.json');
 
 function randomDistribution(o,i) {
@@ -35,8 +35,108 @@ module.exports = {
 		info: 'I will rate anything out of 10 points.',
 		paramters: ['[thing]'],
 		permissions: 'inclusive',
-		fn({arg,user}) {
-			return md.mention(user) + ', I rate ' + (arg|user.username) + ' a ' + md.bold(random(11) + '/10');
+		fn({client,arg,user,member}) {
+			let subject = arg || 'me';
+			let rating = Math.round(10 * Math.random());
+			
+			if (['i','me','myself'].includes(subject.toLowerCase())) {
+				subject = member.nick || user.username;
+			} else if (['you','yourself',client.mention].includes(subject.toLowerCase())) {
+				subject = 'myself';
+				rating = 10;
+			}
+			
+			return 'I rate ' + subject + ' a ' + md.bold(rating + '/10');
+		}
+	},
+	'how': {
+		category: 'Fun',
+		info: 'I will rate something on a percentage basis of a given trait!',
+		parameters: ['<cool|awesome|strong|smart|hot|sexy|gay|dank|cursed|blessed|thicc|cute|thot|valid|pro|rich>', '[am/is/are (subject)]'],
+		permissions: 'inclusive',
+		fn({client,args,user,member}) {
+			let [trait, ...subject] = args;
+			let plural = false;
+			if (['am','is','are','was','were'].includes(subject[0])) {
+				plural = subject[0] == 'are';
+				subject.shift();
+			}
+			subject = subject.join(' ');
+			let percent = Math.round(100 * Math.random());
+			
+			if (['i','me','myself'].includes(subject.toLowerCase())) {
+				subject = member.nick || user.username;
+			} else if (['you','yourself',client.mention].includes(subject.toLowerCase())) {
+				plural = false;
+				subject = client.username;
+				percent = 100;
+			}
+			let helpingAdj = '';
+			if (percent > 99) {
+				helpingAdj = random(['absolutely','totally','insanely','unbelievably','completely','undeniably','impossibly','super']);
+			} else if (percent > 89) {
+				helpingAdj = random(['extremely','very very','really']);
+			} else if (percent > 59) {
+				helpingAdj = random(['mostly','usually','very']);
+			} else if (percent > 39) {
+				helpingAdj = random(['moderately','maybe']);
+			} else if (percent > 9) {
+				helpingAdj = random(['kinda','sorta','slightly','mildly']);
+			} else if (percent > 0) {
+				helpingAdj = random(['hardly','barely','marginally','not really that']);
+			} else {
+				helpingAdj = random(['not','the opposite of','anti-','un-']);
+			}
+			let emoji = '';
+			switch (trait.toLowerCase()) {
+				case 'cool':
+				case 'awesome':
+					emoji = '😎';
+					break;
+				case 'strong':
+					emoji = '💪';
+					break;
+				case 'smart':
+					emoji = '🧠';
+					break;
+				case 'hot':
+				case 'sexy':
+					emoji = '😳';
+					break;
+				case 'gay':
+					emoji = '🏳‍🌈';
+					break;
+				case 'dank':
+					emoji = '😂';
+					break;
+				case 'cursed':
+					emoji = '😨';
+					break;
+				case 'blessed':
+					emoji = '☺';
+					break;
+				case 'thicc':
+					emoji = '🍑';
+					if (percent > 99) helpingAdj = 'dummy';
+					break;
+				case 'cute':
+					emoji = '😇';
+					break;
+				case 'thot':
+					emoji = '😏';
+					break;
+				case 'valid':
+					emoji = '🤓';
+					break;
+				case 'pro':
+					emoji = '🐱‍👤';
+					break;
+				case 'rich':
+					emoji = '🤑';
+					if (percent > 99) helpingAdj = 'filthy stinkin\'';
+					break;
+			}
+			return `${emoji} ${subject} ${plural?'are':'is'} ${md.bold(helpingAdj + ' ' + trait)} (${String(percent)}%) ${emoji}`;
 		}
 	},
 	'decide':{
@@ -54,7 +154,7 @@ module.exports = {
 				while (or > -1) {
 					decisions.push(args.splice(0,or).join(' '));
 					args.shift();
-					or = args.indexOf('OR');
+					or = args.indexOf('or');
 					if (or < 0) or = args.indexOf('|');
 				}
 				decisions.push(args.join(' '));

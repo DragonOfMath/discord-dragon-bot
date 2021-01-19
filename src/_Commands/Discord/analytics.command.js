@@ -93,14 +93,16 @@ module.exports = {
 		permissions: 'inclusive',
 		fn({client, server}) {
 			let growth = client.database.get('servers').get(server.id).growth;
-			return Graph.createLineGraph(growth, {
+			let graph = Graph.createLineGraph(growth, {
 				title: 'Member Count Over 100 Days',
 				xaxis: 'Days',
 				yaxis: 'Members',
 				borders: true,
 				grid: true,
 				minimumY: 0
-			}).image.getBufferAs('membercount.png');
+			}).image;
+			if (client.DARK_MODE) graph = graph.invert();
+			return graph.getBufferAs('membercount.png');
 		}
 	}
 };

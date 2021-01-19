@@ -1,5 +1,5 @@
-const {random} = require('../../Utils');
-const Asset = require('../../Structures/Asset');
+const {random} = require('../../../Utils');
+const Asset = require('../../../Structures/Asset');
 const SOUL  = Asset.load('Text/zalgo.json');
 const ALL   = [].concat(SOUL.UP, SOUL.DOWN, SOUL.MID);
 

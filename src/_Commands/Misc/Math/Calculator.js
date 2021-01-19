@@ -22,7 +22,7 @@ class Calculator extends MessageGame {
 		super.init();
 		this.expression = expr;
 		this.eval = !!expr;
-		if (eval) {
+		if (this.eval) {
 			this.finishMove();
 		} else {
 			this.updateEmbed();

@@ -13,7 +13,7 @@ const {Array}   = require('../Utils');
  */
 class Banlist {
 	constructor(usernames, urls) {
-		if (typeof(arguments[0]) === 'object') {
+		if (arguments.length == 1 && typeof(arguments[0]) === 'object') {
 			this.usernames = arguments[0].usernames || [];
 			this.urls      = arguments[0].urls || [];
 		} else {
@@ -59,8 +59,9 @@ class Banlist {
 		this.urls = this.urls.diff(urls);
 	}
 	checkMessage(message) {
+		if (!this.urls.length) return;
 		let urls = message.match(/https?:\/\/[^\s]+/g);
-		if (this.urls.length) {
+		if (urls && urls.length) {
 			let bannedURLsFound = urls.filter(u => this.urls.some(b => u.includes(b)));
 			if (bannedURLsFound.length) {
 				return new Offense('Banlist', 'User linked to ' + bannedURLsFound.join(', '), Constants.ACTIONS.BAN);
@@ -68,6 +69,7 @@ class Banlist {
 		}
 	}
 	checkUser(user) {
+		if (!this.usernames.length) return;
 		user = user.username || user;
 		let bannedName = this.usernames.find(n => {
 			n = new RegExp(n, 'i');

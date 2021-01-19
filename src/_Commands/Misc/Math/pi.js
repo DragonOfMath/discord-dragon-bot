@@ -1,5 +1,3 @@
-const BigNum = require('bignumber.js');
-
 /**
  * Streams digits of pi ad infinitum.
  *
@@ -12,6 +10,9 @@ const BigNum = require('bignumber.js');
  * Requires arbitrary precision arithmetic to compensate for unbounded memory.
  * Without which, within a few iterations the maximum floating-point precision is reached and incorrect digits are yielded.
  */
+/*
+// Outdated implementation. Newer one uses native BigInts.
+const BigNum = require('bignumber.js');
 function* pi() {
 	let q = new BigNum(1), r = new BigNum(0), t = new BigNum(1), k = 1, n = 3, l = 3;
 	while (true) {
@@ -31,6 +32,30 @@ function* pi() {
 				k + 1,
 				q.times(7 * k + 2).plus(r.times(l)).idiv(t.times(l)).toNumber(),
 				l + 2
+			];
+		}
+	}
+}
+*/
+function* pi() {
+	let q = 1n, r = 0n, t = 1n, k = 1n, n = 3n, l = 3n;
+	while (true) {
+		//console.log(q,r,t,k,n,l);
+		if (4n*q+r-t < t*n) {
+			yield Number(n);
+			[q,r,n] = [
+				10n * q,
+				10n * (r - (t * n)),
+				((q * 3n + r) * 10n) / t - (n * 10n)
+			];
+		} else {
+			[q,r,t,k,n,l] = [
+				q * k,
+				(q * 2n + r) * l,
+				t * l,
+				k + 1n,
+				(q * (7n * k + 2n) + (r * l)) / (t * l),
+				l + 2n
 			];
 		}
 	}

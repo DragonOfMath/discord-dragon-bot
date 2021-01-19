@@ -150,4 +150,8 @@ function getImgurImages(post) {
 	}
 }
 
+function getVredditDownload(post) {
+	
+}
+
 module.exports = RedditPost;

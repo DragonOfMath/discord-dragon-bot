@@ -20,6 +20,7 @@ class SudokuCell {
 		this.g = Math.floor(this.y / 3) * 3 + Math.floor(this.x / 3);
 		this.value = value;
 		this.defaultValue = value;
+		this.valuesLeft = [];
 	}
 	get used() {
 		return this.board.getAll(this.x, this.y);
@@ -36,7 +37,23 @@ class SudokuCell {
 	get group() {
 		return this.board.getGroup(this.x, this.y);
 	}
+	recalc() {
+		this.valuesLeft = this.remaining;
+	}
+	tryFirstValue() {
+		return this.value = this.valuesLeft[0] ?? 0;
+	}
+	tryNextValue() {
+		this.valuesLeft.shift();
+		return this.value = this.valuesLeft[0] ?? 0;
+	}
+	tryAnyValue() {
+		this.value = random(this.valuesLeft) ?? 0;
+		this.valuesLeft.splice(this.valuesLeft.indexOf(this.value),1);
+		return this.value;
+	}
 	setAsDefault(value) {
+		this.valuesLeft = [];
 		this.defaultValue = this.value = value;
 	}
 }
@@ -51,23 +68,77 @@ class SudokuBoard {
 		}
 	}
 	randomize(difficulty) {
-		difficulty = Math.min(100, difficulty || 80);
+		difficulty = Math.min(100, difficulty ?? 60);
 		
-		let maxIterations = Math.round(30 - 0.2 * difficulty), x, y, that = this;
-		function randomize(x,y) {
-			let cell = that.get(x,y);
-			if (cell.value) return;
-			let remaining = cell.remaining;
-			if (remaining.length) {
-				cell.setAsDefault(random(remaining));
-			} else {
-				// uhh, bad move, sudoku board is now impossible
+		let maxIterations = Math.round(30 - 0.2 * difficulty), x, y, moves = [];
+		while (maxIterations-- > 0) {
+			x = random(SIZE), y = random(SIZE);
+			let cell = this.get(x,y);
+			if (cell.value) continue;
+			cell.recalc();
+			if (cell.valuesLeft.length) {
+				cell.tryAnyValue();
+				moves.push(cell);
+			} else while (moves.length && !moves[moves.length-1].tryAnyValue()) {
+				moves.pop();
 			}
 		}
-		while (maxIterations-- > 0) {
-			randomize(x = random(SIZE), y = random(SIZE));
-			//randomize(SIZE - (x+1), SIZE - (y+1));
+		// solidify the random values chosen for this board (and hope it's still solvable)
+		for (let y = 0; y < SIZE; y++) {
+			for (let x = 0; x < SIZE; x++) {
+				let cell = this.get(x,y);
+				cell.setAsDefault(cell.value);
+			}
 		}
+	}
+	// https://en.wikipedia.org/wiki/Sudoku_solving_algorithms
+	// https://en.wikipedia.org/wiki/Exact_cover#Sudoku
+	autosolve() {
+		let moves = [], solved = false;
+		
+		solve:
+		while (!solved) {
+			solved = true;
+			
+			let choiceMoves = [], exactMoveFound = null;
+			
+			checkCells:
+			for (let y = 0; y < SIZE; y++) {
+				for (let x = 0; x < SIZE; y++) {
+					let cell = this.get(x,y);
+					if (cell.value) continue;
+					solved = false;
+					cell.recalc();
+					if (cell.movesLeft.length == 0) {
+						// encountered a cell with no possible moves, uh oh!
+						// need to backtrack until we reach a cell with more than one other move
+						while (moves.length && !moves[moves.length-1].tryNextValue()) {
+							moves.pop();
+						}
+						if (moves.length == 0) {
+							// if all possible moves have been exhausted then no solution exists
+							break solve;
+						} else {
+							// because moves were backtracked, we will need to redo the checking
+							continue solve;
+						}
+					} else if (cell.movesLeft.length === 1) {
+						// a cell with only one option is the highest priority for solving
+						exactMoveFound = cell;
+						break checkCells;
+					} else {
+						// cell has multiple branching moves
+						choiceMoves.push(cell);
+					}
+				}
+			}
+			if (!solved) {
+				let cell = exactMoveFound ?? choiceMoves[0];
+				cell.tryFirstValue();
+				moves.push(cell);
+			}
+		}
+		return solved;
 	}
 	reset() {
 		for (let y = 0; y < SIZE; y++) {
@@ -157,8 +228,6 @@ class Sudoku extends MessageGame {
 			this.avatar.x = random(SIZE);
 			this.avatar.y = random(SIZE);
 		}
-
-		this.moves = [];
 		
 		this.updateEmbed();
 	}
@@ -187,86 +256,15 @@ class Sudoku extends MessageGame {
 				this.set(num);
 			}
 		} else if (reaction == SOLVE) {
-			this.player.auto = true;
-			this.handleBotMove();
-			return true;
+			this.noSolution = !this.game.autosolve();
 		}
 		this.finishMove();
 		return true;
 	}
-	// https://en.wikipedia.org/wiki/Sudoku_solving_algorithms
-	// https://en.wikipedia.org/wiki/Exact_cover#Sudoku
 	handleBotMove() {
-		// TODO: autosolve
-		let destination;
-		let noSolution  = false;
-		let exactCells  = [];
-		let choiceCells = [];
-		for (let y = 0; y < SIZE;y ++) {
-			for (let x = 0; x < SIZE; x++) {
-				let cell = this.game.get(x,y);
-				if (cell.value) continue;
-				let remaining = cell.remaining;
-				if (remaining.length == 0) {
-					noSolution = true;
-				} else if (remaining.length == 1) {
-					exactCells.push(cell);
-				} else {
-					choiceCells.push(cell);
-				}
-			}
-		}
-
-		if (noSolution) {
-			if (this.moves.length) {
-				destination = this.moves[this.moves.length-1];
-				if (this.avatar.equals(destination)) {
-					this.moves.pop();
-					destination.value = 0;
-					destination = null;
-				}
-			} else {
-				this.noSolution = true;
-			}
-		} else if (exactCells.length) {
-			destination = exactCells[0];
-			if (this.avatar.equals(destination)) {
-				this.set(destination.remaining[0]);
-				destination = null;
-			}
-		} else if (choiceCells.length) {
-			destination = choiceCells[0];
-			if (this.avatar.equals(destination)) {
-				this.set(random(destination.remaining));
-				destination = null;
-			}
-		}
-		
-		if (destination && !this.avatar.equals(destination)) {
-			this.avatar.goto(destination);
-			/* screw this...
-			let diffX = Math.abs(this.avatar.x - destination.x);
-			let diffY = Math.abs(this.avatar.y - destination.y);
-			let dirX;
-			let dirY;
-			if (this.avatar.x < destination.x) {
-				dirX = Pointer2D.DIRS.RIGHT;
-			} else {
-				dirX = Pointer2D.DIRS.LEFT;
-			}
-			if (this.avatar.y < destination.y) {
-				dirY = Pointer2D.DIRS.DOWN;
-			} else {
-				dirY = Pointer2D.DIRS.UP;
-			}
-			this.avatar.dir = diffX > diffY ? dirX : dirY;
-			if (!this.move()) {
-				this.avatar.dir = diffX > diffY ? dirY : dirX;
-				this.move();
-			}
-			*/
-		}
-		this.finishMove();
+		// TODO: show bot solving sudoku but slowly
+		this.noSolution = !this.game.autosolve();
+		return this.finishMove();
 	}
 	set(n) {
 		let cell = this.game.get(this.avatar.x, this.avatar.y);

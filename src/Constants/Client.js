@@ -6,11 +6,12 @@ module.exports = {
 	
 	MAX_MESSAGE_LENGTH: 2000,  // max message size in bytes
 	MAX_MESSAGE_CHUNKS: 3,     // max number of message chunks for larger messages
+	MAX_FILE_SIZE: 8 * (1024 ** 2), // max filesize in bytes
 	TYPING_POLL_TIME: 5000,    // interval between sending the typing indicator
 	MESSAGE_POLL_TIME: 3000,   // delay between polling messages from Discord
 	
 	MAX_RECONNECT_TRIES: 3,    // how many attempts the bot will try to reconnect when it loses connection
-	RECONNECT_AFTER: 60000,    // how long the bot will wait after it has used all its attempts
+	RECONNECT_AFTER: 300000,   // how long the bot will wait after it has used all its attempts
 	LOGGING: ['None','Limited','Normal','All'], // logging levels for debugging
 	ERROR_HANDLING: {
 		OFF: 0, // don't send messages for errors
@@ -20,6 +21,8 @@ module.exports = {
 	
 	PERMISSIONS: 268790902,    // default permissions value for invites
 	SOURCE_CODE: 'https://github.com/DragonOfMath/discord-dragon-bot/', // link to the github repo
+	
+	DARK_MODE: true, // avoid posting bright-white images
 	
 	METHODS: [
 		'getUser',

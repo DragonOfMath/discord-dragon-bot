@@ -158,10 +158,10 @@ class Commands extends TypeMapBase {
 			return handler.resolve();
 			
 		} else if (commands.length == 1) {
-			this.logger.info(handler.text);
 			let command = commands[0];
 			handler.command = command;
 			handler.cmd = command.fullID;
+			this.logger.info(handler.cmd, handler.args, handler.flags);
 			command.validate(handler);
 			if (handler.grant == 'granted') {
 				return command.run(handler);

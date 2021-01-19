@@ -35,16 +35,27 @@ module.exports = {
 			options.origin   = flags.get('o') || flags.get('origin');
 			options.grid     = flags.get('g') || flags.get('grid');
 			
+			let graph, graphName;
 			switch (options.type) {
 				case 'line':
-					return Graph.createLineGraph(data, options).image.getBufferAs('linegraph.png');
+					graph = Graph.createLineGraph(data, options).image;
+					graphName = 'linegraph.png';
+					break;
 				case 'scatter':
-					return Graph.createScatterGraph(data, options).image.getBufferAs('scatterplot.png');
+					graph = Graph.createScatterGraph(data, options).image;
+					graphName = 'scatterplot.png';
+					break;
 				case 'bar':
-					return Graph.createBarGraph(data, options).image.getBufferAs('bargraph.png');
+					graph = Graph.createBarGraph(data, options).image;
+					graphName = 'bargraph.png';
+					break;
 				case 'pie':
-					return Graph.createPieChart(data, options).image.getBufferAs('piechart.png');
+					graph = Graph.createPieChart(data, options).image;
+					graphName = 'piechart.png';
+					break;
 			}
+			if (client.DARK_MODE) graph = graph.invert();
+			return graph.getBufferAs(graphName);
 		}
 	}
 };

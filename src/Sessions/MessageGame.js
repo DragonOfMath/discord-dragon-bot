@@ -1,7 +1,7 @@
 const LiveMessage = require('./LiveMessage');
 const Player      = require('./Player');
 const Constants   = require('../Constants/MessageGame');
-const {Array,Markdown:md,Format:fmt} = require('../Utils');
+const {Array,Markdown:md,Format:fmt,modulo} = require('../Utils');
 
 /**
  * MessageGame interface for creating interactive embed games.
@@ -34,8 +34,7 @@ class MessageGame extends LiveMessage {
     constructor(context, players = [], options = {}) {
 		if (!players.length) players.push(context.user);
         super(context.channelID);
-		this.config(this.constructor.CONFIG);
-		Object.assign(this.options, options);
+		this.config(options);
 		
 		//this.client = context.client;
 		
@@ -157,7 +156,6 @@ class MessageGame extends LiveMessage {
         });
     }
 	config(options = {}) {
-		this.options = {};
 		if (options.gameType) {
 			for (let key in Constants.PRESETS[options.gameType]) {
 				this.options[key] = Constants.PRESETS[options.gameType][key];
@@ -165,14 +163,8 @@ class MessageGame extends LiveMessage {
 		} else {
 			options.gameType = Constants.TYPES.CASUAL;
 		}
-		if (!options.displayName) {
-			options.displayName = this.constructor.name;
-		}
-		for (let key in options) {
-			if (key in Constants.CONFIG) {
-				this.options[key] = options[key];
-			}
-		}
+		this.options = Object.assign({}, MessageGame.CONFIG, this.constructor.CONFIG, options);
+		
 		// validate configuration
 		if (this.options.maxPlayers < 1) {
 			throw 'Bad game configuration: max player count must be at least 1.';
@@ -306,6 +298,7 @@ class MessageGame extends LiveMessage {
         this.winner    = null;
         this.turns     = 1;
         this.playerIdx = 0;
+		this.rotationDirection = 1;
 
         this.timer = this.options.timeLimit;
         this.stopTimer();
@@ -429,11 +422,11 @@ class MessageGame extends LiveMessage {
     rotatePlayers() {
 		if (this.activePlayers.length) {
 			do {
-				this.playerIdx = (this.playerIdx + 1) % this.players.length;
+				this.playerIdx = modulo(this.playerIdx + this.rotationDirection, this.players.length);
 			} while (this.player.inactive);
 		}
     }
-    handlePlayerMove(reaction) {
+    handlePlayerMove() {
         throw 'You need to override MessageGame#handlePlayerMove()';
     }
     handleBotMove() {

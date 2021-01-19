@@ -13,16 +13,17 @@ module.exports = {
 	'fish': {
 		aliases: ['fishy', 'fishing', 'feesh'],
 		category: 'Fun',
-		title: Fishing.header,
-		info: `Catch critters of the sea to win big prizes! Each try costs **${Fishing.cost} credits** and you must wait **${fmt.time(Fishing.cooldown)}** between tries. :new: Events are here! For a limited time, fish will be harder/easier to catch, or be more/less valuable!`,
+		title: Fishing.HEADER,
+		info: `Catch critters of the sea to win big prizes! Each try costs **${Fishing.COST} credits** and you must wait **${fmt.time(Fishing.COOLDOWN)}** between tries. :new: Events are here! For a limited time, fish will be harder/easier to catch, or be more/less valuable!`,
 		permissions: 'inclusive',
+		cooldown: Fishing.COOLDOWN,
 		fn({client, userID, channelID, serverID}) {
 			return Fishing.fish(client, userID, channelID, serverID);
 		},
 		subcommands: {
 			'inventory': {
 				aliases: ['inv','catches'],
-				title: Fishing.header,
+				title: Fishing.HEADER,
 				info: 'Displays how many of each type of fish you\'ve caught.',
 				parameters: ['[user]', '[category]'],
 				fn({client, args, userID}) {
@@ -32,7 +33,7 @@ module.exports = {
 			},
 			'info': {
 				aliases: ['fish'],
-				title: Fishing.header,
+				title: Fishing.HEADER,
 				info: 'Displays information about a fish by its type, name, or emoji. If no argument is passed, displays the types of fish to catch.',
 				parameters: ['[fishtype|fishname|:fish:]'],
 				fn({client, args, userID, serverID}) {
@@ -46,7 +47,7 @@ module.exports = {
 			},
 			'events': {
 				aliases: ['evts'],
-				title: Fishing.header,
+				title: Fishing.HEADER,
 				info: 'Displays any fishing events on this server.',
 				fn({client, serverID}) {
 					return Fishing.showEvents(client, serverID);
@@ -54,14 +55,14 @@ module.exports = {
 			},
 			'event': {
 				aliases: ['evt', 'artifact'],
-				title: Fishing.header,
+				title: Fishing.HEADER,
 				info: 'Consumes an Artifact in your inventory to generate a random Fishing Event.',
 				fn({client, userID, channelID, serverID}) {
 					return Fishing.consumeArtifact(client, userID, serverID, channelID);
 				}
 			},
 			'table': {
-				title: Fishing.header,
+				title: Fishing.HEADER,
 				info: 'Displays the current catch rates of all fish types. Can sort by name, value, chance, or type.',
 				parameters: ['[sortby]'],
 				fn({client, args, serverID}) {
@@ -69,7 +70,7 @@ module.exports = {
 				}
 			},
 			'newevent': {
-				title: Fishing.header,
+				title: Fishing.HEADER,
 				info: '(Admin only) Starts a new fishing event, either from given parameters or randomized.',
 				parameters: ['[fish]','[<rarity|value>]','[multiplier]', '[expires]'],
 				permissions: 'private',
@@ -79,22 +80,12 @@ module.exports = {
 				}
 			},
 			'hittable': {
-				title: Fishing.header,
+				title: Fishing.HEADER,
 				info: 'Calculates the probability of hitting a bird, given a few sample Ammo values and the current hit percentage.',
 				parameters: ['[user]','[ammo]'],
 				fn({client, args, userID}) {
 					let id = resolveTargetUser(args, userID);
 					return Fishing.hitProbabilityTable(client, id, args[0]);
-				}
-			},
-			'wait': {
-				title: Fishing.header + ' | Set Cooldown',
-				info: 'Temporarily set the cooldown for `fish` usage.',
-				parameters: ['[time]'],
-				permissions: 'private',
-				fn({client, args}) {
-					var wait = Number(args[0]) || 0;
-					return Fishing.setCooldown(wait);
 				}
 			}
 		}

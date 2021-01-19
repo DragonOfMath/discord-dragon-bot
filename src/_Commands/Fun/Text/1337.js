@@ -1,4 +1,4 @@
-const {random} = require('../../Utils');
+const {random} = require('../../../Utils');
 
 const LEET = {
 	'a': ['@'],

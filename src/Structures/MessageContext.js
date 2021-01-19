@@ -2,6 +2,9 @@ const Context = require('./Context');
 const {DiscordUtils} = require('../Utils');
 const DiscordEvents = require('../Constants/Events');
 
+const LINK_REGEX = /https?:\/\/\S+/g;
+const IMAGE_REGEX = /\.(png|jpe?g|gif)$/;
+
 /**
  * @class MessageContext
  * Describes the context and contents of a message: channel, user, server, member, and WebSocket message data.
@@ -38,6 +41,13 @@ class MessageContext extends Context {
 			this.mentions    = message.mentions;
 			this.messageObj  = message;
 		}
+		
+		// collect links and images
+		this.links  = this.message.match(LINK_REGEX) || [];
+		this.images = [
+			...this.attachments.filter(e => e.filename.match(IMAGE_REGEX)),
+			...this.embeds.filter(e => !!e.image).map(e => e.image)
+		].map(e => e.url);
 		
 		// calculate the time the message was made
 		this.timestamp = DiscordUtils.getCreationTime(this.messageID);

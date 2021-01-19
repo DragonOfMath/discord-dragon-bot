@@ -22,12 +22,12 @@ class Block {
 		if (tokens.length > 0) {
 			let i, j, t, s, b, stop = false;
 			
-			if (parseAsCommand) {
-				this.cmd = tokens[0];
-				this.cmds = this.cmd.split(Constants.DELIMITER);
-				this.ctx = [];
-				this.arg = '';
-				this.args = [];
+			if (parseAsCommand && typeof(tokens[0]) === 'string') {
+				this.cmd   = tokens[0];
+				this.cmds  = this.cmd.split(Constants.DELIMITER);
+				this.ctx   = [];
+				this.arg   = '';
+				this.args  = [];
 				this.flags = new Map();
 				
 				read:

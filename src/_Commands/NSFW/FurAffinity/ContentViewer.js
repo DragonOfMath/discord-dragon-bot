@@ -25,7 +25,7 @@ class ContentViewer extends ContentMessageBrowser {
 	get color() {
 		return 0x2e3b41;
 	}
-	handleUserAction({reaction, change, client, userID}) {
+	handleCustomAction({reaction, change, client, userID}) {
 		for (let r in RATING) {
 			if (reaction == RATING[r]) {
 				this.options.ratings[r] = change > 0;

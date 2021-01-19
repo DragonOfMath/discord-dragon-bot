@@ -78,11 +78,17 @@ module.exports = {
 			'palette': {
 				aliases: ['pallete','colors'],
 				title: 'Color | Palette',
-				info: 'Generate a palette of random colors, up to 10 max (default 5).',
-				parameters: ['[number]'],
+				info: 'Generate a palette from CSS hex color values, or of random colors, up to 10 max (default 5).',
+				parameters: ['[number]','[...colors]'],
 				fn({args,flags}) {
 					var style = new ColorPalette();
-					style.random(Math.max(0, Math.min(args[0], 10)) || 5);
+					if (args.length == 1) {
+						style.random(Math.max(0, Math.min(args[0], 10)) || 5);
+					} else {
+						for (let color of args) {
+							style.add(color);
+						}
+					}
 					return generatePaletteEmbed(style);
 				}
 			}

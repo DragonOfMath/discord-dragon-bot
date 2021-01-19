@@ -30,7 +30,7 @@ class Sessions extends Logger(TypeMapBase) {
 			options.recursive = true;
 		}
 		if (typeof(options.filter) === 'undefined') {
-			options.filter = Constants.Sessions.FILE_REGEX
+			options.filter = Constants.Sessions.FILE_REGEX;
 		}
 		let fc = new FileCollector();
 		this.info('Loading sessions...');
@@ -74,7 +74,7 @@ class Sessions extends Logger(TypeMapBase) {
 		//this.info(data instanceof Session);
 		var session = this.create(data);
 		session.manager = this;
-		if ('start' in session.events) {
+		if (session.hasEvent('start')) {
 			session.fire('start');
 		}
 		return this.set(id, session);
@@ -86,21 +86,21 @@ class Sessions extends Logger(TypeMapBase) {
 		this.info('Ending session:', id);
 		return this.delete(id);
 	}
-	resolve(handler) {
-		var session, response;
+	async resolve(handler) {
+		var session;
 		for (session of this.sessions) {
 			try {
-				response = session.resolve(handler);
+				await session.resolve(handler);
 				if (handler.grant) {
 					this.info(session.id);
-					return response;
+					break;
 				}
 			} catch (e) {
 				this.warn(e);
 				// ignore errors
 			}
 		}
-		return Promise.resolve(handler);
+		return handler;
 	}
 	tick() {
 		for (var s of this.sessions) {

@@ -19,6 +19,9 @@ class Investment extends Resource {
 		}
 		super(Constants.TEMPLATE, inv);
 	}
+	get current() {
+		return Date.now();
+	}
 	get elapsed() {
 		return this.current - this.started;
 	}
@@ -46,6 +49,11 @@ class Investment extends Resource {
 					inline: true
 				},
 				{
+					name: 'Principle',
+					value: Bank.formatCredits(this.principle),
+					inline: true
+				},
+				{
 					name: 'Interest Earned',
 					value: Bank.formatCredits(this.interest),
 					inline: true
@@ -66,6 +74,12 @@ class Investment extends Resource {
 					inline: true
 				}
 			]
+		};
+	}
+	shortSummary(Bank) {
+		return {
+			name: Bank.formatCredits(this.principle) + ' @ ' + fmt.percent(this.rate) + ' | ' + fmt.timestamp(this.elapsed),
+			value: Bank.formatCredits(this.interest)
 		};
 	}
 	

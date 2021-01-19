@@ -57,7 +57,7 @@ class Interpreter extends LoggerMixin(Object) {
 	
 	// end of file/input
 	get EOF() {
-		return +(this.i == this.input.length);
+		return +(this.i == this.stdin.length);
 	}
 	
 	// execution time
@@ -114,7 +114,7 @@ class Interpreter extends LoggerMixin(Object) {
 					throw new Error('Output became too long');
 				}
 			}
-			this.stdout += `\n[:white_check_mark: Program completed successfully in ${this.l} cycles]`
+			this.stdout += `\n\n[:white_check_mark: Program completed successfully in ${this.l} cycles]`
 		} catch (e) {
 			this.stderr = e;
 		} finally {
@@ -132,8 +132,8 @@ class Interpreter extends LoggerMixin(Object) {
 	finish() {
 		this.log(`Finished in ${this.l} cycles [${this.T}ms].`);
 		if (this.stderr) {
-			this.error(e);
-			this.stdout += `\n[:warning: ${this.stderr.message||this.stderr}]`;
+			this.error(this.stderr);
+			this.stdout += `\n\n[:warning: ${this.stderr.message||this.stderr}]`;
 		}
 		if (this.options.debug) {
 			return {
@@ -153,7 +153,7 @@ class Interpreter extends LoggerMixin(Object) {
 		this.log('Input: ', this.stdin);
 		this.log('Output:', this.stdout);
 		return {
-			title: 'Debugger',
+			title: this.constructor.name + '| Debugger',
 			fields: [
 				{
 					name: 'Registers',
@@ -161,11 +161,11 @@ class Interpreter extends LoggerMixin(Object) {
 				},
 				{
 					name: 'Options',
-					value: Object.map(this.options, (v,k) => `${k}=${v}`).join(' ')
+					value: Object.map(this.options, (v,k) => `${k}=${v}`).join(' ') || '[No options]'
 				},
 				{
 					name: 'Data',
-					value: slice.join(',')
+					value: slice.join(',') || '[No data]'
 				}
 			]
 		};

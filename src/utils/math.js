@@ -25,6 +25,15 @@ Math.evaluate = Math.eval = function evaluate(expression) {
 	return eval(`with (Math) {${expression}}`);
 };
 
+function coth(x) {
+	return 1/Math.tanh(x);
+}
+function sech(x) {
+	return 1/Math.cosh(x);
+}
+function csch(x) {
+	return 1/Math.sinh(x);
+}
 function radToDeg(r) {
 	return r * 180 / Math.PI;
 }
@@ -50,7 +59,7 @@ function modulo(x,n) {
 	return ((x % n) + n) % n;
 }
 function step(x) {
-	return x > 0 ? 1 : 0;
+	return x > 0 ? 1 : x < 0 ? -1 : 0;
 }
 function factorial(x) {
 	let f = 1;
@@ -72,33 +81,22 @@ function factorize(x) {
 	return f;
 }
 function prime(x) {
-	if (x % 2 == 0) {
-		return false;
-	}
-	var root = Math.ceil(Math.sqrt(x));
-	for (var n = 3; n < root; n += 2) {
-		if (x % n == 0) {
-			return false;
-		}
+	if (x % 2 == 0) return false;
+	if (x % 5 == 0) return false;
+	let root = Math.sqrt(x);
+	for (let n = 3; n < root; n += 2) {
+		if (n % 5 == 0) continue;
+		if (x % n == 0) return false;
 	}
 	return true;
 }
 function primesUpTo(x) {
-	for (var n = 3, primes = [2]; n <= x; n += 2) {
+	for (let n = 3, primes = [2]; n <= x; n += 2) {
 		if (primes.every(p => n % p)) {
 			primes.push(n);
 		}
 	}
 	return primes;
-}
-// https://en.wikipedia.org/wiki/De_Moivre%27s_formula
-function complexPow(zReal, zImag, power) {
-	var r = Math.exp(Math.log(zReal * zReal + zImag * zImag) * power / 2);
-	var t = Math.atan2(zImag, zReal);
-	return {
-		real: r * Math.cos(t * power),
-		imag: r * Math.sin(t * power)
-	};
 }
 function summation(a,b,f) {
 	let sum = 0;
@@ -123,23 +121,33 @@ function product(a,b,f) {
 }
 function gcd(a,b) {
 	// Euclidean algorithm
-	while (a != b) {
+	/*while (a != b) {
 		if (a > b)
 			a -= b;
 		else
 			b -= a;
+	}*/
+	// faster method
+	let t;
+	while (b > 0) {
+		t = b;
+		b = a % b;
+		a = t;
 	}
 	return a;
 }
+function lcm(a,b) {
+	return a * b / gcd(a,b);
+}
 function root(x,n) {
-	if (n == 2) {
+	if (n === 2) {
 		return Math.sqrt(x);
-	} else if (n == 3) {
+	} else if (n === 3) {
 		return Math.cbrt(x);
 	} else {
 		// https://en.wikipedia.org/wiki/Nth_root_algorithm
 		let sign = Math.sign(x);
-		if (sign < 0 && n % 2 == 0) return NaN;
+		if (sign < 0 && n % 2 === 0) return NaN;
 		x = Math.abs(x);
 		let root = 1;
 		let prev = 0;
@@ -189,6 +197,24 @@ function manhattan(x0, y0, x1, y1) {
 function interp(a0, a1, w) {
 	return a0 + (a1 - a0) * w;
 }
+function coserp(a0, a1, w) {
+	return interp(a0, a1, (1-Math.cos(w*PI))/2);
+}
+function smooth(x) {
+	return x * x * (3 - x * 2);
+}
+function smoother(x) {
+	return x * x * x * (x * (x * 6 - 15) + 10);
+}
+function __smooth(a,b,k) {
+	return ((Math.max(k - Math.abs(a - b), 0) / k) ** 3) * k / 6;
+}
+function smoothmin(a,b,k) {
+	return Math.min(a, b) - __smooth(a,b,k);
+}
+function smoothmax(a,b,k) {
+	return Math.max(a, b) + __smooth(a,b,k);
+}
 function quantize(x,q) {
 	return Math.floor(x / q) * q;
 }
@@ -203,7 +229,7 @@ function pascalsTriangle(N) {
 	}
 	return rows;
 }
-// find N and D such that X = N/D
+// find N and D such that N/D approximate X
 function dirtyFraction(x) {
 	let numerator = x;
 	let denominator = 1;
@@ -219,7 +245,7 @@ function dirtyFraction(x) {
 	denominator = Math.round(denominator);
 	
 	// find the greatest common factor
-	let factor = Math.gcd(numerator,denominator);
+	let factor = gcd(numerator,denominator);
 	
 	// divide the parts by their greatest common factor
 	numerator   /= factor;
@@ -227,9 +253,20 @@ function dirtyFraction(x) {
 	
 	return {numerator,denominator};
 }
-
+// this has been replaced by Complex.pow()
+function complexPow(zReal, zImag, power) {
+	let r = Math.exp(Math.log(zReal * zReal + zImag * zImag) * power / 2);
+	let t = Math.atan2(zImag, zReal);
+	return {
+		real: r * Math.cos(t * power),
+		imag: r * Math.sin(t * power)
+	};
+}
 
 module.exports = {
+	coth,
+	sech,
+	csch,
 	radToDeg,
 	degToRad,
 	minmax,
@@ -237,7 +274,6 @@ module.exports = {
 	standardDeviation,
 	modulo,
 	step,
-	complexPow,
 	summation,
 	integration,
 	product,
@@ -246,6 +282,7 @@ module.exports = {
 	prime,
 	primesUpTo,
 	gcd,
+	lcm,
 	root,
 	combination,
 	combo: combination,
@@ -253,9 +290,14 @@ module.exports = {
 	permutation,
 	manhattan,
 	interp,
+	coserp,
+	smooth,
+	smoother,
+	smoothmin,
+	smoothmax,
 	quantize,
 	pascalsTriangle,
-	dirtyFraction
+	dirtyFraction,
+	complexPow
 };
-
 module.exports.Math = Object.assign(Math, module.exports);

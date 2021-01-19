@@ -1,5 +1,5 @@
 /**
-	Command file for configuring the permissions of commands and other command-related stuff.
+	Command file for configuring the settings and permissions of commands.
 	
 	First, it must be established where all commands can be used
 	commands.allow * #bot-channel
@@ -12,8 +12,6 @@
 	
 	Next, establish who the mods and admins are and give them permission to make changes to things
 	commands.allow &admin &moderation @admin @moderator
-	
-	Note: avoid using @mentions for permissions, as this will give them privileges across all servers they are in with the bot!
 	
 	And you're done!
 */
@@ -76,51 +74,161 @@ function showErrors(errors) {
 
 module.exports = {
 	'commands': {
-		aliases: ['cmds'],
+		aliases: ['command','cmds','cmd'],
 		category: 'Discord',
 		info: 'Interface for enabling and disabling commands. *You should configure commands in a private channel to avoid mentioning users and roles.*\n\nIf you are looking for a list of commands, try using the `category` command (there are simply too many commands to list them all!).',
+		parameters: ['<allow|deny>', '...commands', '[...targets]'],
 		permissions: 'privileged',
-		suppress: true,
-		subcommands: {
-			'enable': {
-				aliases: ['allow'],
-				info: 'Enables command(s) for the current channel/channel(s)/user(s)/role(s).',
-				parameters: ['...commands', '[...targets]'],
-				fn({client, args, channelID, serverID}) {
-					var data = parse(serverID, channelID, args);
-					var suppressedErrors = [];
-					var commands = client.commands.get(...data.commands);
-					
-					for (var command of commands) {
-						try {
+		fn({client, args, channelID, serverID}) {
+			var opt = args.shift();
+			var data = parse(serverID, channelID, args);
+			var suppressedErrors = [];
+			var commands = client.commands.get(...data.commands);
+			
+			for (var command of commands) {
+				try {
+					switch (opt) {
+						case 'allow':
 							command.permissions.allow(client, data);
-						} catch (e) {
-							suppressedErrors.push(e);
-						}
+							break;
+						case 'deny':
+							command.permissions.deny(client, data);
+							break;
 					}
-					client.database.get('permissions').save();
-					return 'Settings saved.' + showErrors(suppressedErrors);
+				} catch (e) {
+					suppressedErrors.push(e);
+				}
+			}
+			client.database.get('permissions').save();
+			return 'Settings saved.' + showErrors(suppressedErrors);
+		},
+		subcommands: {
+			'create': {
+				aliases: ['new'],
+				info: 'Create a new temporary command. Surround the code in a code block for proper parsing. By default, unlimited arguments may be passed and all known context members are defined. Pass flag values for additional (but optional) settings.',
+				parameters: ['id','code'],
+				flags: ['title','category','info','suppress','analytics','private','super'],
+				permissions: 'private',
+				fn({client, args, flags}) {
+					var [cmd,code] = args;
+					if (client.commands.has(cmd)) {
+						throw 'Command already exists: ' + cmd;
+					} else if (cmd in client.commands) {
+						throw 'Cannot override property: ' + cmd;
+					} else {
+						var command = client.commands.create(cmd, {
+							title:       flags.get('title'),
+							category:    flags.get('category') || 'Discord',
+							info:        flags.get('info') || 'This is a temoporary command.',
+							parameters: ['[...args]'],
+							permissions: flags.has('private') ? 'private' : 'public',
+							suppress:    flags.has('suppress'),
+							analytics:   flags.has('analytics'),
+							fn: new Function('data','with (data) {\n' + code + '\n}')
+						});
+						if (flags.has('super')) {
+							var superID = flags.get('super');
+							var supercommand = client.commands.get(superID);
+							if (supercommand.length == 1) {
+								supercommand = supercommand[0];
+								supercommand.addSubcommand(command);
+							} else {
+								throw 'Cannot identify a single command with the ID: ' + superID;
+							}
+						} else {
+							client.commands.set(cmd, command);
+						}
+						return 'Created temporary command: ' + cmd;
+					}
 				}
 			},
-			'disable': {
-				aliases: ['deny'],
-				info: 'Disables command(s) for the current channel/channel(s)/user(s)/role(s).',
-				parameters: ['...commands', '[...targets]'],
-				fn({client, args, channelID, serverID}) {
-					var data = parse(serverID, channelID, args);
-					var suppressedErrors = [];
-					var commands = client.commands.get(...data.commands);
-					
-					for (var command of commands) {
-						try {
-							command.permissions.deny(client, data);
-						} catch (e) {
-							suppressedErrors.push(e);
+			'settings': {
+				info: 'Modify settings of a command.',
+				parameters: ['command'],
+				flags: ['enabled','nsfw','suppress','analytics','cooldown'],
+				permissions: 'private',
+				fn({client, args, flags}) {
+					var command = client.commands.get(args[0]);
+					if (!command || command.length == 0) {
+						throw 'No command found!';
+					}
+					command = command[0];
+					var settings = [];
+					for (var b of ['enabled','nsfw','suppress','analytics']) {
+						if (flags.has(b)) {
+							settings.push(b + ': ' + String(command[b] = !!flags.get(b)));
 						}
 					}
-					
-					client.database.get('permissions').save();
-					return 'Settings saved.' + showErrors(suppressedErrors);
+					if (flags.has('cooldown')) {
+						settings.push('cooldown: ' + String(command.cooldown = Number(flags.get('enabled'))));
+					}
+					/*
+					if (flags.has('permissions')) {
+						settings.push('permissions: ' + String(command.permissions.type = flags.get('permissions'));
+					}
+					*/
+					return 'New settings for ' + md.code(command.id) + ':\n' + settings.join('\n');
+				}
+			},
+			'toggle': {
+				aliases: ['enable','disable'],
+				info: 'Enables or disabled command(s) globally.',
+				parameters: ['...commands'],
+				permissions: 'private',
+				fn({client, cmds, args}) {
+					var force = cmds[1] === 'enable'  ? true  : 
+					            cmds[1] === 'disable' ? false : null;
+					var commands = client.commands.get(...args);
+					var results = [];
+					for (var command of commands) {
+						if (typeof(force) === 'boolean') {
+							command.enabled = force;
+						} else {
+							command.enabled = !command.enabled;
+						}
+						results.push(command.id + ' is ' + (command.enabled ? 'enabled' : 'disabled'));
+					}
+					return results.join('\n');
+				}
+			},
+			'alias': {
+				info: 'Add aliases for commands. Key/value pairs are separated by a colon.',
+				parameters: ['...command:alias'],
+				permissions: 'private',
+				suppress: true,
+				fn({client, args, flags}) {
+					var pairs = args.map(a => a.split(Constants.Symbols.KEY));
+					var result = [];
+					for (var [cmd,alias] of pairs) {
+						var cmds = client.commands.get(cmd);
+						if (cmds.length != 1) {
+							throw `\`${cmd}\` is an invalid command identifier.`;
+						}
+						cmd = cmds[0];
+						cmd.addAlias(alias);
+						result.push(`\`${alias}\` => \`${cmd.fullID}\``);
+					}
+					return result.join('\n');
+				}
+			},
+			'cooldown': {
+				info: 'Set cooldowns for commands. Key/value pairs are separated by a colon.',
+				parameters: ['...command:cooldown'],
+				permissions: 'private',
+				suppress: true,
+				fn({client, args}) {
+					var pairs = args.map(a => a.split(Constants.Symbols.KEY));
+					var result = [];
+					for (var [cmd,cooldown] of pairs) {
+						var cmds = client.commands.get(cmd);
+						if (cmds.length != 1) {
+							throw `\`${cmd}\` is an invalid command identifier.`;
+						}
+						cmd = cmds[0];
+						cmd.cooldown = cooldown;
+						result.push(`\`${cmd}\`'s cooldown has been set to ${cooldown}.`);
+					}
+					return result.join('\n');
 				}
 			},
 			'clear': {
@@ -229,7 +337,7 @@ module.exports = {
 				}
 			},
 			'move': {
-				aliases: ['replace', 'alias', 'rename'],
+				aliases: ['replace','rename'],
 				info: 'Replace permission entry keys with new ones, in case the names of commands change and are no longer binded. :warning: Warning! This is a low-level command, it will create or delete data regardless of validation!',
 				parameters: ['...old:new'],
 				permissions: 'private',
@@ -255,36 +363,14 @@ module.exports = {
 					return 'Settings saved.' + showErrors(suppressedErrors);
 				}
 			},
-			'create': {
-				aliases: ['new'],
-				info: 'Create a new temporary command. Surround the code in a code block for proper parsing. By default, unlimited arguments may be passed and all known context members are defined.',
-				parameters: ['name','code'],
-				permissions: 'private',
-				fn({client, args}) {
-					var [cmd,code] = args;
-					var fn = new Function('data','with (data) {\n' + code + '\n}');
-					if (client.commands.has(cmd)) {
-						throw 'Command already exists: ' + cmd;
-					} else if (cmd in client.commands) {
-						throw 'Cannot override property: ' + cmd;
-					} else {
-						client.commands.set(cmd, cmd, {
-							info: 'This is a temporary command.',
-							suppress: false,
-							analytics: false,
-							permissions: 'public',
-							fn
-						});
-						return 'Created temporary command: ' + cmd;
-					}
-				}
-			}/*,
 			'export': {
 				aliases: ['download'],
 				info: 'Serialize command(s) to a JS file.',
 				parameters: ['...commands'],
 				permission: 'private',
+				enabled: false,
 				fn({client, args}) {
+					throw 'WORK IN PROGRESS!!!!1!';
 					let _export = {}, base;
 					let commands = client.commands.get(...args);
 					for (let cmd of commands) {
@@ -299,7 +385,7 @@ module.exports = {
 					
 					return md.codeblock(buffer, 'js');
 				}
-			}*/
+			}
 		}
 	}
 };

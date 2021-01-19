@@ -84,6 +84,13 @@ class Pokemon extends Resource {
 		var mult = 1 + this.lvl/10;
 		return Math.floor(this.baseValue * mult);
 	}
+	toString() {
+		let str = this.name + ' LV. ' + this.lvl;
+		if (this.shiny) {
+			str = 'Shiny ' + str;
+		}
+		return str;
+	}
 	displayInfo() {
 		let lvl = this.lvl;
 		let nextXP = levelToXP(lvl+1);

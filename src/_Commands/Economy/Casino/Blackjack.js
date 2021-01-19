@@ -1,6 +1,6 @@
-const MessageGame = require('../../Sessions/MessageGame');
+const MessageGame = require('../../../Sessions/MessageGame');
 const {Deck,Hand,CardValues} = require('./Cards');
-const {Format:fmt} = require('../../Utils');
+const {Format:fmt} = require('../../../Utils');
 
 const BLACKJACK = 21;
 const RISK = 0.25;

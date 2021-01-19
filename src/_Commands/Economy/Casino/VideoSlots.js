@@ -1,5 +1,5 @@
-const MessageGame = require('../../Sessions/MessageGame');
-const {Markdown:md,Format:fmt,tableify,random} = require('../../Utils');
+const MessageGame = require('../../../Sessions/MessageGame');
+const {Markdown:md,Format:fmt,tableify,random,Array} = require('../../../Utils');
 
 const HIDDEN = ['❔','❔','❔'];
 
@@ -10,6 +10,16 @@ const BET_MULT_2 = '2⃣';
 const BET_MULT_5 = '5⃣';
 const BET_MULT_10 = '🔟';
 
+const PAYLINES = [
+	[0,0,0,0,0], // bar through first row
+	[1,1,1,1,1], // bar through middle row
+	[2,2,2,2,2], // bar through last row
+	[0,1,2,1,0], // "V"
+	[2,1,0,1,2], // chevron
+	[0,0,1,2,2], // high to low
+	[2,2,1,0,0], // low to high
+];
+
 const MULTIPLIER = {
 	[BET_MULT_1]: 1,
 	[BET_MULT_2]: 2,
@@ -19,64 +29,64 @@ const MULTIPLIER = {
 
 const TABLE = {
 	'🐉': {
-		value: [1,100,1000],
+		value: [1,1,10,100,1000],
 		count: 1
 	},
 	[SPIN]: {
-		value: [1,77,777],
+		value: [1,1,7,77,777],
 		count: 1,
 	},
 	'💎': {
-		value: [1,50,500],
+		value: [1,1,5,50,500],
 		count: 1
 	},
 	'😂': {
-		value: [1,42,420],
-		count: 2
+		value: [1,1,4,42,420],
+		count: 1
 	},
 	'🤔': {
-		value: [1,20,200],
-		count: 2
+		value: [1,1,2,20,200],
+		count: 1
 	},
 	'👌': {
-		value: [1,15,150],
+		value: [1,1,1,15,150],
 		count: 2
 	},
 	'💯': {
-		value: [1,10,100],
+		value: [1,1,1,10,100],
 		count: 2
 	},
 	'🍌': {
-		value: [1,8,80],
-		count: 3
+		value: [1,1,1,8,80],
+		count: 2
 	},
 	'🍆': {
-		value: [1,6.9,69], // Nice.
-		count: 3
+		value: [1,1,1,6.9,69], // Nice.
+		count: 2
 	},
 	'🍉': {
-		value: [1,6,60],
-		count: 4
-	},
-	'🍇': {
-		value: [1,5,50],
-		count: 4
-	},
-	'🍒': {
-		value: [1,4,40],
-		count: 4
-	},
-	'🍈': {
-		value: [1,3,30],
-		count: 4
-	},
-	'💩': {
-		value: [0,2,20],
+		value: [1,1,1,3,10],
 		count: 5
 	},
+	'🍇': {
+		value: [1,1,1,3,10],
+		count: 5
+	},
+	'🍒': {
+		value: [1,1,1,3,10],
+		count: 5
+	},
+	'🍈': {
+		value: [1,1,1,3,10],
+		count: 5
+	},
+	'💩': {
+		value: [0,0,1,2,8],
+		count: 6
+	},
 	[FREE_SPIN]: {
-		value: [1,10,100],
-		count: 3
+		value: [1,2,3,5,15],
+		count: 2
 	}
 };
 
@@ -124,7 +134,7 @@ class SlotColumn {
 	}
 }
 
-class SlotMachine extends MessageGame {
+class VideoSlotMachine extends MessageGame {
 	constructor(context, bank, bet = 0) {
 		super(context, [context.user]);
 		
@@ -137,6 +147,8 @@ class SlotMachine extends MessageGame {
 	init() {
 		super.init();
 		this.game = [
+			new SlotColumn(),
+			new SlotColumn(),
 			new SlotColumn(),
 			new SlotColumn(),
 			new SlotColumn()
@@ -162,16 +174,17 @@ class SlotMachine extends MessageGame {
 		return null;
 	}
 	startMove(client) {
-		if (this.spinning) {
+		if (this.spinning && this.spinIdx < this.game.length) {
 			setTimeout(() => {
 				if (this.closed) return;
 				
 				// spin the hidden columns, then reveal one
 				let i = this.spinIdx;
-				while (i < 3) this.game[i++].spin();
+				if (i >= this.game.length) return;
+				while (i < this.game.length) this.game[i++].spin();
 				this.game[this.spinIdx++].hidden = false;
 				
-				if (this.spinIdx == 3) {
+				if (this.spinIdx == this.game.length) {
 					this.finishMove();
 				} else {
 					this.updateEmbed();
@@ -188,6 +201,7 @@ class SlotMachine extends MessageGame {
 			return true;
 		} else if (reaction == SPIN) {
 			if (this.freeSpins) {
+				this.betMult = 1; // cannot bet higher than 1x on free spins, for obvious reasons
 				this.freeSpins--;
 			} else {
 				if (this.bank.credits < this.totalBet) {
@@ -205,34 +219,36 @@ class SlotMachine extends MessageGame {
 		this.spinIdx  = 0;
 		this.reward     = this.totalBet;
 		this.rewardMult = 1;
+		this.paylines = [];
 		this.game.forEach(slot => {slot.hidden = true});
 		this.updateEmbed();
 	}
 	checkWinCondition() {
 		this.spinning = false;
 		
-		let items = this.game.map(c => c.selected);
+		this.rewardMult = 0;
 		
-		let counts = {};
-		for (let item of items) {
-			counts[item] = (counts[item] || 0) + 1;
-		}
-		
-		let good = false;
-		let amount;
-		for (let item in counts) {
-			amount = TABLE[item].value[counts[item]-1];
-			if (item == FREE_SPIN) {
-				this.freeSpins += amount;
-				good = true;
-			} else {
-				this.rewardMult *= amount;
+		let good = false, totalMult, amount, items, counts;
+		for (let combo of PAYLINES) {
+			items = this.game.map((col,i) => col.items[combo[i]]);
+			counts = {};
+			for (let item of items) {
+				counts[item] = (counts[item] || 0) + 1;
 			}
-		}
-		if (this.rewardMult > 1) {
-			good = true;
-		} else {
-			this.rewardMult = 0;
+			totalMult = 1;
+			for (let item in counts) {
+				amount = TABLE[item].value[counts[item]-1];
+				if (item == FREE_SPIN) {
+					this.freeSpins += amount;
+					good = true;
+				} else {
+					totalMult *= amount;
+				}
+			}
+			if (totalMult > 1) {
+				this.rewardMult += totalMult;
+				good = true;
+			}
 		}
 		
 		this.emit('creditchange', this.totalReward);
@@ -240,8 +256,8 @@ class SlotMachine extends MessageGame {
 	}
 	toString() {
 		let columnItems = this.game.map(c => c.visible);
-		let rows = columnItems.map((x,i) => columnItems.map(c => c[i]));
-		return rows[0].join(' | ') + '\n' + rows[1].join(' | ') + ' ⬅\n' + rows[2].join(' | ');
+		let rows = Array.transpose(columnItems);
+		return rows.map(row => row.join(' | ')).join('\n');
 	}
 	updateEmbed() {
 		super.updateEmbed();
@@ -283,10 +299,10 @@ class SlotMachine extends MessageGame {
 	}
 }
 
-SlotMachine.CONFIG = {
+VideoSlotMachine.CONFIG = {
 	gameType: MessageGame.CASUAL,
-	displayName: 'Slot Machine',
-	howToPlay: 'Push the button to spin the machine!\nYou can adjust your bet multiplier to get even bigger rewards!\nSometimes, you will win free spins!',
+	displayName: 'Video Slot Machine',
+	howToPlay: 'Just like slots but with 5 columns and several more ways to win per spin!',
 	minPlayers: 1,
 	maxPlayers: 1,
 	minBotPlayers: 0,
@@ -295,4 +311,4 @@ SlotMachine.CONFIG = {
 	interface: [SPIN,BET_MULT_1,BET_MULT_2,BET_MULT_5,BET_MULT_10]
 };
 
-module.exports = SlotMachine;
+module.exports = VideoSlotMachine;

@@ -38,7 +38,7 @@ class UserListViewer extends MessageBrowser {
 		}
 		this.updateEmbed();
 	}
-	handleUserAction({reaction, change, client, userID}) {
+	handleCustomAction({reaction, change, client, userID}) {
 		for (let s in STATUS) {
 			if (STATUS[s] == reaction) {
 				this.options.status[s] = change > 0;
@@ -93,7 +93,7 @@ class UserListViewer extends MessageBrowser {
 		this.page = Math.min(this.page, maxPages);
 		
 		// generate the embed contents
-		let embed = paginate(users, this.page, this.options.itemsPerPage, (_, i, user) => {
+		let embed = paginate(users, this.page, this.options.itemsPerPage, (user, i) => {
 			return {
 				name: user.id,
 				value: `${md.atUser(user)} ${STATUS[statuses[user.id]]}`,
@@ -154,7 +154,7 @@ class RoleListViewer extends MessageBrowser {
 		let maxPages = Math.ceil(this.data.length / this.options.itemsPerPage);
 		this.page = Math.min(this.page, maxPages);
 		
-		let embed = paginate(this.data, this.page, this.options.itemsPerPage, (_, i, role) => {
+		let embed = paginate(this.data, this.page, this.options.itemsPerPage, (role, i) => {
 			let value;
 			if (role.id in this.server.roles) {
 				value = md.role(role);
@@ -218,7 +218,7 @@ class ChannelListViewer extends MessageBrowser {
 		}
 		this.updateEmbed();
 	}
-	handleUserAction({reaction, change, client, userID}) {
+	handleCustomAction({reaction, change, client, userID}) {
 		for (let type in CHANNEL) {
 			if (CHANNEL[type] == reaction) {
 				this.options.types[type] = change > 0;
@@ -258,7 +258,7 @@ class ChannelListViewer extends MessageBrowser {
 		let maxPages = Math.ceil(channels.length / this.options.itemsPerPage);
 		this.page = Math.min(this.page, maxPages);
 		
-		let embed = paginate(channels, this.page, this.options.itemsPerPage, (_, i, channel) => {
+		let embed = paginate(channels, this.page, this.options.itemsPerPage, (channel, i) => {
 			let value;
 			if (channel.id in this.server.channels) {
 				value = `${channel.name} ${CHANNEL[channel.type]}`;
@@ -322,7 +322,7 @@ class ServerListViewer extends MessageBrowser {
 		let maxPages = Math.ceil(this.data.length / this.options.itemsPerPage);
 		this.page = Math.min(this.page, maxPages);
 		
-		let embed = paginate(this.data, this.page, this.options.itemsPerPage, (_, i, server) => {
+		let embed = paginate(this.data, this.page, this.options.itemsPerPage, (server, i) => {
 			let owner = this.users[server.owner_id];
 			let size = server.member_count;
 			let value;

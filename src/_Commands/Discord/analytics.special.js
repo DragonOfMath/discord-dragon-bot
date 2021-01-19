@@ -15,6 +15,7 @@ module.exports = {
 				for (let sID in client.servers) {
 					stable.modify(sID, data => {
 						data.growth = data.growth || [];
+						// TODO: record messages/day
 						data.growth.push(client.servers[sID].member_count);
 						if (data.growth.length > 100) {
 							data.growth.shift();

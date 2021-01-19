@@ -158,7 +158,7 @@ class Whitespace extends Interpreter {
 	readNumber() {
 		this.c++;
 		let x = 0;
-		while (this.C != N) {
+		while (this.C != L) {
 			x = 2 * x + BINARY[this.C];
 			this.c++;
 		}
@@ -169,7 +169,7 @@ class Whitespace extends Interpreter {
 		let embed = super.debug();
 		embed.fields.push({
 			name: 'Heap',
-			value: Object.map(this.heap, (v,k) => `${k}=${v}`).join(' ')
+			value: Object.map(this.heap, (v,k) => `${k}=${v}`).join(' ') || '[No data]'
 		});
 		embed.fields.push({
 			name: 'Call Stack',

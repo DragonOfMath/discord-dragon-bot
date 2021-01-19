@@ -11,7 +11,7 @@ class Artist {
 		this.booru = booru;
 	}
 	get url() {
-		return this.booru.host + '/post?tags=artist:' + this.name;
+		return this.booru.host + '/post?tags=' + this.name;
 	}
 }
 

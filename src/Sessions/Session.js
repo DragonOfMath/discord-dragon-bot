@@ -41,9 +41,11 @@ class Session extends Resource {
 			}
 		}
 		
-		if (sessionManager) {
-			this.manager = sessionManager;
-		}
+		Object.defineProperty(this, 'manager', {
+			value: sessionManager,
+			enumerable: false,
+			writable: true
+		});
 		
 		Object.assign(this.events, {
 			close() {
@@ -84,6 +86,9 @@ class Session extends Resource {
 	hasEvent(event) {
 		return typeof(this.events[event]) === 'function';
 	}
+	reply(client, message) {
+		return client.send(this.last_channel_id, message);
+	}
 	fire(event, ...args) {
 		var eventFn = typeof(event) === 'function' ? event : this.events[event];
 		return eventFn && eventFn.apply(this, args);
@@ -94,17 +99,23 @@ class Session extends Resource {
 		}
 		this.fire('close');
 	}
-	resolve(handler) {
-		if (this.disabled) return;
+	async resolve(handler) {
+		//console.log('Session:', this.id, 'Disabled:', this.disabled, 'Can Resolve:', !!this.resolver);
+		if (this.disabled) return
 		if (!this.resolver) return;
 		
-		var grant = this.permissions.check(handler, true);
+		let grant = this.permissions.check(handler, true);
+		//console.log('Has Permission:', grant.granted);
 		if (!grant.granted) return;
 		
 		this.last_channel_id = handler.channelID;
 		
-		var resolvedEvt = this.resolver.call(this, handler);
+		let resolvedEvt = await this.resolver.call(this, handler);
+		
+		//console.log('Resolved Event:', resolvedEvt, 'Can Fire:', this.hasEvent(resolvedEvt));
+		
 		if (resolvedEvt && this.hasEvent(resolvedEvt)) {
+			
 			this.uses++;
 			if (this.uses == this.settings.max) {
 				this.close(handler, 'Max uses reached.');
@@ -112,10 +123,15 @@ class Session extends Resource {
 			if (this.settings.reset) {
 				this.elapsed = 0;
 			}
-			var result = this.events[resolvedEvt].call(this, handler);
+			let result = this.events[resolvedEvt].call(this, handler);
 			if (result) {
 				handler.grant = true;
-				return handler.resolve(result).then(() => {handler.title = this.title});
+				return handler.resolve(result)
+				.then(() => {
+					if (this.title) {
+						handler.title = this.title;
+					}
+				});
 			}
 		} else {
 			this.misses++;

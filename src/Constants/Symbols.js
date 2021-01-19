@@ -22,6 +22,9 @@ const OBJ_START   = '{';
 const OBJ_END     = '}';
 const RGX_START   = '/';
 const RGX_END     = '/';
+const BOM         = '\ufeff';
+const ZWS         = '\u200b';
+const NBSP        = '\u00a0';
 
 module.exports = {
 	PREFIX,
@@ -72,5 +75,8 @@ module.exports = {
 		OBJ_END,
 		RGX_START,
 		RGX_END
-	]
+	],
+	BOM,
+	ZWS,
+	NBSP
 };

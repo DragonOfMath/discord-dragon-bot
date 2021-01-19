@@ -1,6 +1,28 @@
 const {fetch} = require('../../Utils');
 
 module.exports = {
+	'inspirobot': {
+		category: 'Web',
+		info: 'Generates an inspirational poster from inspirobot.me.',
+		permissions: 'inclusive',
+		cooldown: 10000,
+		fn() {
+			return fetch('https://inspirobot.me/api?generate=true').then(response => {
+				return {
+					image: { url: response },
+					author: { 
+						name: 'InspiroBot',
+						url: 'https://inspirobot.me',
+						icon_url: 'https://inspirobot.me/website/images/favicon.png'
+					},
+					timestamp: new Date(),
+					footer: {
+						text: 'AI Generated Inspiration'
+					}
+				};
+			});
+		}
+	},
 	'google': {
 		category: 'Web',
 		title: 'Google Search',

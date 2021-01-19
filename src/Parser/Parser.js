@@ -1,6 +1,6 @@
 const Block = require('./Block');
 const Constants = require('../Constants/Symbols');
-const {escape, cast, includesAt} = require('../Utils');
+const {escape, cast, includesAt, isWhitespace, isUnicodeWhitespace} = require('../Utils');
 
 const AVOID = [Constants.BLOCK_START,Constants.BLOCK_END,Constants.STOP];
 
@@ -57,8 +57,7 @@ class Parser {
 		while (!this.EOF) {
 			this.skipWhitespace();
 			if (this.letter) {
-				let token = this.parseAny();
-				if (token) this.tokens.push(token);
+				this.tokens.push(this.parseAny());
 			}
 		}
 		return this.tokens;
@@ -69,7 +68,7 @@ class Parser {
 	 */
 	skipWhitespace(start = this.i) {
 		this.i = start;
-		while (/\s/.test(this.letter)) this.i++;
+		while (isWhitespace(this.letter)) this.i++;
 	}
 	/**
 	 * Parse the next token according to its next character(s).
@@ -162,12 +161,15 @@ class Parser {
 	parseRaw(start = this.i) {
 		let token = '';
 		this.i = start;
-		while (this.letter && !/\s/.test(this.letter)) {
+		while (this.letter && !isWhitespace(this.letter)) {
 			if (AVOID.includes(this.letter)) {
 				return token;
 			}
 			token += this.letter;
 			this.i++;
+			if (isUnicodeWhitespace(this.letter)) {
+				this.i++;
+			}
 		}
 		return cast(token);
 	}

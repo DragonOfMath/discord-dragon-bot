@@ -10,6 +10,7 @@ module.exports = {
 		enabled: true,
 		generated: false,
 		nsfw: false,
+		cooldown: 0,
 		parameters: [],
 		flags: [],
 		permissions: {},

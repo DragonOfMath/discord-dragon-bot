@@ -3,7 +3,7 @@ const ModerationError = require('./ModerationError');
 const Offense         = require('./Offense');
 const Permissions     = require('../Permissions/Permissions');
 const Constants       = require('../Constants/Moderation');
-const {Markdown:md,DiscordUtils} = require('../Utils');
+const {Markdown:md,Format:fmt,DiscordUtils} = require('../Utils');
 
 /**
  * @class Moderation
@@ -111,31 +111,70 @@ class Moderation {
 		});
 	}
 	
-	static async archive(client, server, channel, limit, flags) {
+	static async archive(client, server, channel, args, flags) {
 		let channelID = this.validateChannel(client, server, channel);
 		let settings  = this.get(client, server);
 		let archiveID = settings.archiveID;
 		if (!archiveID) {
 			throw new ModerationError('No archive channel set');
 		}
-		return client.moveMessages({
-			from: channelID,
-			to: archiveID,
-			limit,
+		
+		let messages, limit = 0;
+		if (args.length == 1 && typeof args[0] === 'number') {
+			limit = args[0];
+		} else {
+			messages = args;
+		}
+		messages = await client.moveMessages({
+			from: channelID, to: archiveID, messages, limit,
 			before: client.channels[channelID].last_message_id,
+			filter: message => DiscordUtils.filterMessage(client, message, flags),
+			stripMentions: false
+		});
+		return '🔐 Archived ' + fmt.plural('message', messages.length) + ' in ' + md.channel(archiveID);
+	}
+	static async move(client, server, from, to, args, flags) {
+		from = this.validateChannel(client, server, from);
+		to   = this.validateChannel(client, server, to);
+		
+		let messages, limit = 0;
+		if (args.length == 1 && typeof args[0] === 'number') {
+			limit = args[0];
+		} else {
+			messages = args;
+		}
+		messages = await client.moveMessages({
+			from, to, messages, limit,
+			before: client.channels[from].last_message_id,
 			filter: message => DiscordUtils.filterMessage(client, message, flags)
 		});
+		return '🚀 Moved ' + fmt.plural('message', messages.length) + ' to ' + md.channel(to);
+	}
+	static async mirror(client, server, from, to, args, flags) {
+		from = this.validateChannel(client, server, from);
+		to   = this.validateChannel(client, server, to);
+		
+		let messages, limit = 0;
+		if (args.length == 1 && typeof args[0] === 'number') {
+			limit = args[0];
+		} else {
+			messages = args;
+		}
+		messages = await client.moveMessages({
+			from, to, messages, limit,
+			before: client.channels[from].last_message_id,
+			filter: message => DiscordUtils.filterMessage(client, message, flags),
+			keepOriginalMessages: true
+		});
+		return '🔗 Copied ' + fmt.plural('message', messages.length) + ' to ' + md.channel(to);
 	}
 	static async cleanup(client, server, channel, limit, flags) {
 		let channelID = this.validateChannel(client, server, channel);
-		// retrieve all messages
 		let messages = await client.getMessages({
 			channelID,
 			limit,
 			filter: message => DiscordUtils.filterMessage(client, message, flags)
 		});
-
-		// delete messages
 		if (!messages.length) {
 			throw new ModerationError('No messages found');
 		}
@@ -377,10 +416,9 @@ class Moderation {
 	 */
 	static async collectMessages(client, server, channel, limit = 1000, format = 'json', flags) {
 		let channelID = this.validateChannel(client, server, channel);
-		let limit = Math.min(limit, 10000);
 		let messages = await client.getMessages({
 			channelID,
-			limit,
+			limit: Math.min(limit, 10000),
 			before: client.channels[channelID].last_message_id
 		});
 		messages = DiscordUtils.filterMessages(client, messages, flags);

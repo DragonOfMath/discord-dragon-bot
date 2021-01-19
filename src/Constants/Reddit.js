@@ -26,12 +26,15 @@ module.exports = {
 				limit: 100,
 				threshold: 1, // must not be below 1 upvote
 				crossposts: false, // keep crossposts from similar subs
+				spoilers: true, // allow posts tagged as spoilers
+				nsfw: true, // allow posts containing adult content
 				media: {
 					text: true,
 					image: true,
 					video: true,
 					other: true
-				}
+				},
+				blacklisted: [] // users to blacklist from search
 			},
 			subs: {}
 		}

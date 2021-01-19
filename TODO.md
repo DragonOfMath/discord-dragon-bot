@@ -40,17 +40,14 @@
  * Use a better database to handle large scale reads/writes (SQLite?)
  * Resolve unique subcommands
  * Make F-List character embed less verbose
- * Repurpose `commands`
  
 ## Fix
- * new bank accounts have a closed state
  * `ping` pings a web address, but the data returned is unexpected?
  * Music player not skipping or pausing at all
  * `image.magik` is only a homemade prototype, it's slow and broken
  * `info.token` - Timestamp conversion is incorrect
  * MessageGame timeout not working
  * Auto-solver for Sudoku
- * `screenshot` - `puppeteer` not launching correctly?
  * Reddit video embedding: find possible workaround?
  * gif rendering/optimization
  * `textbox` rendering for large buttons

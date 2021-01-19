@@ -92,27 +92,6 @@ module.exports = {
 			.catch(client.error);
 		}
 	},
-	'alias': {
-		category: 'Admin',
-		info: 'Adds a temporary alias for a command.',
-		parameters: ['...command:alias'],
-		permissions: 'private',
-		suppress: true,
-		fn({client, args}) {
-			var pairs = args.map(a => a.split(Constants.Symbols.KEY));
-			var result = [];
-			for (var [cmd,alias] of pairs) {
-				var cmds = client.commands.get(cmd);
-				if (cmds.length != 1) {
-					throw `\`${cmd}\` is an invalid command identifier.`;
-				}
-				cmd = cmds[0];
-				cmd.addAlias(alias);
-				result.push(`\`${alias}\` => \`${cmd.fullID}\``);
-			}
-			return result.join('\n');
-		}
-	},
 	'toggle': {
 		category: 'Admin',
 		title: 'Client Settings',

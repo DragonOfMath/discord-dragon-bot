@@ -1,3 +1,5 @@
+//const {extend} = require('./extend');
+
 /**
 	Case-insensitive string comparison
 */
@@ -6,6 +8,20 @@ function strcmp(a,b) {
 }
 function substrcmp(a,b) {
 	return String(a).toLowerCase().indexOf(String(b).toLowerCase()) > -1;
+}
+
+function matchCase(a,b) {
+	//if (isUpperCase(a)) return b.toUpperCase();
+	//if (isLowerCase(a)) return b.toLowerCase();
+	let max = Math.min(a.length, b.length);
+	for (let i = 0; i < max; i++) {
+		if (isUpperCase(a[i])) {
+			b[i] = b[i].toUpperCase();
+		} else {
+			b[i] = b[i].toLowerCase();
+		}
+	}
+	return b;
 }
 
 /**
@@ -99,21 +115,35 @@ function unescapeHTMLEntities(text) {
 	Checks if a string is all uppercase
 */
 function isUpperCase(text) {
-	return text === text.toUpperCase();
+	return text && text === text.toUpperCase();
 }
 
 /**
 	Checks if a string is all lowercase
 */
 function isLowerCase(text) {
-	return text === text.toLowerCase();
+	return text && text === text.toLowerCase();
+}
+
+/**
+	Checks if a character is whitespace
+*/
+function isWhitespace(x) {
+	return x && x.match(/\s/);
+}
+
+/**
+	Checks if a character is whitespace outside the ASCII range
+*/
+function isUnicodeWhitespace(x) {
+	return x && x.match(/\s/) && (x == '\ufeff' || x == '\u200b' || x == '\u00a0');
 }
 
 /**
 	Matches a MD5 hash in the string
 */
 function md5(text) {
-	return text.match(/[0-9a-f]{32}/i);
+	return text && text.match(/[0-9a-f]{32}/i);
 }
 
 /**
@@ -157,6 +187,21 @@ function kwsearch(items, query, iteratee = x => x) {
 	.sort((m1,m2) => m1.score > m2.score ? -1 : m2.score > m1.score ? 1 : 0);
 }
 
+/**
+ * Shows the difference between two strings.
+ */
+function showDifference(str1, str2) {
+	let diff = '', min = Math.min(str1.length, str2.length), max = Math.max(str1.length, str2.length);
+	for (let i = 0, j = 0; i < min && j < min;) {
+		if (str1[i++] == str2[j++]) {
+			diff += ' ';
+		} else {
+			diff += '^';
+		}
+	}
+	return diff;
+}
+
 module.exports = {
 	strcmp,
 	substrcmp,
@@ -170,8 +215,12 @@ module.exports = {
 	unescapeHTMLEntities,
 	isUpperCase,
 	isLowerCase,
+	matchCase,
+	isWhitespace,
+	isUnicodeWhitespace,
 	md5,
 	parseCSV,
 	keywordify,
-	kwsearch
+	kwsearch,
+	showDifference
 };

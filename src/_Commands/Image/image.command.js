@@ -2,7 +2,7 @@ const {Markdown:md,Jimp,random,Color,Math,Perlin2} = require('../../Utils');
 const {isImage,processImage} = require('./image-utils');
 const brailleify = require('./brailleify');
 
-const TEST_IMAGES = ['blank','grid','checkerboard','color','noise','random']
+const TEST_IMAGES = ['blank','grid','checkerboard','color','gradient','noise','random']
 const TEST_COLORS = [Color.WHITE,Color.RED,Color.GREEN,Color.BLUE,Color.YELLOW,Color.CYAN,Color.MAGENTA];
 const WHITE = Color.WHITE.rgba;
 const BLACK = Color.BLACK.rgba;
@@ -60,7 +60,7 @@ module.exports = {
 			},
 			'test': {
 				aliases: ['testing', 'generate'],
-				info: 'Creates a testing image. Specify what preset to use and at what size.',
+				info: 'Creates a testing image. Specify what pattern to use and at what size.',
 				parameters: [`[<${TEST_IMAGES.join('|')}>]`,'[size]'],
 				fn({client, args}) {
 					let [type = random(TEST_IMAGES), size = 200] = args;
@@ -90,6 +90,15 @@ module.exports = {
 								let tx = x / size;
 								let ty = y / size;
 								return Color.hsl(360 * tx, saturation, Math.abs(2 * ty - 1)).rgba;
+							};
+							break;
+						case 'gradient':
+							let color1 = Color.random();
+							let color2 = Color.random();
+							algorithm = (x,y) => {
+								let tx = x / size;
+								let ty = y / size;
+								return color1.interp(color2,(tx+ty)/2);
 							};
 							break;
 						case 'noise':
@@ -216,10 +225,18 @@ module.exports = {
 				}
 			},
 			'sepia': {
-				info: 'Applies sepia filter to an image.',
+				info: 'Applies a sepia filter to an image.',
 				parameters: ['[imageURL]'],
 				fn({client, channelID, args}) {
 					return processImage(client, args, channelID, (image) => image.sepia(), 'sepia.png');
+				}
+			},
+			'aberration': {
+				aliases: ['aberrate','chromatic','ca','spherochromatism'],
+				info: 'Applies chromatic aberration to an image. Parameters for direction of aberration.',
+				parameters: ['[aX]','[aY]'],
+				fn({client, channelID, args}) {
+					return processImage(client, args, channelID, (image,aX,aY) => image.aberrate(aX,aY), 'chromaticaberration.png');
 				}
 			},
 			'hue': {
@@ -243,7 +260,7 @@ module.exports = {
 			},
 			'brightness': {
 				aliases: ['lightness', 'brighten', 'lighten'],
-				info: 'Adjust the brightness of an image.',
+				info: 'Adjust the brightness of an image. Use a number between -1 and 1.',
 				parameters: ['[imageURL]', '[value]'],
 				fn({client, channelID, args}) {
 					return processImage(client, args, channelID, (image, value = 2*random()-1) => {
@@ -281,7 +298,7 @@ module.exports = {
 				}
 			},
 			'crop': {
-				info: 'Crop an image. Tolerance is a percentage of pixel difference.',
+				info: 'Crop an image. Tolerance is a percentage of pixel difference along the border of the image.',
 				parameters: ['[imageURL]', '[tolerance]'],
 				fn({client, channelID, args}) {
 					return processImage(client, args, channelID, (image, tolerance=0.002) => image.autocrop(resolvePercent(tolerance, 100), false), 'crop.png');
@@ -315,7 +332,7 @@ module.exports = {
 				info: 'Rescale an image by a factor.',
 				parameters: ['[imageURL]', '[scale]'],
 				fn({client, channelID, args}) {
-					return processImage(client, args, channelID, (image, scale=0.8) => {
+					return processImage(client, args, channelID, (image, scale=0.5) => {
 						scale = Math.minmax(scale, 0.1, 10);
 						return image.scale(scale);
 					}, 'rescale.png');
@@ -335,7 +352,7 @@ module.exports = {
 				info: 'Apply blur to an image.',
 				parameters: ['[imageURL]', '[radius]'],
 				fn({client, channelID, args}) {
-					return processImage(client, args, channelID, (image, value=random(5,25)) => {
+					return processImage(client, args, channelID, (image, value=random(5,15)) => {
 						value = Math.minmax(value, 1, 100);
 						return image.blur(value);
 					}, 'blur.png');
@@ -347,15 +364,15 @@ module.exports = {
 				parameters: ['[imageURL]', '[strength]', '[direction]'],
 				fn({client, channelID, args}) {
 					return processImage(client, args, channelID, (image, strength, direction=random(360)) => {
-						var w = image.bitmap.width;
-						var h = image.bitmap.height;
-						var min = Math.min(w,h);
-						var max = Math.max(w,h);
+						let w = image.bitmap.width;
+						let h = image.bitmap.height;
+						let min = Math.min(w,h);
+						let max = Math.max(w,h);
 						direction = Math.degToRad(Math.modulo(direction,360));
 						strength = strength === undefined ? random(min) : resolvePercent(strength, min);
-						var dx = strength * Math.cos(direction);
-						var dy = strength * Math.sin(direction);
-						return image.differentialBlur(() => ({dx,dy}));
+						let dx = strength * Math.cos(direction);
+						let dy = strength * Math.sin(direction);
+						return image.directionalBlur(dx, dy);
 					}, 'motionblur.png');
 				}
 			},
@@ -365,17 +382,14 @@ module.exports = {
 				parameters: ['[imageURL]', '[strength]', '[xpos]', '[ypos]'],
 				fn({client, channelID, args}) {
 					return processImage(client, args, channelID, (image, strength, xpos, ypos) => {
-						var w = image.bitmap.width;
-						var h = image.bitmap.height;
-						var min = Math.min(w,h);
-						var max = Math.max(w,h);
-						var rad = min * Math.PI / 8;
-						var {x:ox,y:oy} = resolvePos(image, xpos, ypos, Math.floor(w / 2), Math.floor(h / 2));
+						let w = image.bitmap.width;
+						let h = image.bitmap.height;
+						let min = Math.min(w,h);
+						let max = Math.max(w,h);
+						let rad = min * Math.PI / 8;
+						let {x:ox,y:oy} = resolvePos(image, xpos, ypos, Math.floor(w / 2), Math.floor(h / 2));
 						strength = strength === undefined ? random(2,rad) : resolvePercent(strength, rad);
-						return image.differentialBlur((x,y) => ({
-							dx: strength * (oy - y) / h,
-							dy: strength * (x - ox) / w
-						}));
+						return image.circularBlur(strength, strength, ox, oy);
 					}, 'circleblur.png');
 				}
 			},
@@ -385,17 +399,14 @@ module.exports = {
 				parameters: ['[imageURL]', '[strength]', '[xpos]', '[ypos]'],
 				fn({client, channelID, args}) {
 					return processImage(client, args, channelID, (image, strength, xpos, ypos) => {
-						var w = image.bitmap.width;
-						var h = image.bitmap.height;
-						var min = Math.min(w,h);
-						var max = Math.max(w,h);
-						var scale = 20;
-						var {x:ox,y:oy} = resolvePos(image, xpos, ypos, Math.floor(w / 2), Math.floor(h / 2));
+						let w = image.bitmap.width;
+						let h = image.bitmap.height;
+						let min = Math.min(w,h);
+						let max = Math.max(w,h);
+						let scale = 20;
+						let {x:ox,y:oy} = resolvePos(image, xpos, ypos, Math.floor(w / 2), Math.floor(h / 2));
 						strength = strength === undefined ? random(3,scale) : resolvePercent(strength, scale);
-						return image.differentialBlur((x,y) => ({
-								dx: strength * (x - ox) / w,
-								dy: strength * (y - oy) / h
-						}));
+						return image.radialBlur(strength, ox, oy);
 					}, 'radialblur.png');
 				}
 			},
@@ -405,23 +416,13 @@ module.exports = {
 				parameters: ['[imageURL]', '[strength]', '[xpos]', '[ypos]'],
 				fn({client, channelID, args}) {
 					return processImage(client, args, channelID, (image, strength, xpos, ypos) => {
-						var w = image.bitmap.width;
-						var h = image.bitmap.height;
-						var min = Math.min(w,h);
-						var max = Math.max(w,h);
-						var {x:ox,y:oy} = resolvePos(image, xpos, ypos, Math.floor(w / 2), Math.floor(h / 2));
+						let w = image.bitmap.width;
+						let h = image.bitmap.height;
+						let min = Math.min(w,h);
+						let max = Math.max(w,h);
+						let {x:ox,y:oy} = resolvePos(image, xpos, ypos, Math.floor(w / 2), Math.floor(h / 2));
 						strength = strength === undefined ? random(min) : resolvePercent(strength, min);
-						return image.transform((x,y) => {
-							var dx = ox - x;
-							var dy = oy - y;
-							var dd = Math.hypot(dx, dy);
-							dd = Math.exp(-(dd*dd)/(strength*strength));
-							dx *= dd;
-							dy *= dd;
-							x += dx;
-							y += dy;
-							return {x,y};
-						});
+						return image.fisheye(strength, ox, oy);
 					}, 'bulge.png');
 				}
 			},
@@ -431,23 +432,13 @@ module.exports = {
 				parameters: ['[imageURL]', '[strength]', '[xpos]', '[ypos]'],
 				fn({client, channelID, args}) {
 					return processImage(client, args, channelID, (image, strength, xpos, ypos) => {
-						var w = image.bitmap.width;
-						var h = image.bitmap.height;
-						var min = Math.min(w,h);
-						var max = Math.max(w,h);
-						var {x:ox,y:oy} = resolvePos(image, xpos, ypos, Math.floor(w / 2), Math.floor(h / 2));
+						let w = image.bitmap.width;
+						let h = image.bitmap.height;
+						let min = Math.min(w,h);
+						let max = Math.max(w,h);
+						let {x:ox,y:oy} = resolvePos(image, xpos, ypos, Math.floor(w / 2), Math.floor(h / 2));
 						strength = strength === undefined ? random(min) : resolvePercent(strength, min);
-						return image.transform((x,y) => {
-							var dx = ox - x;
-							var dy = oy - y;
-							var dd = Math.hypot(dx, dy);
-							dd = Math.exp(-(dd*dd)/(strength*strength));
-							dx *= dd;
-							dy *= dd;
-							x -= dx;
-							y -= dy;
-							return {x,y};
-						});
+						return image.implode(strength, ox, oy);
 					}, 'gravity.png');
 				}
 			},
@@ -488,20 +479,20 @@ module.exports = {
 				parameters: ['[imageURL]', '[power]', '[iterations]'],
 				fn({client, channelID, args}) {
 					return processImage(client, args, channelID, (image, power, iterations) => {
-						var w = image.bitmap.width;
-						var h = image.bitmap.height;
-						var min = Math.min(w,h);
-						var max = Math.max(w,h);
-						var scale = 2 / min;
-						var ox = Math.floor(w / 2);
-						var oy = Math.floor(h / 2);
+						let w = image.bitmap.width;
+						let h = image.bitmap.height;
+						let min = Math.min(w,h);
+						let max = Math.max(w,h);
+						let scale = 2 / min;
+						let ox = Math.floor(w / 2);
+						let oy = Math.floor(h / 2);
 						power = power === undefined ? (random(-8,8)||2) : resolvePercent(power, 8);
 						iterations = iterations === undefined ? 2 : resolvePercent(iterations, 20);
 						iterations = Math.minmax(iterations, 1, 20);
 						return image.transform((x,y) => {
 							// map the pixel plane to the complex plane
-							var dx = scale * (x - ox);
-							var dy = scale * (y - oy);
+							let dx = scale * (x - ox);
+							let dy = scale * (y - oy);
 							// run the iterative function
 							({x,y} = iterate(dx, dy, power, iterations));
 							// map the complex plane back to the pixel plane and wrap
@@ -528,7 +519,7 @@ module.exports = {
 				parameters: ['[imageURL]', '[strength]', '[walleyed]'],
 				fn({client, channelID, args}) {
 					return processImage(client, args, channelID, (image, strength, walleyed) => {
-						var w   = image.bitmap.width,
+						let w   = image.bitmap.width,
 							h   = image.bitmap.height,
 							p   = 5 + 2 * ~~Math.log2(w/h), // partitions
 							pw  = Math.max(~~(w / p), 50),  // partition width
@@ -540,7 +531,7 @@ module.exports = {
 						image = image.greyscale().normalize();
 						
 						// create a random dot pattern, but also make characteristic "blotches"
-						var pattern = new Jimp(pw, h)
+						let pattern = new Jimp(pw, h)
 						.map(() => Color.random())
 						.blur(random(5,15))
 						.normalize()
@@ -549,8 +540,8 @@ module.exports = {
 						
 						// generate the stereogram by shifting regions in the pattern by the corresponding depth map values
 						return image.map((color,x,y,i,img) => {
-							var depth = (color.r / 255);
-							var shift = ~~(((mid - x) / pw) * depth * strength);
+							let depth = (color.r / 255);
+							let shift = ~~(((mid - x) / pw) * depth * strength);
 							if (walleyed) shift *= -1;
 							return pattern.getPixelColor(Math.modulo(x + shift, pw), y);
 						});
@@ -563,7 +554,7 @@ module.exports = {
 				parameters: ['[imageURL]', '[xpos]', '[ypos]', '[scalefactor]'],
 				fn({client, channelID, args}) {
 					return processImage(client, args, channelID, (image, xpos, ypos, scale) => {
-						var w = image.bitmap.width,
+						let w = image.bitmap.width,
 							h = image.bitmap.height,
 							ox = Math.floor(w / 2),
 							oy = Math.floor(h / 2);

@@ -61,26 +61,26 @@ module.exports = {
 			},
 			'get': {
 				title: 'Database | Get Item',
-				info: 'Retrieve a field from the specified table and record. The field can be nested.',
+				info: 'Retrieve a field from the specified table and record. The field can be a path to a nested item.',
 				parameters: ['table','record','field'],
 				fn({client, args}) {
-					var [table, record, fields] = args;
+					var [table, record, field] = args;
 					record = String(record).match(/\d+/) || record;
-					fields = fields.split('.');
+					field = field.split('.');
 					var data = client.database.get(table).get(record);
-					var value = chain(data, fields);
-					return `**${table}[${record}].${fields.join('.')}** = ${JSON.stringify(value)}.`;
+					var value = chain(data, field);
+					return `**${table}[${record}].${field.join('.')}** = ${JSON.stringify(value)}.`;
 				}
 			},
 			'set': {
 				title: 'Database | Set Item',
-				info: 'Set a field from the specified table and record to the JSON-able value. The field can be nested.',
+				info: 'Set a field from the specified table and record to the value. The field can be nested.',
 				parameters: ['table','record','field','value'],
 				fn({client, args}) {
 					var [table, record, fields, value] = args;
 					record = String(record).match(/\d+/) || record;
 					fields = fields.split('.');
-					value = JSON.parse(value);
+					//value = JSON.parse(value);
 					client.database.get(table).modify(record, data => {
 						var lastField = fields.pop();
 						var obj = chain(data, fields);

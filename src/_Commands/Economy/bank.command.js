@@ -173,7 +173,8 @@ module.exports = {
 							throw 'Not authorized to assign themselves as the receiver.';
 						}
 					}
-					Bank.transfer(client, thisUserID, targetUserID, args[0]);
+					let amt = args[0];
+					Bank.transfer(client, thisUserID, targetUserID, amt);
 					return md.mention(thisUserID) + ' has transferred ' + Bank.formatCredits(amt) + ' to ' + md.mention(targetUserID) + '.';
 				}
 			},
@@ -191,7 +192,11 @@ module.exports = {
 						case 'stop':
 							return Bank.stopInvestment(client, userID, args[1]-1);
 						case 'check':
-							return Bank.checkInvestment(client, userID, args[1]-1);
+							if (args[1] == 'all') {
+								return Bank.checkInvestments(client, userID);
+							} else {
+								return Bank.checkInvestment(client, userID, args[1]-1);
+							}
 						default:
 							return {
 								title: `Help`,
@@ -203,7 +208,7 @@ module.exports = {
 									},
 									{
 										name: 'While Investing',
-										value: 'To check on your investing, use ' + md.code(client.PREFIX + 'bank.invest check <id>') + '. The total time that has elapsed since you started will be shown, along with the estimated interest and net gain you will earn. The formula used for calculating interest is A = Pe^(rt)'
+										value: 'To check on your investing, use ' + md.code(client.PREFIX + 'bank.invest check <id|all>') + '. The total time that has elapsed since you started will be shown, along with the estimated interest and net gain you will earn. The formula used for calculating interest is A = Pe^(rt)'
 									},
 									{
 										name: 'Stopping an Investment',
@@ -326,6 +331,7 @@ module.exports = {
 		title: Bank.header + ' | Daily Cash',
 		info: 'Earn free money every day!',
 		permissions: 'inclusive',
+		cooldown: (24 * 60 * 60 * 1000),
 		fn({client, args, user, userID, server, channelID}) {
 			return Bank.daily(client, userID)
 			.then(amount => {

@@ -28,7 +28,7 @@ class Handler {
 		if (typeof(x) !== 'undefined') {
 			if (typeof(x) === 'string') {
 				this.response.message = x;
-			} else if (typeof(x) === 'object') {
+			} else if (typeof(x) === 'object' && x !== null) {
 				if (x.constructor.name === 'Handler') {
 					// skip
 				} else if (x.message || x.embed || x.file) {

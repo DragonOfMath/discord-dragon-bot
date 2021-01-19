@@ -314,6 +314,18 @@ class FilePromise {
 		filename = this.resolve(filename);
 		return fs.existsSync(filename);
 	}
+	static isFile(filepath) {
+		filepath = this.resolve(filepath);
+		return fs.lstatSync(filepath).isFile();
+	}
+	static isDirectory(dirpath) {
+		dirpath = this.resolve(dirpath);
+		return fs.lstatSync(dirpath).isDirectory();
+	}
+	static isRoot(dirpath) {
+		dirpath = this.resolve(dirpath);
+		return dirpath == '/' || dirpath == 'C:/' || dirpath == 'C:\\';
+	}
 	/**
 		Make the directory at the given path
 		@arg {String} filepath
@@ -349,6 +361,42 @@ class FilePromise {
 	static readDirSync(filepath) {
 		filepath = this.resolve(filepath);
 		return fs.readdirSync(filepath);
+	}
+	static removeDir(dirpath) {
+		dirpath = this.resolve(dirpath);
+		if (this.isRoot(dirpath)) {
+			throw 'Cannot delete root.';
+		}
+		return this.readDir(dirpath)
+		.then(async (files) => {
+			if (files.length == 0) {
+				return promisify.call(this, fs.rmdir, dirpath);
+			} else for (let file of files) {
+				file = this.join(dirpath, file);
+				if (this.isDirectory(file)) {
+					await this.removeDir(file);
+				} else {
+					await this.delete(file);
+				}
+			}
+		});
+	}
+	static removeDirSync(dirpath) {
+		dirpath = this.resolve(dirpath);
+		if (this.isRoot(dirpath)) {
+			throw 'Cannot delete root.';
+		}
+		let files = this.readDirSync(dirpath);
+		if (files.length == 0) {
+			return fs.rmdirSync(dirpath);
+		} else for (let file of files) {
+			file = this.join(dirpath, file);
+			if (this.isDirectory(file)) {
+				this.removeDirSync(file);
+			} else {
+				this.deleteSync(file);
+			}
+		}
 	}
 }
 

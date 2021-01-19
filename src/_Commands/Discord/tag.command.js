@@ -6,7 +6,6 @@ module.exports = {
 	'tag': {
 		aliases: ['t','tags'],
 		category: 'Discord',
-		title: 'Get Tag',
 		info: 'Get a server tag.',
 		parameters: ['name'],
 		permissions: 'privileged',
@@ -23,7 +22,7 @@ module.exports = {
 			'set': {
 				aliases: ['make','create','assign'],
 				title: 'Set Tag',
-				info: 'Set a server tag (maximum of 10).',
+				info: 'Set a server tag (maximum of ' + TAG_LIMIT + ').',
 				parameters: ['name','...data'],
 				fn({client, serverID, args}) {
 					let [name, ...data] = args;

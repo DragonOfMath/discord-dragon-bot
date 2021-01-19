@@ -1,4 +1,4 @@
-const Asset = require('../../Structures/Asset');
+const Asset = require('../../../Structures/Asset');
 const NATO  = Asset.load('Text/nato.json');
 
 module.exports = {

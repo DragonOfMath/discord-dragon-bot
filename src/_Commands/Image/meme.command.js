@@ -22,12 +22,16 @@ function getFont(size = 32, color = 'black') {
 	let fontName = `FONT_SANS_${size}_${color.toUpperCase()}`;
 	return Jimp.loadFont(Jimp[fontName]);
 }
-function getTemplate(templateName) {
+async function getTemplate(templateName) {
 	let filename = MemeTemplates[templateName].filename;
-	if (filename instanceof Array) {
-		filename = random(filename);
+	if (filename) {
+		if (filename instanceof Array) {
+			filename = random(filename);
+		}
+		return Jimp.read(Asset.getPath('Templates/' + filename));
+	} else {
+		return;
 	}
-	return Jimp.read(Asset.getPath('Templates/' + filename));
 }
 function applyTemplate(templateName, items = {}, filename) {
 	const Descriptor = MemeTemplates[templateName];
@@ -36,6 +40,9 @@ function applyTemplate(templateName, items = {}, filename) {
 	}
 	return getTemplate(templateName)
 	.then(templateImage => {
+		if (!templateImage) {
+			templateImage = items.image;
+		}
 		return Descriptor.placeholders.forEachAsync(placeholder => {
 			let item = items[placeholder.id];
 			if (isImage(item) && (placeholder.type == 'image' || placeholder.type == 'any')) {
@@ -46,18 +53,20 @@ function applyTemplate(templateName, items = {}, filename) {
 					}
 					let x = placeholder.x || 0;
 					let y = placeholder.y || 0;
+					let w = placeholder.width;
+					let h = placeholder.height;
 					let alignmentX = placeholder.alignmentX || 'left';
 					let alignmentY = placeholder.alignmentY || 'top';
-					image.scaleToFit(placeholder.width, placeholder.height);
+					image.scaleToFit(w, h);
 					if (alignmentX == 'center') {
-						x += placeholder.width / 2 - image.bitmap.width / 2;
+						x += w / 2 - image.bitmap.width / 2;
 					} else if (alignmentX == 'right') {
-						x += placeholder.width - image.bitmap.width;
+						x += w - image.bitmap.width;
 					}
 					if (alignmentX == 'middle') {
-						y += placeholder.height / 2 - image.bitmap.height / 2;
+						y += h / 2 - image.bitmap.height / 2;
 					} else if (alignmentY == 'bottom') {
-						y += placeholder.height - image.bitmap.height;
+						y += h - image.bitmap.height;
 					}
 					if (placeholder.mask) {
 						return templateImage.mask(image, x, y);
@@ -68,21 +77,39 @@ function applyTemplate(templateName, items = {}, filename) {
 					}
 				});
 			} else if (placeholder.type == 'text' || placeholder.type == 'any') {
-				if (!item) {
+				if (!item && placeholder.default) {
 					item = random(placeholder.default);
-				}
-				if (!item) {
-					item = 'Sample Text';
 				}
 				let x = placeholder.x;
 				let y = placeholder.y;
-				let width = placeholder.width;
-				let height = placeholder.height;
+				let w = placeholder.width;
+				let h = placeholder.height;
+				if (w == 'auto') {
+					w = templateImage.bitmap.width;
+				}
+				if (h == 'auto') {
+					h = templateImage.bitmap.height;
+				}
+				if (placeholder.padding) {
+					x += placeholder.padding;
+					y += placeholder.padding;
+					w -= 2 * placeholder.padding;
+					h -= 2 * placeholder.padding;
+				}
+				let size = placeholder.size;
+				if (size == 'auto') {
+					// calculate the optimal font size for this text
+					for (size of [64,32,16,14,12,10,8]) {
+						if (Math.ceil(item.length * size / w) * size * 1.5 < h * 0.33) {
+							break;
+						}
+					}
+				}
 				let alignmentX = Jimp['HORIZONTAL_ALIGN_'+(placeholder.alignmentX || 'left').toUpperCase()];
 				let alignmentY = Jimp['VERTICAL_ALIGN_'+(placeholder.alignmentY || 'top').toUpperCase()];
-				return getFont(placeholder.size, placeholder.color)
+				return getFont(size, placeholder.color)
 				.then(font => {
-					return templateImage.print(font, x, y, {text:item,alignmentX,alignmentY}, width, height);
+					return templateImage.print(font, x, y, {text:item,alignmentX,alignmentY}, w, h);
 				});
 			}
 		})
@@ -181,15 +208,22 @@ function applyWatermark(watermarkName, image, text = 'BOTTOM TEXT') {
 
 module.exports = {
 	'meme': {
-		aliases: ['maymay','dankify','whenyou'],
+		aliases: ['caption','maymay','dankmeme'],
 		category: 'Image',
 		title: 'Meme Generator',
-		info: 'Make a simple text+image meme.',
-		parameters: ['[imageURL]','[toptext]'],
-		fn({client, channelID, args}) {
+		info: 'Make a meme with some caption at the top. When using the `-macro` flag, provide top text and bottom text using quote marks.',
+		parameters: ['[imageURL|memeID]','[...text]'],
+		flags: ['macro'],
+		fn({client, channelID, args, flags}) {
 			return processImage(client, args, channelID, (image, ...text) => {
-				text = text.join(' ');
-				return applyTemplate('blank', {image,text});
+				if (flags.has('macro')) {
+					let [toptext, ...bottomtext] = text;
+					bottomtext = bottomtext.join(' ');
+					return applyTemplate('macro', {image,toptext,bottomtext});
+				} else {
+					text = text.join(' ');
+					return applyTemplate('blank', {image,text});
+				}
 			}, 'meme.jpg');
 		},
 		permissions: 'inclusive',

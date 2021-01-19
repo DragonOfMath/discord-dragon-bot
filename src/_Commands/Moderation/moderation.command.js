@@ -71,14 +71,13 @@ module.exports = {
 				if (!server.channels[channelID]) {
 					throw 'Invalid channel ID: ' + channelID;
 				}
-				return client.moveMessages({
-					from: channel.id,
-					to: channelID,
-					messages: args,
-					keepOriginalMessages: (cmd == 'mirror')
-				});
+				if (cmd == 'mirror') {
+					return Moderation.mirror(client, server, channel, channelID, args, flags);
+				} else {
+					return Moderation.move(client, server, channel, channelID, args, flags);
+				}
 			} else {
-				return Moderation.archive(client, server, channel, args[0], flags);
+				return Moderation.archive(client, server, channel, args, flags);
 			}
 		},
 		subcommands: {
@@ -103,9 +102,9 @@ module.exports = {
 		aliases: ['delete', 'nuke', 'prune', 'purge', 'tidy'],
 		category: 'Moderation',
 		//title: 'Cleanup',
-		info: 'Delete messages in the current channel. Use flags to specify the kinds of messages to filter out.',
+		info: 'Delete messages in the current channel. Use flags to specify the kinds of messages to look for.',
 		parameters: ['[count]'],
-		flags: ['b|bot','c|cmds','t|text','m|media','p|pinned'],
+		flags: ['b|bot','c|cmds','t|text','m|media','p|pinned','by|user','includes|contains','before','after'],
 		permissions: 'privileged',
 		fn({client, server, channel, args, flags}) {
 			return Moderation.cleanup(client, server, channel, args[0], flags);
@@ -267,7 +266,7 @@ module.exports = {
 		aliases: ['codered'],
 		category: 'Moderation',
 		title: 'Moderation | Lockdown',
-		info: 'In the event of a raid/attack, lockdown mode will delete recent invites, set the server to maximum verification level (TODO: monkey-patch this in discord.io?), and observe new members. Should any user spam messages in a short amount of time or mention anyone, they will be kicked immediately.',
+		info: 'In the event of a raid/attack, lockdown mode will delete recent invites, set the server to maximum verification level (TODO: monkey-patch this in discord.io?), and observe new members. Should any user spam messages/images in a short amount of time or mention anyone, they will be kicked immediately.',
 		parameters: ['<on|off|1|0|true|false>'],
 		permissions: 'privileged',
 		fn({client, args, server, userID}) {
@@ -522,9 +521,14 @@ module.exports = {
 				title: 'Moderation | URL Banlist',
 				info: 'Display the current URL banlist.',
 				fn({client, server}) {
-					return {
-						description: Moderation.get(client, server).banlist.urls.join('\n')
-					};
+					let urls = Moderation.get(client, server).banlist.urls;
+					if (urls.length) {
+						return {
+							description: urls.join('\n')
+						};
+					} else {
+						return 'No banned URLs.';
+					}
 				},
 				subcommands: {
 					'clear': {
@@ -538,7 +542,7 @@ module.exports = {
 						}
 					},
 					'add': {
-						aliases: ['ban'],
+						aliases: ['ban','blacklist'],
 						title: 'Moderation | Ban URLs',
 						info: 'Add URLs to the banlist.',
 						parameters: ['...urls'],
@@ -550,7 +554,7 @@ module.exports = {
 						}
 					},
 					'remove': {
-						aliases: ['unban'],
+						aliases: ['unban','allow'],
 						title: 'Moderation | Unban URLs',
 						info: 'Remove URLs from the banlist.',
 						parameters: ['...urls'],
@@ -568,9 +572,14 @@ module.exports = {
 				title: 'Moderation | Username Banlist',
 				info: 'Display the current usernam banlist.',
 				fn({client, server}) {
-					return {
-						description: Moderation.get(client, server).banlist.usernames.join(', ')
-					};
+					let users = Moderation.get(client, server).banlist.usernames;
+					if (users.length) {
+						return {
+							description: users.join(', ')
+						};
+					} else {
+						return 'No banned usernames.';
+					}
 				},
 				subcommands: {
 					'clear': {
@@ -584,7 +593,7 @@ module.exports = {
 						}
 					},
 					'add': {
-						aliases: ['ban'],
+						aliases: ['ban','blacklist'],
 						title: 'Moderation | Ban Usernames',
 						info: 'Add username filters to the name banlist.',
 						fn({client, server, args}) {
@@ -595,7 +604,7 @@ module.exports = {
 						}
 					},
 					'remove': {
-						aliases: ['unban'],
+						aliases: ['unban','allow'],
 						title: 'Moderation | Unban Usernames',
 						info: 'Remove username filters from the name banlist.',
 						fn({client, server, args}) {

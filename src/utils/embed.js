@@ -10,15 +10,15 @@ function tableify(columns = [], rows = [], fn, start = 0, limit) {
 		value: '',
 		inline: true
 	}));
-	for (let r = start, row; r <= end; r++) {
+	for (let r = start, row, c; r <= end; r++) {
 		row = fn ? fn(rows[r], r) : rows[r];
-		for (let c = 0; c < row.length; c++) {
+		for (c = 0; c < fields.length; c++) {
 			fields[c].value += String(row[c]) + '\n';
 		}
 	}
 	
 	let embed = {fields};
-	if (start != 1 || end != rows.length) {
+	if (end-start != rows.length-1) {
 		embed.footer = {
 			text: `Showing ${start+1}-${end+1} of ${rows.length} Total`
 		};
@@ -50,7 +50,7 @@ function paginate(items, page = 1, limit = 20, fn) {
 			text: `Page ${page} of ${maxPages} | Showing ${start+1}-${end+1} of ${totalItems} Total`
 		};
 		for (var idx = start, temp; idx <= end; idx++) {
-			temp = fn(items, idx, items[idx]);
+			temp = fn(items[idx], idx, items);
 			if (typeof(temp) === 'string') {
 				temp = {
 					name: `#${idx+1}`,

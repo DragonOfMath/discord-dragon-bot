@@ -7,7 +7,7 @@ class Format {
 		return `${x} ${s}${x!=1?'s':''}`;
 	}
 	static ordinal(x) {
-		return ['1st','2nd','3rd'][x-1] || (x + 'th');
+		return ['1st','2nd','3rd'][(x % 100) < 10 && (x % 100 > 20) && (x % 10) - 1] || (x + 'th');
 	}
 	static insertCommas(x) {
 		if (x >= 0 && x < 1000) {
@@ -67,6 +67,24 @@ class Format {
 		}
 		return time.join(' ');
 	}
+	static shorttime(t,parts=4) {
+		t = Math.floor(t);
+		let ms = t % 1000;
+		t = Math.floor(t/1000);
+		let sec = t % 60;
+		t = Math.floor(t/60);
+		let min = t % 60;
+		t = Math.floor(t/60);
+		let hr = t % 24;
+		t = Math.floor(t/24);
+		let dd = t;
+		let time = [];
+		if (dd)  time.push(this.plural('d',dd));
+		if (hr)  time.push(this.plural('h',hr));
+		if (min) time.push(this.plural('m',min));
+		if (sec) time.push(this.plural('s',sec));
+		return time.slice(0,parts).join(' ');
+	}
 	static timestamp(t) {
 		let sign = t < 0 ? '-' : '';
 		t = Math.floor(Math.abs(t));
@@ -99,6 +117,19 @@ class Format {
 		b /= 1024;
 		b = ~~(b * 10) / 10;
 		return `${b} MB`;
+	}
+	static relativeOrder(n,precision=2) {
+		n = Number(n);
+		let order = Math.floor(Math.log(n) / Math.log(1000));
+		if (order != 0) n /= 1000 ** order;
+		n = n.toPrecision(precision);
+		if (order > 0 && order < 6) {
+			n+= ['k','M','B','T','Q'][order-1];
+		}
+		return n;
+	}
+	static scientificNotation(n,precision=2) {
+		return Number(n).toExponential(precision);
 	}
 	static coordinates(latitude, longitude) {
 		return [Math.abs(latitude),(latitude>=0?'N':'S'),Math.abs(longitude),(longitude>=0?'E':'W')].join(' ');

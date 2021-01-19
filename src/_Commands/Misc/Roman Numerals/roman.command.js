@@ -9,8 +9,8 @@ module.exports = {
 		parameters: ['number'],
 		permissions: 'inclusive',
 		fn({args}) {
-			let n = args[0];
-			return n + ' = ' + (isNaN(n) ? Roman.from(n) : Roman.to(n));
+			let [x,y] = args;
+			return isNaN(x) ? (y + ' = ' + Roman.from(y)) : (x + ' = ' + Roman.to(x));
 		}
 	}
 };

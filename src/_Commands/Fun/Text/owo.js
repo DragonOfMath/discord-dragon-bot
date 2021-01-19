@@ -1,4 +1,4 @@
-const {random} = require('../../Utils');
+const {random,matchCase} = require('../../../Utils');
 
 const OwO = ['(・`ω´・)','(´・ω・`)',';;w;;','OwO','owo','UwU','uwu','>w<','^w^','x3','X3',':3'];
 
@@ -7,48 +7,34 @@ const OwO = ['(・`ω´・)','(´・ω・`)',';;w;;','OwO','owo','UwU','uwu','>w
 	Additional tidbits from https://github.com/Printendo/HewwoStudio
 */
 module.exports = function owoify(x) {
-	function isUpper(x) {
-		return x.toUpperCase() == x;
-	}
-	function isLower(x) {
-		return x.toLowerCase() == x;
-	}
-	function replaceWith(str, rep) {
-		for (var i = 0; i < rep.length; i++) {
-			if (str[i] && isUpper(str[i])) {
-				rep[i] = rep[i].toUpperCase();
-			}
-		}
-		return rep;
-	}
-	return x
+	return (x ? x
 	.replace(/damn/gi, function(s) {
-		return replaceWith(s, 'dang');
+		return matchCase(s, 'dang');
 	})
 	.replace(/fuck/gi, function(s) {
-		return replaceWith(s, 'heck');
+		return matchCase(s, 'heck');
 	})
 	.replace(/shit/gi, function(s) {
-		return replaceWith(s, 'poop');
+		return matchCase(s, 'poop');
 	})
 	.replace(/piss/gi, function(s) {
-		return replaceWith(s, 'pee');
+		return matchCase(s, 'pee');
 	})
 	.replace(/(?:r|l)/gi, function(s) {
-		return replaceWith(s, 'w');
+		return matchCase(s, 'w');
 	})
 	.replace(/ove/gi, function(s) {
-		return replaceWith(s, 'uv');
+		return matchCase(s, 'uv');
 	})
 	.replace(/qu/gi, function(s) {
-		return replaceWith(s, 'kw');
+		return matchCase(s, 'kw');
 	})
 	.replace(/\bth/gi, function(s) {
-		return replaceWith(s, 'd');
+		return matchCase(s, 'd');
 	})
 	.replace(/th\b/gi, function(s) {
-		return replaceWith(s, 'f');
+		return matchCase(s, 'f');
 	})
 	.replace(/n([aeiou])/g, 'ny$1').replace(/N([aeiou])/g, 'Ny$1').replace(/N([AEIOU])/g, 'NY$1')
-	 + ' ' + random(OwO);
+	: '') + ' ' + random(OwO);
 };

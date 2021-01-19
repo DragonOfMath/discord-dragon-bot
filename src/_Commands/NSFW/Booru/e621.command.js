@@ -1,6 +1,7 @@
 const e621 = require('./e621');
 const PoolViewer = require('./PoolViewer');
 const {random,md5} = require('../../../Utils');
+const {processImage} = require('../../Image/image-utils');
 
 module.exports = {
 	'e621': {
@@ -82,10 +83,21 @@ module.exports = {
 				aliases: ['worst','worstof'],
 				info: 'Search the *worst* posts on e621. Beware these treacherous waters, because your blacklist won\'t apply!',
 				parameters: ['tag1','[tag2]','[tag3]','[tag4]','[tag5]'],
+				enabled: false, // I cannot trust this command to *not* post illegal shit
 				fn({client, args, userID, serverID}) {
 					return e621.search([...args, 'order:score_asc'])
 					.then(random)
 					.then(post => post.embed(args.join(', ')));
+				}
+			},
+			'ify': {
+				aliases: ['imageify','posterize'],
+				info: 'Posterize an image into an e621-like style.',
+				parameters: ['[imageURL]'],
+				fn({client, channelID, args}) {
+					return processImage(client, args, channelID, 
+						image => image.posterize([0x000000FF,0x012E57FF,0x004996FF,0x01244AFF,0xFCB328FF,0xFEFEFEFF]),
+						'e621ify.png');
 				}
 			}
 		}

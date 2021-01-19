@@ -2,10 +2,7 @@ const MessageBrowser = require('./MessageBrowser');
 const {tableify} = require('../Utils/embed');
 
 class TableMessageBrowser extends MessageBrowser {
-	filterData(data) {
-		return data;
-	}
-	map(item, index) {
+	mapItem(item, index) {
 		return [`#${index+1}`,item];
 	}
 	updateEmbed() {

@@ -7,7 +7,7 @@ const Grant        = require('../Permissions/Grant');
 const TypeMapBase  = require('../Structures/TypeMapBase');
 const Resource     = require('../Structures/Resource');
 
-const {Markdown:md,strcmp} = require('../Utils');
+const {Markdown:md,Format:fmt,strcmp} = require('../Utils');
 
 /**
  * Command class constructor
@@ -24,10 +24,13 @@ const {Markdown:md,strcmp} = require('../Utils');
  * @prop {Permissions}   [permissions] - default permissions of the command                (see Permissions.js)
  * @prop {Object}        [subcommands] - subcommands which are recursively processed
  * @prop {Function}      [fn]          - the command function handler, which takes one argument, the input object
+ * @prop {Function}      [init]        - optional initialization called after all commands are processed (only allowed on top-level commands)
  *
  * @prop {Boolean}       [suppress=false]  - prevent listing this command and its subcommands
  * @prop {Boolean}       [analytics=true]  - record usage of this command
  * @prop {Boolean}       [enabled=true]    - enable/disable this command, for experimental reasons
+ * @prop {Boolean}       [nsfw=false]      - whether the command is considered NSFW, so it can only be used in the appropriate channels
+ * @prop {Number}        [cooldown=0]      - the time needed to wait between using this command
  *
  * @prop {Boolean}       [generated=false] - only used for auto-generated commands
  * @prop {Command}       [supercommand]    - the parent command object, automatically linked for subcommands
@@ -52,9 +55,14 @@ class Command extends Resource {
 		this.flags       = new Flags(descriptor.flags, this);
 		this.permissions = new Permissions(descriptor.permissions || Constants.Permissions.DEFAULT, this);
 		this.fn = typeof(descriptor.fn) === 'string' ? eval(descriptor.fn) : descriptor.fn;
+		this.init = descriptor.init ? descriptor.init.bind(this) : null;
+		this.userCooldowns = {};
 		
 		this.supercommand = supercommand;
 		if (supercommand) {
+			if (this.init) {
+				throw new CommandError(id, `init must be from a top-level command only.`);
+			}
 			this.category = (typeof(descriptor.category) != 'undefined' && descriptor.category !== 'Misc') ? this.category : supercommand.category;
 			this.suppress = (typeof(descriptor.suppress) != 'undefined') ? descriptor.suppress : supercommand.suppress;
 			this.nsfw     = (typeof(descriptor.nsfw)     != 'undefined') ? descriptor.nsfw     : supercommand.nsfw;
@@ -218,13 +226,16 @@ class Command extends Resource {
 	validate(handler) {
 		let grant;
 		if (this.disabled) {
-			grant = Grant.denied('This feature is disabled. :lock:');
+			grant = Grant.denied('This feature is disabled. 🔒');
 		} else if (this.nsfw && !handler.isDM && !handler.context.channel.nsfw) {
-			grant = Grant.denied('Command may not be used outside a NSFW channel. :underage:');
+			grant = Grant.denied('Command may not be used outside a NSFW channel. 🔞');
 		} else {
 			grant = this.permissions.check(handler);
 			if (grant.granted) {
-				grant = this.parameters.check(handler.args);
+				grant = this.checkCooldown(handler.userID);
+				if (grant.granted) {
+					grant = this.parameters.check(handler.args);
+				}
 			}
 		}
 		handler.grant = grant.value;
@@ -240,7 +251,7 @@ class Command extends Resource {
 		try {
 			var value;
 			if (this.fn instanceof Function) {
-				value = this.fn.call(this, handler);
+				value = this._run(handler);
 			} else if (this.info) {
 				value = this.info + (this.hasSubcommands ? `\nUse ${md.code(this.fullID + '.?')} to list subcommands.` : '');
 			}
@@ -253,7 +264,7 @@ class Command extends Resource {
 			return handler;
 		}
 	}
-	runRaw(data) {
+	_run(data) {
 		return this.fn.call(this, data);
 	}
 	/**
@@ -264,22 +275,25 @@ class Command extends Resource {
 	 */
 	embed(client, server) {
 		let settings = [];
+		if (this.cooldown) {
+			settings.push('🕓 Cooldown (' + fmt.time(this.cooldown) + ')');
+		}
 		if (this.suppress) {
-			settings.push(':spy: Hidden');
+			settings.push('🕵️‍ Hidden');
 		}
 		if (this.enabled) {
-			settings.push(':unlock: Enabled');
+			settings.push('🔓 Enabled');
 		} else {
-			settings.push(':lock: Disabled');
+			settings.push('🔒 Disabled');
 		}
 		if (this.analytics) {
-			settings.push(':bar_chart: Usage Tracked');
+			settings.push('📊 Usage Tracked');
 		}
 		if (this.nsfw) {
-			settings.push(':underage: NSFW');
+			settings.push('🔞 NSFW');
 		}
 		if (this.generated) {
-			settings.push(':computer: Generated');
+			settings.push('🖥 Generated');
 		}
 		return {
 			title: this.category + ': ' + this.fullID,
@@ -310,7 +324,10 @@ class Command extends Resource {
 					value: this.subcommandList.join(', ') || 'None',
 					inline: true
 				}
-			]
+			],
+			footer: {
+				text: 'Command Parameter Guide: [] = optional, ... = 1 or more, <|> = set of acceptable values, {} = command lambda'
+			}
 		};
 	}
 	/**
@@ -344,12 +361,34 @@ class Command extends Resource {
 			return [];
 		}
 	}
+	/**
+	 * Check the last usage by a user with the cooldown. Update their last usage when ready.
+	 * @return a Grant that explains if the cooldown has not been waited out.
+	 */
+	checkCooldown(userID) {
+		if (this.cooldown > 0) {
+			this.userCooldowns[userID] = this.userCooldowns[userID] || 0;
+			let now = Date.now(),
+			    elapsed = now - this.userCooldowns[userID],
+				remaining = this.cooldown - elapsed;
+			if (remaining > 0) {
+				return Grant.denied('Please wait 🕓' + md.bold(fmt.time(remaining)) + ' before using ' + md.code(this.id) + ' again!');
+			}
+			this.userCooldowns[userID] = now;
+		}
+		return Grant.granted();
+	}
+	resetCooldown(userID) {
+		delete this.userCooldowns[userID];
+	}
 	
 	/* Documentation generator functions */
 	toText(recursive = false) {
 		let docs = this.toString();
 		if (this.disabled) {
-			docs += ' !DISABLED!';
+			docs += ' 🔒';
+		} else if (this.nsfw) {
+			docs += ' 🔞';
 		}
 		
 		let p = this.permissions.inherited;
@@ -362,6 +401,9 @@ class Command extends Resource {
 		
 		if (this.aliases.length) {
 			docs += 'Aliases: ' + this.aliases.join(', ') + '\n';
+		}
+		if (this.cooldown) {
+			docs += 'Cooldown: ' + fmt.time(this.cooldown) + '\n';
 		}
 		
 		docs += this.info;
@@ -386,6 +428,9 @@ class Command extends Resource {
 		if (this.aliases.length) {
 			docs += 'Aliases: ' + this.aliases.map(md.code).join(', ') + '\n\n';
 		}
+		if (this.cooldown) {
+			docs += 'Cooldown: ' + fmt.time(this.cooldown) + '\n\n';
+		}
 		
 		docs += this.info + '\n';
 		
@@ -399,6 +444,8 @@ class Command extends Resource {
 		let docs = `<div class="command" id="${this.fullID}">\n<div><h3 class="command-id"><code>${this.toString()}</code></h3>`;
 		if (this.disabled) {
 			docs += `<i>Disabled</i>`;
+		} else if (this.nsfw) {
+			docs += `<i>NSFW</i>`;
 		}
 		let p = this.permissions.inherited;
 		if (p.isPrivate) {
@@ -410,6 +457,9 @@ class Command extends Resource {
 		
 		if (this.aliases.length) {
 			docs += `<div>Aliases: <span class="aliases">${this.aliases.map(a => '<code>'+a+'</code>').join(', ')}</span></div>\n`;
+		}
+		if (this.cooldown) {
+			docs += `<div>Cooldown: <span class="cooldown">${fmt.time(this.cooldown)}</span></div>\n`;
 		}
 		
 		docs += `<p>${this.info}</p>\n</div>`;
@@ -467,6 +517,9 @@ class Command extends Resource {
 		}
 		if (this.nsfw) {
 			_export.nsfw = this.nsfw;
+		}
+		if (this.cooldown) {
+			_export.cooldown = this.cooldown;
 		}
 		if (this.generated) {
 			_export.generated = this.generated;

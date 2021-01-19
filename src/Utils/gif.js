@@ -1,4 +1,4 @@
-const {Gif,GifFrame,GifUtil,GifCodec,BitmapImage} = require('gifwrap');
+const {Gif,GifFrame,GifUtil,GifCodec,GifError,BitmapImage} = require('gifwrap');
 const fs = require('fs');
 const path = require('path');
 const {Jimp} = require('./jimp');
@@ -77,6 +77,7 @@ class GIF {
 			
 			// create new canvas with black background
 			canvas = new GifFrame(width, height, 0x000000FF, frame);
+			console.log('Original delay (in 1/100th seconds):', canvas.delayCentisecs);
 			canvas.delayCentisecs = 100;
 			
 			// copy pixels to canvas
@@ -92,7 +93,7 @@ class GIF {
 	/**
 	 * Replace the GIF frames with the rendered image at each frame
 	 */
-	renderAllFrames() {
+	bakeFrames() {
 		let canvas = new GifFrame(this.frames[0]);
 		for (let f = 1, frame; f < this.frames.length; f++) {
 			frame = this.frames[f];
@@ -163,13 +164,13 @@ class GIF {
 		this.frames = optimalFrames;
 		return this;
 	}
-	async getBuffer() {
+	async toBuffer() {
 		let codec = new GifCodec();
 		let buffer = await codec.encodeGif(this.frames, this);
 		return buffer;
 	}
 	async write(dest) {
-		let buffer = await this.getBuffer();
+		let buffer = await this.toBuffer();
 		return fs.writeFileSync(dest, buffer);
 	}
 	static async read(src) {
@@ -190,4 +191,4 @@ class GIF {
 	}
 }
 
-module.exports = {GIF,Gif,GifFrame,GifUtil,GifCodec};
+module.exports = {GIF,Gif,GifFrame,GifUtil,GifCodec,GifError};

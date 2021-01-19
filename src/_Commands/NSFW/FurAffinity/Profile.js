@@ -38,12 +38,14 @@ class Profile {
 					case 'Favorite artist':
 						continue loop;
 				}
-				info += `${md.bold(key+':')} ${this.artist_information[key]}\n`;
+				info += `${md.bold(key)}: ${this.artist_information[key]}\n`;
 			}
-			e.fields.push({
-				name: 'Misc Information',
-				value: info
-			});
+			if (info) {
+				e.fields.push({
+					name: 'Misc Information',
+					value: info
+				});
+			}
 		}
 		if (this.featured_submission) {
 			e.fields.push({

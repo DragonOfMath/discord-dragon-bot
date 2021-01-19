@@ -1,5 +1,6 @@
 const Asset = require('../../Structures/Asset');
-const {Jimp,strcmp,parseCSV,fetch,encodeURIComponent} = require('../../Utils');
+const TableMessageBrowser = require('../../Sessions/TableMessageBrowser');
+const {Markdown:md,Jimp,strcmp,parseCSV,fetch,encodeURIComponent} = require('../../Utils');
 
 // Stolen off of https://crafting.thedestruc7i0n.ca/ :^) (Images are (c) Mojang)
 const Ingredients = Asset.require('Minecraft/ingredients.json');
@@ -53,15 +54,51 @@ async function generateFurnaceRecipe(input, fuel, output) {
 	if (output) await placeIngredient(furnace, output, 216,  76)
 	return furnace.getBufferAs('recipe.png');
 }
+async function generateArmorSet(head, chest, legs, feet) {
+	let armor = await Jimp.read(Asset.load('Minecraft/armor.png'));
+	if (head)  await placeIngredient(armor, head,  25, 26);
+	if (chest) await placeIngredient(armor, chest, 25, 62);
+	if (legs)  await placeIngredient(armor, legs,  25, 98);
+	if (feet)  await placeIngredient(armor, feet,  25, 134);
+	return armor.getBufferAs('armor.png');
+}
+class MinecraftItemBrowser extends TableMessageBrowser {
+	constructor(context) {
+		let items = Object.keys(Ingredients).map(id => Ingredients[id]);
+		super(context, items);
+		this.init();
+	}
+	init() {
+		super.init();
+		this.updateEmbed();
+	}
+	mapItem(item, index) {
+		return [md.code(item.id), item.name];
+	}
+}
+MinecraftItemBrowser.CONFIG = {
+	displayName: 'Minecraft Items',
+	columns: ['ID','Name'],
+	itemsPerPage: 25
+};
 
 module.exports = {
 	'mc': {
-		aliases: ['minecraft','meinkraft'],
+		aliases: ['minecraft'],
 		category: 'Image',
 		title: 'Minecraft',
 		info: 'Minecraft-related image commands.',
 		permissions: 'inclusive',
 		subcommands: {
+			'items': {
+				aliases: ['ingredients','blocks','things','list'],
+				title: 'Minecraft | Item List',
+				info: 'Displays a browser for Minecraft items.',
+				fn({context}) {
+					let browser = new MinecraftItemBrowser(context);
+					browser.startBrowser(context.client);
+				}
+			},
 			'craft': {
 				aliases: ['crafting','table'],
 				title: 'Minecraft | Crafting Recipe',
@@ -79,10 +116,20 @@ module.exports = {
 				aliases: ['cooking'],
 				title: 'Minecraft | Furnace Recipe',
 				info: 'Generates a Minecraft furnace recipe. Ingredients are minecraft:identifiers or block names, and separated by commas.',
-				parameters: ['input','fuel','output'],
+				parameters: ['...components'],
 				fn({args}) {
-					let [input,fuel,output] = validateIngredients(args);
-					return generateFurnaceRecipe(input, fuel, output);
+					let components = validateIngredients(args);
+					return generateFurnaceRecipe(...components);
+				}
+			},
+			'armor': {
+				aliases: ['clothing'],
+				title: 'Minecraft | Armor',
+				info: 'Generates a Minecraft set of armor (from 4 parts). Use minecraft:identifiers or item names, and separated by commas.',
+				parameters: ['...parts'],
+				fn({args}) {
+					let parts = validateIngredients(args);
+					return generateArmorSet(...parts);
 				}
 			},
 			'achievement': {

@@ -10,6 +10,9 @@ function allowed(x) {
 class RedditSubscription extends Resource {
 	constructor(subscription = {}) {
 		super(Constants.Subscription.TEMPLATE, subscription);
+		if (this.subreddits.length == 0) {
+			this.lastPollTime = 0;
+		}
 	}
 	get feed() {
 		return `${Constants.URL}/r/${this.toRedditString()}`;
@@ -69,12 +72,17 @@ class RedditSubscription extends Resource {
 			// post must not already be visited
 			if (this.checkPostCache(post)) return false;
 			
-			// if crossposting is not allowed, then avoid crossposts
-			if (!this.options.crossposting) {
-				// if a crosspost, it must not be from an already visited post
-				let parent = post.crosspost;
-				if (parent && this.checkPostCache(parent)) return false;
-			}
+			// if crossposting is not allowed, then avoid crossposts of previously visited subs
+			if (!this.options.crossposting && post.crosspost && this.checkPostCache(post.crosspost)) return false;
+			
+			// if NSFW posts are not allowed, then avoid adult content
+			if (post.over_18 && !this.options.nsfw) return false;
+			
+			// if spoilers are not allowed, then avoid spoilers
+			if (post.spoiler && !this.options.spoiler) return false;
+			
+			// avoid posts from blacklisted users
+			if (this.options.blacklisted.includes(post.author)) return false;
 			
 			// post type must be allowed
 			if (post.is_self)
@@ -153,8 +161,23 @@ class RedditSubscription extends Resource {
 					inline: true
 				},
 				{
+					name: 'Blacklisted Users',
+					value: this.options.blacklisted.join(', ') || 'none',
+					inline: true
+				},
+				{
 					name: 'Crossposting',
 					value: allowed(this.options.crossposts),
+					inline: true
+				},
+				{
+					name: 'Adult Content',
+					value: allowed(this.options.nsfw),
+					inline: true
+				},
+				{
+					name: 'Spoilers',
+					value: allowed(this.options.spoilers),
 					inline: true
 				}
 			]

@@ -1,24 +1,10 @@
 const Resource = require('../../../Structures/Resource');
-const {Markdown:md,Format:fmt,random} = require('../../../Utils');
+const {Markdown:md,Format:fmt,random,Date} = require('../../../Utils');
 
 const TEMPLATE = {
-    date: t => t || Date.now(),
+    date: t => t || Math.floor(Date.now() / 1000),
 	announce: false
 };
-
-function compare(date1, date2) {
-	if (date1.getMonth() > date2.getMonth()) {
-		return 1;
-	} else if (date1.getMonth() < date2.getMonth()) {
-		return -1;
-	} else if (date1.getDate() >  date2.getDate()) {
-		return 1;
-	} else if (date1.getDate() <  date2.getDate()) {
-		return -1;
-	} else {
-		return 0;
-	}
-}
 
 class Birthday extends Resource {
     constructor(bday) {
@@ -40,7 +26,7 @@ class Birthday extends Resource {
     get nextBirthday() {
 		let bd = this.birthDate;
         let td = new Date();
-		if (compare(td,bd) > -1) {
+		if (Date.compare(td,bd) > -1) {
 			td.setFullYear(td.getFullYear()+1);
 		}
 		td.setMonth(bd.getMonth());
@@ -50,13 +36,13 @@ class Birthday extends Resource {
 	get isToday() {
 		let bd = this.birthDate;
         let td = new Date();
-		return !compare(bd,td);
+		return !Date.compare(bd,td);
 	}
     get years() {
         let bd = this.birthDate;
         let td = new Date();
         let years = td.getFullYear() - bd.getFullYear();
-		if (compare(td,bd) == -1) {
+		if (Date.compare(td,bd) == -1) {
 			years--;
 		}
 		return years;

@@ -70,6 +70,12 @@ class Codel {
 		this.y = y;
 		this.color = new Color(color);
 	}
+	get isPass() {
+		return this.color.equals(WHITE_PASS, true);
+	}
+	get isStop() {
+		return this.color.equals(BLACK_STOP, true);
+	}
 	toString() {
 		return `(${this.x},${this.y},${this.color.hex})`;
 	}
@@ -104,8 +110,8 @@ class Piet extends Interpreter {
 			DP: this.DP.toString(),
 			CC: this.CC,
 			a: this.attempts,
-			C: codel ? codel.color.val : '?',
-			Cd: next ? next.color.val : '?',
+			C: codel ? codel.color.rgb : '?',
+			Cd: next ? next.color.rgb : '?',
 			d: this.d,
 			D: this.D,
 			i: this.i,
@@ -117,15 +123,14 @@ class Piet extends Interpreter {
 	
 	getCodel(x,y) {
 		if (oob(x, y, this.width, this.height)) return null;
-		let hex = this.code.getPixelColor(x * this.codelSize, y * this.codelSize);
-		let color = Jimp.intToRGBA(hex);
+		let color = this.code.getPixelColor(x * this.codelSize, y * this.codelSize, true);
 		return new Codel(x, y, color);
 	}
 	
 	preprocess() {
 		this.code.scan(0, 0, this.width, this.height, (x,y,i) => {
 			let codel = this.getCodel(x, y);
-			let color = codel.color.val;
+			let color = codel.color.rgb;
 			if (!(color in COLOR_TABLE)) {
 				this.warn(`Invalid codel: ${codel.toString()}`);
 			}
@@ -143,13 +148,13 @@ class Piet extends Interpreter {
 	executeOpcode(thisCodel) {
 		// validate the codel for movement
 		this.log('Current:', thisCodel.toString());
-		if (thisCodel.color.equals(BLACK_STOP)) {
+		if (thisCodel.isStop) {
 			throw new Error('Interpreter is at a black color block somehow...');
 		}
 		
 		// check if the interpreter is about to run into a wall or edge
 		let nextCodel = this.Cd;
-		if (!nextCodel || nextCodel.color.equals(BLACK_STOP)) {
+		if (!nextCodel || nextCodel.color.equals(BLACK_STOP,true)) {
 			this.retry();
 			this.log(`Retrying movement... (${this.attempts}/8)`);
 			//this.DP.record('retry',this.attempts);
@@ -160,14 +165,14 @@ class Piet extends Interpreter {
 		}
 		
 		// ensure that opcodes only execute when passing through actual colors
-		if (thisCodel.color.equals(WHITE_PASS) || nextCodel.color.equals(WHITE_PASS)) {
+		if (thisCodel.isPass || nextCodel.isPass) {
 			this.DP.forward();
 			return;
 		}
 		
 		// calculate an opcode based on the change in hue/shade
-		let thisColor = thisCodel.color.val;
-		let nextColor = nextCodel.color.val;
+		let thisColor = thisCodel.color.rgb;
+		let nextColor = nextCodel.color.rgb;
 		let c1 = COLOR_TABLE[thisColor];
 		let c2 = COLOR_TABLE[nextColor];
 		let hueChange = (c2[0] - c1[0] + 6) % 6;
@@ -190,7 +195,7 @@ class Piet extends Interpreter {
 	next() {
 		if (this.attempts == 8) {
 			this.done = true;
-		} else if (this.C.color.equals(WHITE_PASS)) {
+		} else if (this.C.isPass) {
 			this.traverseWhite();
 		} else {
 			this.traverseColorBlock();
@@ -199,19 +204,25 @@ class Piet extends Interpreter {
 	finish() {
 		this.DP.record('end');
 		let message = super.finish();
-		if (this.options.trace && this.trace.length <= 100) {
+		if (this.options.trace && this.DP.trace.length <= 100) {
 			return this.drawTrace()
-			.then(file => ({message, file, filename: 'piet_trace.png'}));
+			.then(file => ({message, file, filename: 'piet_trace.png'}))
+			.catch(e => { // forget the trace if it fails
+				this.error(e);
+				return message;
+			});
 		} else {
 			return message;
 		}
 	}
 	debug() {
 		let embed = super.debug();
-		embed.fields.push({
-			name: 'Opcodes',
-			value: this.opcodes.slice(0, 100).join(',')
-		});
+		if (this.opcodes) {
+			embed.fields.push({
+				name: 'Opcodes',
+				value: this.opcodes.slice(0, 100).join(',')
+			});
+		}
 		return embed;
 	}
 	
@@ -222,10 +233,12 @@ class Piet extends Interpreter {
 			let traceCS  = this.codelSize;
 			// traces must be sufficiently large enough to display the correct information
 			// since the longest opcode name is 4 letters, it must be 8px * 4 = 32 pixels/codel to fit
-			while (traceCS < 32) {
+			// cut off early if it gets bigger than 2000x2000
+			while (traceCS < 32 && traceImg.bitmap.width < 2000 && traceImg.bitmap.height < 2000) {
 				traceImg = traceImg.scale(2, Jimp.RESIZE_NEAREST_NEIGHBOR);
 				traceCS *= 2;
 			}
+			
 			// for codel blocks that are visited multiple times,
 			// the opcodes are printed in seperate lines to prevent overlap
 			let visited = {};
@@ -272,11 +285,11 @@ class Piet extends Interpreter {
 		this.attempts = 0;
 		while (this.attempts < 4) {
 			let codel = this.Cd;
-			while (codel && codel.color.equals(WHITE_PASS)) {
+			while (codel && codel.isPass) {
 				this.DP.forward();
 				codel = this.Cd;
 			}
-			if (!codel || codel.color.equals(BLACK_STOP)) {
+			if (!codel || codel.isStop) {
 				this.retry(true);
 			} else {
 				this.DP.forward();
@@ -318,7 +331,7 @@ class Piet extends Interpreter {
 			
 			// get the codel and color
 			let codel = this.getCodel(x, y);
-			let color = codel.color.val;
+			let color = codel.color.rgb;
 			
 			// check that the color is the same as the first codel
 			if (sameColor === -1) sameColor = color;
